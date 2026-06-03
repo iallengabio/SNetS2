@@ -13,9 +13,9 @@ import com.snets2.output.ExcelExporter;
 import com.snets2.output.SimulationResult;
 import com.snets2.rmsca.AlgorithmFactory;
 import com.snets2.rmsca.IRMSCA;
+import com.snets2.rmsca.StandardIntegratedRMSCA;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -73,37 +73,36 @@ public class ExperimentalPlanner {
             baseSetup.simulation().totalSlots()
         );
 
-        IRMSCA rmsca = AlgorithmFactory.create(baseSetup.simulation().integratedRmlsa());
+        // 2. Instantiate Algorithm Chain
+        String integratedId = getParam("simulation.integratedRMSCA", scenario, baseSetup.simulation().integratedRMSCA());
+        IRMSCA rmsca = AlgorithmFactory.createIntegrated(integratedId);
 
-        // 2. Apply Scenario Overrides (Parameter Sweep)
+        if (rmsca instanceof StandardIntegratedRMSCA standard) {
+            String routingId = getParam("simulation.routing", scenario, baseSetup.simulation().routing());
+            String modulationId = getParam("simulation.modulationSelection", scenario, baseSetup.simulation().modulationSelection());
+            String coreId = getParam("simulation.coreAndSpectrumAssignment", scenario, baseSetup.simulation().coreAndSpectrumAssignment());
+            String spectrumId = getParam("simulation.spectrumAssignment", scenario, baseSetup.simulation().spectrumAssignment());
+
+            standard.setRouting(AlgorithmFactory.createRouting(routingId));
+            standard.setModulationSelection(AlgorithmFactory.createModulation(modulationId));
+            standard.setCoreAssignment(AlgorithmFactory.createCore(coreId));
+            standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(spectrumId));
+        }
+
+        // 3. Traffic parameters
         double load = baseSetup.traffic().load() != null ? baseSetup.traffic().load() : 1.0;
         if (scenario.containsKey("traffic.load")) {
             load = Double.parseDouble(scenario.get("traffic.load").toString());
         }
 
-        if (rmsca instanceof com.snets2.rmsca.StandardIntegratedRMSCA integrated) {
-            String spectrumAlgo = baseSetup.simulation().spectrumAssignment();
-            if (scenario.containsKey("simulation.spectrumAssignment")) {
-                spectrumAlgo = scenario.get("simulation.spectrumAssignment").toString();
-            }
-
-            if (spectrumAlgo.equalsIgnoreCase("randomfit")) {
-                integrated.setSpectrumAssignment(new com.snets2.rmsca.RandomFitSpectrumAssignment());
-            } else if (spectrumAlgo.equalsIgnoreCase("dummyfit")) {
-                integrated.setSpectrumAssignment(new com.snets2.rmsca.DummyFitSpectrumAssignment());
-            } else {
-                integrated.setSpectrumAssignment(new com.snets2.rmsca.FirstFitSpectrumAssignment());
-            }
-        }
-
-        // 3. Initialize Control Plane
+        // 4. Initialize Control Plane
         ControlPlane cp = new ControlPlane(
             topology, 
             rmsca, 
             baseSetup.physicalLayer().bvtSpectralWidth()
         );
 
-        // 3. Initialize Engine
+        // 5. Initialize Engine
         SimulationEngine engine = new SimulationEngine(
             topology, 
             cp, 
@@ -113,7 +112,7 @@ public class ExperimentalPlanner {
             repId // Seed
         );
 
-        // 4. Seed First Event
+        // 6. Seed First Event
         List<Node> nodes = topology.nodes();
         Node src = nodes.get(engine.getRandom().nextInt(nodes.size()));
         Node dest;
@@ -124,18 +123,25 @@ public class ExperimentalPlanner {
         double firstBitRate = engine.nextBitRate();
         engine.schedule(new ArrivalEvent(0.0, src, dest, firstBitRate));
 
-        // 5. Schedule periodic observations (organizational rule)
+        // 7. Schedule periodic observations (organizational rule)
         engine.schedule(new ResourceUtilizationObservationEvent(0.0));
 
-        // 6. Run
+        // 8. Run
         engine.run();
 
-        // 7. Collect results into the aggregator
+        // 9. Collect results into the aggregator
         engine.getMetricsManager().getBitRateBlocking().fillResults(aggregatedResult, scenario, repId);
         engine.getMetricsManager().getResourceUtilization().fillResults(aggregatedResult, scenario, repId);
 
         double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();
         System.out.println(String.format("BP: %.4e", bp));
+    }
+
+    private String getParam(String key, Map<String, Object> scenario, String defaultValue) {
+        if (scenario.containsKey(key)) {
+            return scenario.get(key).toString();
+        }
+        return defaultValue;
     }
 
     /**

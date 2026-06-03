@@ -1,7 +1,8 @@
-package com.snets2.rmsca;
+package com.snets2.rmsca.modulation;
 
+import com.snets2.model.ControlPlane;
 import com.snets2.model.ModulationFormat;
-import com.snets2.model.NetworkTopology;
+import com.snets2.rmsca.routing.Path;
 import java.util.Comparator;
 import java.util.List;
 
@@ -10,20 +11,16 @@ import java.util.List;
  * It picks the format with the highest spectral efficiency that still reaches the destination.
  */
 public class DistanceAdaptiveModulationSelection implements IModulationSelection {
-    private final List<ModulationFormat> availableModulations;
-    private final double slotBandwidth; // amplitude of one slot in Hz
-
-    public DistanceAdaptiveModulationSelection(List<ModulationFormat> modulations, double slotBandwidth) {
-        // Sort modulations by spectral efficiency (M) descending
-        this.availableModulations = modulations.stream()
-            .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
-            .toList();
-        this.slotBandwidth = slotBandwidth;
-    }
 
     @Override
-    public ModulationResult selectModulation(Path path, double bitRate) {
+    public ModulationResult selectModulation(ControlPlane cp, Path path, double bitRate) {
         double distance = path.getLength();
+        double slotBandwidth = cp.getSlotBandwidth();
+        
+        // Sort modulations by spectral efficiency (M) descending
+        List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
+            .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
+            .toList();
 
         for (ModulationFormat format : availableModulations) {
             if (distance <= format.maxReach()) {

@@ -95,14 +95,11 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
   "kRouting": "newksp",
   "spectrumAssignment": "randomfit",
   "coreAndSpectrumAssignment": "csbasdm",
-  "integratedRmlsa": "prmscav3",
+  "integratedRMSCA": "standard",
   "modulationSelection": "modulationbyqotv2",
-  "grooming": "notrafficgrooming",
   "reallocation": "fsalfav1",
   "powerAssignment": "apamem",
   "regeneratorAssignment": "aar",
-  "networkType": 0,
-  "threads": 10,
   "activeMetrics": {
     "BlockingProbability": true,
     "BitRateBlockingProbability": true,
@@ -122,7 +119,6 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
 * **requests:** Critério de parada primário da simulação (número total de requisições geradas).
 * **Algoritmos (RMSCA):** Strings que identificam as heurísticas que serão instanciadas via Reflection/Factory Pattern no simulador.
 * **activeMetrics:** Sistema de *opt-in* para métricas. Desativar métricas complexas (ex: fragmentação) pode melhorar significativamente a performance da simulação.
-* **threads:** Indica o nível de concorrência permitida. Fundamental para acelerar o módulo de `experimentalPlanning` (rodar replicações em paralelo).
 
 ---
 

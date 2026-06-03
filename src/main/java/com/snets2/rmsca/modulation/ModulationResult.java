@@ -1,4 +1,4 @@
-package com.snets2.rmsca;
+package com.snets2.rmsca.modulation;
 
 import com.snets2.model.ModulationFormat;
 

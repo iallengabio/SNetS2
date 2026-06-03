@@ -27,7 +27,7 @@ class ConfigLoaderTest {
             "activeMetrics": {"BlockingProbability": true}
           },
           "traffic": {
-            "type": "uniform",
+            "loadDistributionPerPair": "uniform",
             "load": 100.0
           },
           "experimentalPlanning": {

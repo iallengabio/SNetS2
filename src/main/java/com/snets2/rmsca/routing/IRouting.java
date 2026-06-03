@@ -1,4 +1,4 @@
-package com.snets2.rmsca;
+package com.snets2.rmsca.routing;
 
 import com.snets2.model.ControlPlane;
 import com.snets2.model.Node;

@@ -65,7 +65,7 @@
     "routing": "djk",
     "spectrumAssignment": "firstfit",
     "coreAndSpectrumAssignment": "firstfitcore",
-    "integratedRmlsa": "integrated",
+    "integratedRMSCA": "standard",
     "modulationSelection": "fixed",
     "activeMetrics": {
       "BlockingProbability": true,

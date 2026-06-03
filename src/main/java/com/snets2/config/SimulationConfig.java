@@ -9,7 +9,7 @@ public record SimulationConfig(
     String kRouting,
     String spectrumAssignment,
     String coreAndSpectrumAssignment,
-    String integratedRmlsa,
+    String integratedRMSCA,
     String modulationSelection,
     String grooming,
     String reallocation,

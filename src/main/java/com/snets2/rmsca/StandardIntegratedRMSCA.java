@@ -1,6 +1,13 @@
 package com.snets2.rmsca;
 
 import com.snets2.model.*;
+import com.snets2.rmsca.core.ICoreAssignment;
+import com.snets2.rmsca.modulation.IModulationSelection;
+import com.snets2.rmsca.modulation.ModulationResult;
+import com.snets2.rmsca.routing.IRouting;
+import com.snets2.rmsca.routing.Path;
+import com.snets2.rmsca.spectrum.ISpectrumAssignment;
+import com.snets2.rmsca.spectrum.SpectrumInterval;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,19 +17,22 @@ import java.util.List;
  */
 public class StandardIntegratedRMSCA implements IRMSCA {
 
-    private IRouting routing = new DijkstraRouting();
-    private ICoreAssignment coreAssignment = new FirstFitCoreAssignment();
-    private ISpectrumAssignment spectrumAssignment = new FirstFitSpectrumAssignment();
+    private IRouting routing;
+    private ICoreAssignment coreAssignment;
+    private IModulationSelection modulationSelection;
+    private ISpectrumAssignment spectrumAssignment;
 
-    /**
-     * Configures the spectrum assignment algorithm.
-     */
-    public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) {
-        this.spectrumAssignment = spectrumAssignment;
-    }
+    public void setRouting(IRouting routing) { this.routing = routing; }
+    public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
+    public void setModulationSelection(IModulationSelection modulationSelection) { this.modulationSelection = modulationSelection; }
+    public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
 
     @Override
     public AllocationSolution allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
+        if (routing == null || coreAssignment == null || modulationSelection == null || spectrumAssignment == null) {
+            throw new IllegalStateException("StandardIntegratedRMSCA sub-algorithms not properly initialized.");
+        }
+
         // 1. Hardware check
         if (!source.hasAvailableTx() || !destination.hasAvailableRx()) {
             return null;
@@ -34,11 +44,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         Path path = candidatePaths.get(0);
 
         // 3. Modulation Selection
-        IModulationSelection modulationSelection = new DistanceAdaptiveModulationSelection(
-            cp.getTopology().modulations(), 
-            cp.getSlotBandwidth()
-        );
-        ModulationResult modResult = modulationSelection.selectModulation(path, bitRate);
+        ModulationResult modResult = modulationSelection.selectModulation(cp, path, bitRate);
         if (modResult == null) return null;
 
         // 4. Core Assignment

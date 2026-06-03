@@ -1,7 +1,8 @@
-package com.snets2.rmsca;
+package com.snets2.rmsca.spectrum;
 
 import com.snets2.model.ControlPlane;
 import com.snets2.model.Link;
+import com.snets2.rmsca.routing.Path;
 import java.util.List;
 
 /**

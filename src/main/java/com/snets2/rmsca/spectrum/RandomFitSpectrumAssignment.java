@@ -1,9 +1,9 @@
-package com.snets2.rmsca;
+package com.snets2.rmsca.spectrum;
 
 import com.snets2.model.ControlPlane;
 import com.snets2.model.Link;
+import com.snets2.rmsca.routing.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -16,7 +16,6 @@ public class RandomFitSpectrumAssignment implements ISpectrumAssignment {
 
     @Override
     public SpectrumInterval findSlots(ControlPlane cp, Path path, int coreIndex, int numSlots) {
-        // System.out.println("RandomFit called!");
         List<Link> links = path.links();
         if (links.isEmpty()) return null;
 
@@ -39,8 +38,6 @@ public class RandomFitSpectrumAssignment implements ISpectrumAssignment {
 
         if (candidates.isEmpty()) return null;
 
-        //System.out.println("RandomFit called, candidates: " + candidates.size());
-        // Pick one candidate at random
         return candidates.get(random.nextInt(candidates.size()));
     }
 }
