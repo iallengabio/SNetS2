@@ -36,7 +36,7 @@ class SimulationEngineTest {
         };
 
         // 3. Initialize Control Plane (with RMSCA and slotBandwidth)
-        ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9);
+        ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9, 1);
 
         // 4. Initialize Engine (with Topology and Control Plane)
         SimulationEngine engine = new SimulationEngine(topology, cp, 10, 1.0, List.of(), 42L);

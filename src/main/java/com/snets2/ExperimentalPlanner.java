@@ -2,6 +2,7 @@ package com.snets2;
 
 import com.snets2.config.ConfigLoader;
 import com.snets2.config.ExperimentSetup;
+import com.snets2.config.ScenarioSetup;
 import com.snets2.config.TopologyMapper;
 import com.snets2.engine.ArrivalEvent;
 import com.snets2.engine.ResourceUtilizationObservationEvent;
@@ -44,8 +45,10 @@ public class ExperimentalPlanner {
         System.out.println("Generated " + scenarios.size() + " unique scenarios.");
         this.aggregatedResult = new SimulationResult(replications);
 
+        ScenarioSetup baseScenario = baseSetup.getBaseScenario();
+
         for (Map<String, Object> scenario : scenarios) {
-            runScenario(scenario, replications);
+            runScenario(baseScenario, scenario, replications);
         }
 
         // Export Results
@@ -56,63 +59,56 @@ public class ExperimentalPlanner {
         System.out.println("Results saved to: " + outputFile.getAbsolutePath());
     }
 
-    private void runScenario(Map<String, Object> scenario, int replications) throws Exception {
-        System.out.println("\n--- SCENARIO: " + scenario + " ---");
+    private void runScenario(ScenarioSetup baseScenario, Map<String, Object> scenarioMap, int replications) throws Exception {
+        System.out.println("\n--- SCENARIO: " + scenarioMap + " ---");
+        
+        // Generate the concrete setup for this scenario by applying dynamic overrides
+        ScenarioSetup scenarioSetup = ConfigLoader.applyOverrides(baseScenario, scenarioMap);
         
         for (int rep = 0; rep < replications; rep++) {
-            runReplication(rep, scenario);
+            runReplication(rep, scenarioSetup, scenarioMap);
         }
     }
 
-    private void runReplication(int repId, Map<String, Object> scenario) throws Exception {
+    private void runReplication(int repId, ScenarioSetup setup, Map<String, Object> scenarioMap) throws Exception {
         System.out.print(String.format("  > Rep %d... ", repId));
         
-        // 1. Map Topology
+        // 1. Map Topology using scenario-specific values
         NetworkTopology topology = TopologyMapper.map(
-            baseSetup.networkTopology(), 
-            baseSetup.simulation().totalSlots()
+            setup.networkTopology(), 
+            setup.simulation().totalSlots()
         );
 
-        // 2. Instantiate Algorithm Chain
-        String integratedId = getParam("simulation.integratedRMSCA", scenario, baseSetup.simulation().integratedRMSCA());
-        IRMSCA rmsca = AlgorithmFactory.createIntegrated(integratedId);
+        // 2. Instantiate Algorithm Chain using scenario-specific values
+        IRMSCA rmsca = AlgorithmFactory.createIntegrated(setup.simulation().integratedRMSCA());
 
         if (rmsca instanceof StandardIntegratedRMSCA standard) {
-            String routingId = getParam("simulation.routing", scenario, baseSetup.simulation().routing());
-            String modulationId = getParam("simulation.modulationSelection", scenario, baseSetup.simulation().modulationSelection());
-            String coreId = getParam("simulation.coreAndSpectrumAssignment", scenario, baseSetup.simulation().coreAndSpectrumAssignment());
-            String spectrumId = getParam("simulation.spectrumAssignment", scenario, baseSetup.simulation().spectrumAssignment());
-
-            standard.setRouting(AlgorithmFactory.createRouting(routingId));
-            standard.setModulationSelection(AlgorithmFactory.createModulation(modulationId));
-            standard.setCoreAssignment(AlgorithmFactory.createCore(coreId));
-            standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(spectrumId));
+            standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
+            standard.setModulationSelection(AlgorithmFactory.createModulation(setup.simulation().modulationSelection()));
+            standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
+            standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
         }
 
-        // 3. Traffic parameters
-        double load = baseSetup.traffic().load() != null ? baseSetup.traffic().load() : 1.0;
-        if (scenario.containsKey("traffic.load")) {
-            load = Double.parseDouble(scenario.get("traffic.load").toString());
-        }
-
-        // 4. Initialize Control Plane
+        // 3. Initialize Control Plane
         ControlPlane cp = new ControlPlane(
             topology, 
             rmsca, 
-            baseSetup.physicalLayer().bvtSpectralWidth()
+            setup.physicalLayer().bvtSpectralWidth(),
+            setup.physicalLayer().guardBand()
         );
 
-        // 5. Initialize Engine
+        // 4. Initialize Engine
+        double load = setup.traffic().load() != null ? setup.traffic().load() : 1.0;
         SimulationEngine engine = new SimulationEngine(
             topology, 
             cp, 
-            baseSetup.simulation().requests(), 
+            setup.simulation().requests(), 
             load, 
-            baseSetup.traffic().bitRates(),
+            setup.traffic().bitRates(),
             repId // Seed
         );
 
-        // 6. Seed First Event
+        // 5. Seed First Event
         List<Node> nodes = topology.nodes();
         Node src = nodes.get(engine.getRandom().nextInt(nodes.size()));
         Node dest;
@@ -123,25 +119,18 @@ public class ExperimentalPlanner {
         double firstBitRate = engine.nextBitRate();
         engine.schedule(new ArrivalEvent(0.0, src, dest, firstBitRate));
 
-        // 7. Schedule periodic observations (organizational rule)
+        // 6. Schedule periodic observations
         engine.schedule(new ResourceUtilizationObservationEvent(0.0));
 
-        // 8. Run
+        // 7. Run
         engine.run();
 
-        // 9. Collect results into the aggregator
-        engine.getMetricsManager().getBitRateBlocking().fillResults(aggregatedResult, scenario, repId);
-        engine.getMetricsManager().getResourceUtilization().fillResults(aggregatedResult, scenario, repId);
+        // 8. Collect results into the aggregator (using the scenario map for identifying the row)
+        engine.getMetricsManager().getBitRateBlocking().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getResourceUtilization().fillResults(aggregatedResult, scenarioMap, repId);
 
         double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();
         System.out.println(String.format("BP: %.4e", bp));
-    }
-
-    private String getParam(String key, Map<String, Object> scenario, String defaultValue) {
-        if (scenario.containsKey(key)) {
-            return scenario.get(key).toString();
-        }
-        return defaultValue;
     }
 
     /**

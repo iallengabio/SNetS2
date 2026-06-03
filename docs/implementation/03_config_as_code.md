@@ -2,19 +2,33 @@
 
 Este documento descreve como o SNetS2 interpreta arquivos de configuração JSON e os transforma em um ambiente de simulação ativo.
 
-## 1. O Objeto `experimentSetup`
+## 1. A Hierarquia de Configuração
 
-A configuração é centralizada em um único objeto JSON que segue a estrutura das classes no pacote `com.snets2.config`.
+O SNetS2 utiliza uma abordagem de duas camadas para gerenciar configurações, separando a definição do experimento da execução concreta de cada simulação.
 
-### 1.1. `ConfigLoader` (com.snets2.config.ConfigLoader)
-Utiliza a biblioteca **Jackson** para desserialização de alto desempenho.
-- Suporta mapeamento de campos aninhados e listas complexas.
-- Permite a leitura de arquivos físicos ou strings raw.
+### 1.1. `ExperimentSetup` (com.snets2.config.ExperimentSetup)
+Representa o arquivo JSON bruto. Ele contém:
+- As configurações base da rede, camada física, simulação e tráfego.
+- O bloco `experimentalPlanning`, que define as variáveis de varredura (*Parameter Sweep*) e o número de replicações.
 
-### 1.2. `ExperimentalPlanningConfig`
-Possui uma lógica dinâmica para suportar *Parameter Sweeps*.
-- Utiliza `@JsonAnySetter` para capturar variáveis arbitrárias (ex: `traffic.load`, `simulation.routing`).
-- Esta estrutura permite que o simulador realize o produto cartesiano de parâmetros sem código adicional.
+### 1.2. `ScenarioSetup` (com.snets2.config.ScenarioSetup)
+Representa uma configuração concreta e pronta para execução para um único cenário. Ele é derivado do `ExperimentSetup` e contém apenas as chaves de sistema (`networkTopology`, `physicalLayer`, `simulation`, `traffic`), com todos os valores de varredura já aplicados.
+
+---
+
+## 2. Parameter Sweep Genérico
+
+Diferente de abordagens tradicionais com mapeamentos manuais, o SNetS2 utiliza manipulação dinâmica de árvore JSON para permitir a varredura de **qualquer parâmetro**.
+
+### 2.1. `ConfigLoader.applyOverrides`
+Este método é o coração do planejamento experimental:
+1. Converte o `ScenarioSetup` base em um mapa genérico (`Map<String, Object>`).
+2. Navega pela estrutura usando a notação de ponto (ex: `physicalLayer.guardBand`).
+3. Substitui o valor folha pelo valor definido no cenário atual.
+4. Reconverte o mapa resultante em um novo objeto `ScenarioSetup` tipado.
+
+Essa arquitetura garante que, ao adicionar qualquer novo campo ao JSON de configuração, ele se torne automaticamente "variável" no planejamento experimental, sem necessidade de alterar o código Java do `ExperimentalPlanner`.
+
 
 ---
 

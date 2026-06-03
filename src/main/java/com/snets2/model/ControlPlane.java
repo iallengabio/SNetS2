@@ -16,6 +16,7 @@ public class ControlPlane {
     private final Map<String, Circuit> activeCircuits;
     private final IRMSCA rmsca;
     private final double slotBandwidth;
+    private final int guardBand;
 
     /**
      * Initializes the Control Plane.
@@ -23,8 +24,9 @@ public class ControlPlane {
      * @param topology      The physical network topology.
      * @param rmsca         The RMSCA algorithm.
      * @param slotBandwidth The bandwidth of a single spectrum slot in Hz.
+     * @param guardBand     The number of guard band slots.
      */
-    public ControlPlane(NetworkTopology topology, IRMSCA rmsca, double slotBandwidth) {
+    public ControlPlane(NetworkTopology topology, IRMSCA rmsca, double slotBandwidth, int guardBand) {
         this.topology = topology;
         this.nodesMap = new HashMap<>();
         for (Node n : topology.nodes()) {
@@ -33,11 +35,13 @@ public class ControlPlane {
         this.activeCircuits = new HashMap<>();
         this.rmsca = rmsca;
         this.slotBandwidth = slotBandwidth;
+        this.guardBand = guardBand;
     }
 
     public NetworkTopology getTopology() { return topology; }
     public IRMSCA getRmsca() { return rmsca; }
     public double getSlotBandwidth() { return slotBandwidth; }
+    public int getGuardBand() { return guardBand; }
 
     public Node getNode(String id) { return nodesMap.get(id); }
     public List<Node> getNodes() { return topology.nodes(); }

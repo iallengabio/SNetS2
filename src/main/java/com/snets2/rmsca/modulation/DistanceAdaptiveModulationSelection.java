@@ -30,8 +30,8 @@ public class DistanceAdaptiveModulationSelection implements IModulationSelection
                 int bitsPerSymbol = format.getBitsPerSymbol();
                 int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * slotBandwidth));
                 
-                // Add guard band (simplified, should come from physical layer config)
-                numSlots += 1; 
+                // Add guard band from configuration
+                numSlots += cp.getGuardBand(); 
 
                 return new ModulationResult(format, numSlots);
             }
