@@ -15,10 +15,11 @@ public class TopologyMapper {
      * Maps a NetworkTopologyConfig to a NetworkTopology model.
      *
      * @param config The topology configuration.
-     * @param numSlots Standard number of slots per core (could be added to physical layer config).
+     * @param physConfig The physical layer configuration.
+     * @param numSlots Standard number of slots per core.
      * @return A fully initialized NetworkTopology.
      */
-    public static NetworkTopology map(NetworkTopologyConfig config, int numSlots) {
+    public static NetworkTopology map(NetworkTopologyConfig config, PhysicalLayerConfig physConfig, int numSlots) {
         // 1. Create Nodes
         List<Node> nodes = config.nodes().stream()
             .map(nc -> new Node(nc.id(), nc.tx(), nc.rx(), nc.regenerators()))
@@ -39,7 +40,17 @@ public class TopologyMapper {
                 .map(cc -> new Core(cc.id(), cc.adjacentCores(), numSlots))
                 .collect(Collectors.toList());
 
-            links.add(new Link(lc.source(), lc.destination(), lc.length(), coresForLink, new ArrayList<>()));
+            // Calculate number of amplifiers based on spanLength
+            List<Amplifier> amplifiers = new ArrayList<>();
+            double spanLength = physConfig.spanLength();
+            int numAmplifiers = (int) Math.floor(lc.length() / spanLength);
+            for (int i = 0; i < numAmplifiers; i++) {
+                // Default gains and NF from config could be added later
+                amplifiers.add(new Amplifier("amp_" + lc.source() + "_" + lc.destination() + "_" + i, 
+                                             16.0, 5.0, 100.0, 16.0));
+            }
+
+            links.add(new Link(lc.source(), lc.destination(), lc.length(), coresForLink, amplifiers));
         }
 
         return new NetworkTopology(nodes, links, modulations);

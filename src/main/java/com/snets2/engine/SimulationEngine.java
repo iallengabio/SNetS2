@@ -53,6 +53,7 @@ public class SimulationEngine {
         this.arrivalCounter = 0;
         this.random = new RandomGenerator(seed);
         this.metricsManager = new MetricsManager();
+        this.metricsManager.initializeEnergyMetric(topology);
         
         this.mu = 1.0;
         this.lambda = load * mu;
@@ -102,6 +103,11 @@ public class SimulationEngine {
             
             // Process the event
             event.execute(this);
+        }
+
+        // Final energy update at simulation end
+        if (metricsManager.getConsumedEnergy() != null) {
+            metricsManager.getConsumedEnergy().update(currentTime);
         }
     }
 

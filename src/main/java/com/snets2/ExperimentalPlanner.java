@@ -76,6 +76,7 @@ public class ExperimentalPlanner {
         // 1. Map Topology using scenario-specific values
         NetworkTopology topology = TopologyMapper.map(
             setup.networkTopology(), 
+            setup.physicalLayer(),
             setup.simulation().totalSlots()
         );
 
@@ -128,6 +129,10 @@ public class ExperimentalPlanner {
         // 8. Collect results into the aggregator (using the scenario map for identifying the row)
         engine.getMetricsManager().getBitRateBlocking().fillResults(aggregatedResult, scenarioMap, repId);
         engine.getMetricsManager().getResourceUtilization().fillResults(aggregatedResult, scenarioMap, repId);
+        
+        if (engine.getMetricsManager().getConsumedEnergy() != null) {
+            engine.getMetricsManager().getConsumedEnergy().fillResults(aggregatedResult, scenarioMap, repId, engine.getCurrentTime());
+        }
 
         double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();
         System.out.println(String.format("BP: %.4e", bp));

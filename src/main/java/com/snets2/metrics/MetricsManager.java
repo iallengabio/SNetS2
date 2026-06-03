@@ -1,30 +1,34 @@
 package com.snets2.metrics;
 
+import com.snets2.model.NetworkTopology;
+
 /**
- * Orchestrates all active metric modules for a simulation replication.
+ * Point of access for all metric collection modules.
  */
 public class MetricsManager {
+
     private final BitRateBlockingMetrics bitRateBlocking;
     private final ResourceUtilizationMetrics resourceUtilization;
+    private ConsumedEnergyMetrics consumedEnergy;
 
     public MetricsManager() {
         this.bitRateBlocking = new BitRateBlockingMetrics();
         this.resourceUtilization = new ResourceUtilizationMetrics();
     }
 
-    public BitRateBlockingMetrics getBitRateBlocking() {
-        return bitRateBlocking;
-    }
-
-    public ResourceUtilizationMetrics getResourceUtilization() {
-        return resourceUtilization;
-    }
-
     /**
-     * Clears all counters for a new replication.
+     * Initializes the energy metric with the topology-specific static power.
      */
-    public void reset() {
-        // Re-instantiating is the safest way to reset all maps and counters
-        // (Will be refined if performance becomes an issue)
+    public void initializeEnergyMetric(NetworkTopology topology) {
+        double staticPower = EnergyConsumptionModel.calculateStaticPower(topology);
+        this.consumedEnergy = new ConsumedEnergyMetrics(staticPower);
     }
+
+    public BitRateBlockingMetrics getBitRateBlocking() { return bitRateBlocking; }
+    public ResourceUtilizationMetrics getResourceUtilization() { return resourceUtilization; }
+    
+    /**
+     * @return The energy metrics module, or null if not initialized.
+     */
+    public ConsumedEnergyMetrics getConsumedEnergy() { return consumedEnergy; }
 }

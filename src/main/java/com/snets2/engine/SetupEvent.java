@@ -1,6 +1,7 @@
 package com.snets2.engine;
 
 import com.snets2.SimulationConstants;
+import com.snets2.metrics.EnergyConsumptionModel;
 import com.snets2.model.AllocationSolution;
 import com.snets2.model.Circuit;
 
@@ -27,11 +28,18 @@ public class SetupEvent extends Event {
         Circuit circuit = solution.toCircuit(circuitId);
         engine.getControlPlane().establishCircuit(circuit);
 
-        // 2. Schedule connection departure based on hold time distribution
+        // 2. Update energy metrics (dynamic part)
+        if (engine.getMetricsManager().getConsumedEnergy() != null) {
+            engine.getMetricsManager().getConsumedEnergy().update(time);
+            double circuitPower = EnergyConsumptionModel.calculateCircuitPower(circuit, engine.getControlPlane().getSlotBandwidth());
+            engine.getMetricsManager().getConsumedEnergy().addCircuitPower(circuitPower);
+        }
+
+        // 3. Schedule connection departure based on hold time distribution
         double holdTime = engine.nextHoldTime();
         engine.schedule(new DepartureEvent(time + holdTime, circuitId));
 
-        // 3. Trigger observation following the organizational pattern
+        // 4. Trigger observation following the organizational pattern
         engine.schedule(new ResourceUtilizationObservationEvent(time));
     }
 }
