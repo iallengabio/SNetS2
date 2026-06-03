@@ -35,6 +35,7 @@ Define os elementos estruturais da rede, capacidades de roteamento e a geometria
 * **nodes:** Lista de nós ópticos (ROADM). Cada nó possui uma quantidade definida de transmissores (`tx`), receptores (`rx`) e `regenerators`.
 * **links:** Fibras bidirecionais (ou unidirecionais dependendo da modelagem interna, a definir) conectando os nós, com o comprimento (`length`) tipicamente em quilômetros.
 * **cores:** A representação geométrica dos núcleos dentro da fibra. Em vez de forçar um modelo espacial estático, a lista de `adjacentCores` permite representar qualquer disposição (linear, anelar, hexagonal, etc.), sendo crucial para o cálculo de Crosstalk (XT).
+* **modulations:** Lista de formatos de modulação disponíveis. Cada item define o nome, o alcance máximo estimado (`maxRange`), a ordem da modulação (`M`), o limiar de SNR (SNR) e a tolerância a Crosstalk (`XT`).
 
 ---
 
@@ -126,15 +127,23 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
 ---
 
 ## 5. Modelo de Tráfego (`traffic`)
-Controla o gerador de eventos da simulação.
-
+Controla o gerador de eventos da simulação, definindo a carga e a distribuição das demandas de largura de banda.
 ```json
 "traffic": {
-  "type": "uniform",
-  "load": 1000
+  "loadDistributionPerPair": "uniform",
+  "load": 1000,
+  "bitRates": [
+```
+    {"value": 100.0, "weight": 1.0},
+    {"value": 200.0, "weight": 0.5},
+    {"value": 400.0, "weight": 0.25}
+  ]
 }
 ```
 * **Carga (Load):** O usuário deve definir *obrigatoriamente apenas um* dentre `load` ou `loadByPair`. Ambos são valores em Erlangs.
+* **bitRates:** Uma lista de objetos que definem as larguras de banda requisitadas.
+    * `value`: A taxa de bits da requisição em Gbps.
+    * `weight`: O peso estatístico desta largura de banda. A probabilidade de uma requisição ter um determinado `value` é dada por $P(v_i) = \frac{weight_i}{\sum weight}$. No exemplo acima, requisições de 100G são 2x mais prováveis que as de 200G e 4x mais prováveis que as de 400G.
 * **Taxas do DES (Discrete Event Simulator):** A taxa de retenção das conexões (*hold rate*, $\mu$) é fixada matematicamente em 1. Logo, a taxa de chegada (*arrival rate*, $\lambda$) calculada pelo simulador para atingir a carga informada será diretamente $\lambda = \text{load} \times \mu$.
 
 ---

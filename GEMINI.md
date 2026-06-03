@@ -18,3 +18,8 @@
 ## Simulation Specifics
 - Focus on MC-EON (Multi-core Elastic Optical Networks).
 - Spatial Division Multiplexing (SDM) is a first-class citizen.
+
+## Mandatory Project Rule: Documentation Sync
+- **Strict Requirement:** Every functional implementation or architectural change **MUST** be reflected in the detailed documentation within the `docs/implementation/` directory.
+- **Rationale:** This ensures a perfect mapping between the conceptual model and the code, facilitating long-term maintenance and allowing AI agents to understand and extend the system accurately.
+- **Format:** Documentation must describe the class purpose, its mathematical/physical significance, and how it interacts with other components.

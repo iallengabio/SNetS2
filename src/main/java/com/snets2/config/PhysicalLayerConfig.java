@@ -1,0 +1,39 @@
+package com.snets2.config;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record PhysicalLayerConfig(
+    int physicalLayerModel,
+    int crosstalkModel,
+    boolean activeQoT,
+    boolean activeQoTForOther,
+    boolean activeASE,
+    boolean activeNLI,
+    boolean activeXT,
+    boolean activeXTForOther,
+    double rateOfFEC,
+    int typeOfTestQoT,
+    double power,
+    double spanLength,
+    double fiberLoss,
+    double fiberNonlinearity,
+    double fiberDispersion,
+    double centerFrequency,
+    double constantOfPlanck,
+    double noiseFigureOfOpticalAmplifier,
+    double powerSaturationOfOpticalAmplifier,
+    double noiseFactorModelParameterA1,
+    double noiseFactorModelParameterA2,
+    int typeOfAmplifierGain,
+    double amplificationFrequency,
+    double switchInsertionLoss,
+    boolean fixedPowerSpectralDensity,
+    double referenceBandwidthForPowerSpectralDensity,
+    double propagationConstant,
+    double bendingRadius,
+    double couplingCoefficient,
+    double corePitch,
+    double polarizationModes,
+    int guardBand,
+    double bvtSpectralWidth
+) {}

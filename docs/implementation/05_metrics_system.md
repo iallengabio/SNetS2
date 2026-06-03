@@ -1,0 +1,43 @@
+# Detalhamento Técnico: Sistema de Métricas e Observação
+
+Este documento descreve a arquitetura de coleta, processamento e exportação de métricas do SNetS2, garantindo precisão científica e suporte a grandes volumes de dados.
+
+## 1. Arquitetura de Coleta
+
+O SNetS2 separa a **captura** de dados (Eventos) do **armazenamento** (Classes de Métricas) e do **cálculo** (Exportadores).
+
+### 1.1. `MetricsManager` (com.snets2.metrics.MetricsManager)
+É o ponto central de acesso a todos os módulos de métricas.
+- **Ciclo de Vida:** Uma nova instância é criada pelo `SimulationEngine` para cada replicação do experimento, garantindo que os contadores sejam resetados.
+- **Módulos:** Contém instâncias de `BitRateBlockingMetrics` e `ResourceUtilizationMetrics`.
+
+### 1.2. Classes de Armazenamento
+- **`BitRateBlockingMetrics`**: Armazena somas brutas de bit rate (solicitado vs bloqueado). Utiliza `HashMap` para realizar breakdowns por par de nós, por core e por faixa de banda.
+- **`ResourceUtilizationMetrics`**: Implementa a técnica de **Média Ponderada pelo Tempo**. Armazena acumuladores de ocupação multiplicados pelo tempo de permanência naquele estado ($\Delta t$).
+
+---
+
+## 2. Eventos de Observação (`...ObservationEvent`)
+
+Seguindo o princípio de organização do projeto, **classes de sistema e de motor nunca chamam métricas diretamente**. Toda coleta é mediada por eventos de observação.
+
+### 2.1. `ResourceUtilizationObservationEvent`
+- **Gatilho:** Disparado pelo `SetupEvent` e `TeardownEvent` sempre que o estado da rede muda.
+- **Lógica:** Calcula o tempo decorrido desde a última mudança e pesa o estado anterior da rede no acumulador global.
+- **Precisão:** Este método garante que a métrica de utilização seja insensível ao "acaso" de observações periódicas, refletindo a ocupação exata da linha do tempo.
+
+---
+
+## 3. Formatação e Saída de Dados
+
+O SNetS2 segue o paradigma de **Wide Data Format** descrito em [06_output_metrics.md](../formal_description/06_output_metrics.md).
+
+### 3.1. Processamento de Resultados
+Ao final de uma simulação, as classes de métricas não fornecem apenas médias, mas sim os valores agregados que serão formatados pelo exportador:
+1.  **Dimensões Dinâmicas:** As métricas são organizadas por sub-métricas (ex: "BP by QoT") e dimensões (ex: "src", "dest").
+2.  **Múltiplas Replicações:** O exportador coleta os resultados de `rep0`, `rep1`, ..., `repN` e os dispõe em colunas paralelas para análise de variância posterior em ferramentas como Pandas.
+
+### 3.2. Estrutura de Planilha
+Os dados são preparados para o **Excel Multi-abas**, onde cada aba corresponde a um módulo de métricas:
+- Aba `BlockingProbability`: Bloqueio de chamadas e bit rate.
+- Aba `SpectrumUtilization`: Utilização ponderada por link, core e slot.
