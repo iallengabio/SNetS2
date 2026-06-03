@@ -37,4 +37,4 @@ O simulador foca em quatro pilares de métricas, ativáveis sob demanda:
 1. **Eficiência de Bloqueio:** Probabilidade de bloqueio de banda e requisição (geral e por causa raiz: QoT, fragmentação, falta de hardware).
 2. **Utilização de Recursos:** Ocupação de slots de espectro, transmissores, receptores e regeneradores.
 3. **Fisura Spectrale:** Índices de fragmentação externa e relativa.
-4. **Qualidade de Transmissão:** Estatísticas detalhadas de Crosstalk e utilização de formatos de modulação.
+6. **Qualidade de Transmissão:** Estatísticas detalhadas de Crosstalk e utilização de formatos de modulação. Veja os [Modelos da Camada Física](07_physical_layer_models.md) para detalhes matemáticos.

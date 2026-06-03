@@ -46,7 +46,7 @@ class SimulationLifecycleTest {
         };
 
         // 3. Init Control Plane and Engine
-        ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9, 1);
+        ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9, 1, null);
         // Load = 2 Erlangs, 5 requests total to keep logs readable
         SimulationEngine engine = new SimulationEngine(topology, cp, 5, 2.0, List.of(), 12345L);
 

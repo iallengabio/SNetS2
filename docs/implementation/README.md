@@ -17,6 +17,7 @@ Este diretório contém o detalhamento técnico minucioso de cada componente do 
 3.  **[Config-as-Code](03_config_as_code.md)**: Detalhes sobre o parser JSON, mapeamento de topologia e fábrica de algoritmos.
 4.  **[RMSCA Logic](04_rmsca_logic.md)**: Detalhes sobre as interfaces e implementações de Roteamento, Modulação e Alocação de Espectro/Core.
 5.  **[Metrics System](05_metrics_system.md)**: Detalhes sobre a coleta de dados, eventos de observação ponderados pelo tempo e formatação de saída.
+6.  **[Physical Layer Architecture](06_physical_layer_architecture.md)**: Estratégia de otimização via Incremental State Caching para OSNR e Crosstalk.
 
 ---
 *Este conjunto de documentos visa viabilizar um desenvolvimento agentico saudável e garantir a manutenibilidade a longo prazo do simulador.*

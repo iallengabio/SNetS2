@@ -18,6 +18,7 @@ public class Link {
     private final double length; // in km
     private final Map<Integer, Core> cores;
     private final List<Amplifier> amplifiers;
+    private double staticAseNoise; // Noise density (W/Hz)
 
     /**
      * Constructs a Link with its cores and amplifiers.
@@ -89,5 +90,19 @@ public class Link {
      */
     public List<Amplifier> getAmplifiers() {
         return amplifiers;
+    }
+
+    /**
+     * Sets the static ASE noise density for this link.
+     */
+    public void setStaticAseNoise(double staticAseNoise) {
+        this.staticAseNoise = staticAseNoise;
+    }
+
+    /**
+     * Gets the static ASE noise density.
+     */
+    public double getStaticAseNoise() {
+        return staticAseNoise;
     }
 }

@@ -95,7 +95,8 @@ public class ExperimentalPlanner {
             topology, 
             rmsca, 
             setup.physicalLayer().bvtSpectralWidth(),
-            setup.physicalLayer().guardBand()
+            setup.physicalLayer().guardBand(),
+            setup.physicalLayer()
         );
 
         // 4. Initialize Engine

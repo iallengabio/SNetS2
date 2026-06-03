@@ -30,4 +30,14 @@ public record ModulationFormat(
     public double getBitRate() {
         return getBitsPerSymbol() * symbolRate;
     }
+
+    /** @return SNR threshold in linear scale. */
+    public double getSnrThresholdLinear() {
+        return Math.pow(10, snrThreshold / 10.0);
+    }
+
+    /** @return Crosstalk threshold in linear scale. */
+    public double getCrosstalkThresholdLinear() {
+        return Math.pow(10, crosstalkThreshold / 10.0);
+    }
 }

@@ -27,7 +27,7 @@ class ControlPlaneTest {
         linkAB = new Link("A", "B", 100.0, List.of(core0), List.of());
         NetworkTopology topology = new NetworkTopology(List.of(nodeA, nodeB), List.of(linkAB), List.of(qpsk));
         
-        controlPlane = new ControlPlane(topology, null, 12.5E9, 1);
+        controlPlane = new ControlPlane(topology, null, 12.5E9, 1, null);
     }
 
     @Test

@@ -13,6 +13,8 @@ public class Core {
     private final int id;
     private final List<Integer> adjacentCores;
     private final Spectrum spectrum;
+    private final double[] nliNoiseCache;
+    private final double[] xtNoiseCache;
 
     /**
      * Constructs a Core with its spatial and spectral properties.
@@ -25,6 +27,60 @@ public class Core {
         this.id = id;
         this.adjacentCores = List.copyOf(adjacentCores);
         this.spectrum = new Spectrum(numSlots);
+        this.nliNoiseCache = new double[numSlots];
+        this.xtNoiseCache = new double[numSlots];
+    }
+
+    /**
+     * Adds NLI noise contribution to a specific slot.
+     */
+    public void addNliNoise(int slot, double noise) {
+        nliNoiseCache[slot] += noise;
+    }
+
+    /**
+     * Removes NLI noise contribution from a specific slot.
+     */
+    public void removeNliNoise(int slot, double noise) {
+        nliNoiseCache[slot] -= noise;
+        if (nliNoiseCache[slot] < 0) nliNoiseCache[slot] = 0;
+    }
+
+    /**
+     * Adds Crosstalk noise contribution to a specific slot.
+     */
+    public void addXtNoise(int slot, double noise) {
+        xtNoiseCache[slot] += noise;
+    }
+
+    /**
+     * Removes Crosstalk noise contribution from a specific slot.
+     */
+    public void removeXtNoise(int slot, double noise) {
+        xtNoiseCache[slot] -= noise;
+        if (xtNoiseCache[slot] < 0) xtNoiseCache[slot] = 0;
+    }
+
+    /**
+     * Gets the average NLI noise density in a range of slots.
+     */
+    public double getAverageNliNoise(int startSlot, int endSlot) {
+        double sum = 0;
+        for (int i = startSlot; i <= endSlot; i++) {
+            sum += nliNoiseCache[i];
+        }
+        return sum / (endSlot - startSlot + 1);
+    }
+
+    /**
+     * Gets the average Crosstalk noise density in a range of slots.
+     */
+    public double getAverageXtNoise(int startSlot, int endSlot) {
+        double sum = 0;
+        for (int i = startSlot; i <= endSlot; i++) {
+            sum += xtNoiseCache[i];
+        }
+        return sum / (endSlot - startSlot + 1);
     }
 
     /**
