@@ -65,7 +65,7 @@ public class TransmittersReceiversRegeneratorsUtilizationMetrics {
     }
 
     public void fillResults(SimulationResult result, Map<String, Object> scenario, int repId) {
-        String sheet = "TransmittersReceiversRegeneratorsUtilization";
+        String sheet = "TxRxRegenUtilization";
         if (totalSimulationTime == 0) return;
 
         // General (Average across all nodes)
