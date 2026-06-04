@@ -37,12 +37,12 @@ Este documento descreve o estado atual da implementação do simulador e define 
   - Implementada Seleção de Modulação Adaptativa por Distância.
   - Implementada a orquestração `StandardIntegratedRMSCA`.
 
-### Fase 3: Camada Física e Consumo Energético
-- [ ] **Physical Layer Model:**
+### Fase 3: Camada Física e Consumo Energético (Concluída)
+- [x] **Physical Layer Model:**
   - Implementar cálculo de OSNR (ASE Noise e NLI).
   - Implementar modelo matemático de Crosstalk (XT) inter-core.
   - Integração de validação de QoT durante o `ArrivalEvent`.
-- [ ] **Energy Consumption Model:**
+- [x] **Energy Consumption Model:**
   - Implementar o modelo de consumo de potência por componente (Transceptores, Amplificadores, Nós e Regeneradores).
   - Lógica para computar o consumo acumulado e instantâneo da rede.
 
