@@ -30,6 +30,7 @@ public class AlgorithmFactory {
         
         // Core
         coreRegistry.put("firstfitcore", FirstFitCoreAssignment.class);
+        coreRegistry.put("randomfitcore", RandomFitCoreAssignment.class);
         
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);

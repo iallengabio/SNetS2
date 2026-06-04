@@ -14,6 +14,7 @@ O SNetS2 separa a **captura** de dados (Eventos) do **armazenamento** (Classes d
 ### 1.2. Classes de Armazenamento
 - **`BitRateBlockingMetrics`**: Armazena somas brutas de bit rate (solicitado vs bloqueado). Utiliza `HashMap` para realizar breakdowns por par de nós, por core e por faixa de banda.
 - **`ResourceUtilizationMetrics`**: Implementa a técnica de **Média Ponderada pelo Tempo**. Armazena acumuladores de ocupação multiplicados pelo tempo de permanência naquele estado ($\Delta t$).
+- **`PhysicalLayerMetrics`**: Coleta estatísticas de qualidade de sinal (OSNR, XT, Potência) no momento do estabelecimento dos circuitos. Realiza breakdowns por par de nós e por contagem de sobreposições (*overlaps*).
 
 ---
 
@@ -41,3 +42,8 @@ Ao final de uma simulação, as classes de métricas não fornecem apenas média
 Os dados são preparados para o **Excel Multi-abas**, onde cada aba corresponde a um módulo de métricas:
 - Aba `BlockingProbability`: Bloqueio de chamadas e bit rate.
 - Aba `SpectrumUtilization`: Utilização ponderada por link, core e slot.
+- Aba `ExternalFragmentation`: Fragmentação externa vertical (média dos links e entropia de Shannon ponderadas no tempo) e horizontal (média no estabelecimento de caminhos).
+- Aba `RelativeFragmentation`: Fração ponderada no tempo de espectro livre inutilizável para diferentes tamanhos de demanda $c$.
+- Aba `ModulationUtilization`: Percentual de circuitos utilizando cada formato de modulação, geral e por taxa de transmissão.
+- Aba `SpectrumSizeStatistics`: Distribuição percentual do número de slots alocados, geral e por link.
+- Aba `TransmittersReceiversRegeneratorsUtilization`: Utilização média (ponderada no tempo) e de pico dos transmissores, receptores e regeneradores, geral e por nó.

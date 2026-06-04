@@ -6,12 +6,14 @@ import com.snets2.rmsca.routing.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
- * Core assignment using the First Fit policy.
- * It returns all core IDs present in all links, sorted numerically.
+ * Core assignment using the Random Fit policy.
+ * It returns all valid core IDs in random order.
  */
-public class FirstFitCoreAssignment implements ICoreAssignment {
+public class RandomFitCoreAssignment implements ICoreAssignment {
+    private final Random random = new Random();
 
     @Override
     public List<Integer> selectCores(ControlPlane cp, Path path) {
@@ -31,7 +33,7 @@ public class FirstFitCoreAssignment implements ICoreAssignment {
             if (allHaveIt) candidates.add(coreId);
         }
         
-        Collections.sort(candidates);
+        Collections.shuffle(candidates, random);
         return candidates;
     }
 }

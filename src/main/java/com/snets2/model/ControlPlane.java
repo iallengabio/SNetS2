@@ -2,6 +2,7 @@ package com.snets2.model;
 
 import com.snets2.SimulationConstants;
 import com.snets2.rmsca.IRMSCA;
+import com.snets2.metrics.BlockingCause;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -195,5 +196,24 @@ public class ControlPlane {
         // 2. Release Tx/Rx
         circuit.getSource().releaseTx();
         circuit.getDestination().releaseRx();
+    }
+
+    private BlockingCause lastBlockingCause = BlockingCause.OTHER;
+    private Integer lastBlockingCoreId = null;
+
+    public BlockingCause getLastBlockingCause() {
+        return lastBlockingCause;
+    }
+
+    public void setLastBlockingCause(BlockingCause lastBlockingCause) {
+        this.lastBlockingCause = lastBlockingCause;
+    }
+
+    public Integer getLastBlockingCoreId() {
+        return lastBlockingCoreId;
+    }
+
+    public void setLastBlockingCoreId(Integer lastBlockingCoreId) {
+        this.lastBlockingCoreId = lastBlockingCoreId;
     }
 }

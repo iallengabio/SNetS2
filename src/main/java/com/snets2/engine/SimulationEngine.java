@@ -55,6 +55,16 @@ public class SimulationEngine {
         this.metricsManager = new MetricsManager();
         this.metricsManager.initializeEnergyMetric(topology);
         
+        List<Double> brValues = new java.util.ArrayList<>();
+        if (bitRates == null || bitRates.isEmpty()) {
+            brValues.add(100.0);
+        } else {
+            for (var br : bitRates) {
+                brValues.add(br.value());
+            }
+        }
+        this.metricsManager.initializeRelativeFragmentation(controlPlane, brValues);
+
         this.mu = 1.0;
         this.lambda = load * mu;
         this.bitRates = bitRates != null ? bitRates : new ArrayList<>();
@@ -158,5 +168,10 @@ public class SimulationEngine {
             }
         }
         return bitRates.get(bitRates.size() - 1).value();
+    }
+
+    /** @return The list of configured bit rates. */
+    public List<com.snets2.config.TrafficConfig.BitRateConfig> getBitRates() {
+        return bitRates;
     }
 }

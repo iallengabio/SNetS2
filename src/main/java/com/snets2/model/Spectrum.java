@@ -114,4 +114,13 @@ public class Spectrum {
         int nextSet = slots.nextSetBit(startSlot);
         return nextSet == -1 || nextSet > endSlot;
     }
+
+    /**
+     * Returns the underlying BitSet of slot occupancies (true = occupied, false = free).
+     *
+     * @return The BitSet of slots.
+     */
+    public BitSet getSlots() {
+        return slots;
+    }
 }

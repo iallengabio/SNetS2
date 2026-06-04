@@ -103,6 +103,41 @@ public class PhysicalLayerModel {
     }
 
     /**
+     * Calculates the total number of overlapping slots with adjacent cores across the entire path.
+     */
+    public static int calculateTotalOverlaps(Path path, int coreId, int startSlot, int endSlot) {
+        int totalOverlaps = 0;
+        for (Link link : path.links()) {
+            Core core = link.getCore(coreId);
+            if (core == null) continue;
+            
+            for (int adjId : core.getAdjacentCores()) {
+                Core adjCore = link.getCore(adjId);
+                if (adjCore != null) {
+                    for (int s = startSlot; s <= endSlot; s++) {
+                        if (adjCore.getSpectrum().isOccupied(s)) {
+                            totalOverlaps++;
+                        }
+                    }
+                }
+            }
+        }
+        return totalOverlaps;
+    }
+
+    /**
+     * Calculates the current average XT (dB) for a proposed allocation.
+     */
+    public static double predictXT(Path path, int coreId, int startSlot, int endSlot) {
+        double totalXtDensity = 0;
+        for (Link link : path.links()) {
+            Core core = link.getCore(coreId);
+            totalXtDensity += core.getAverageXtNoise(startSlot, endSlot);
+        }
+        return 10 * Math.log10(Math.max(1E-30, totalXtDensity));
+    }
+
+    /**
      * Predicts the OSNR (Linear) for a proposed allocation.
      */
     public static double predictSNR(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
@@ -123,6 +158,33 @@ public class PhysicalLayerModel {
         double pLinear = 1E-4; // Default fallback
         if (cp.getPhysicalLayerConfig() != null) {
             pLinear = Math.pow(10, cp.getPhysicalLayerConfig().power() / 10.0) * 1E-3; // dBm to Watts
+        }
+        
+        double bandwidth = (endSlot - startSlot + 1) * cp.getSlotBandwidth();
+        double iCh = pLinear / bandwidth;
+
+        return iCh / Math.max(1E-30, totalNoiseDensity);
+    }
+
+    /**
+     * Predicts the SNR (Linear) for a proposed allocation excluding inter-core crosstalk.
+     */
+    public static double predictSnrWithoutXt(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
+        double totalNoiseDensity = 0;
+        double totalAseDensity = 0;
+        
+        for (Link link : path.links()) {
+            Core core = link.getCore(coreId);
+            totalAseDensity += link.getStaticAseNoise();
+            totalNoiseDensity += core.getAverageNliNoise(startSlot, endSlot);
+        }
+
+        totalNoiseDensity += totalAseDensity;
+
+        // Signal Power Density
+        double pLinear = 1E-4;
+        if (cp.getPhysicalLayerConfig() != null) {
+            pLinear = Math.pow(10, cp.getPhysicalLayerConfig().power() / 10.0) * 1E-3;
         }
         
         double bandwidth = (endSlot - startSlot + 1) * cp.getSlotBandwidth();

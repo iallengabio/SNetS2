@@ -20,8 +20,14 @@ public class ResourceUtilizationObservationEvent extends Event {
             System.out.println(String.format("[DEBUG] t=%.4f | ResourceUtilizationObservation", time));
         }
 
-        // Perform time-weighted observation
+        // Perform time-weighted observations
         engine.getMetricsManager().getResourceUtilization()
+              .recordObservation(engine.getControlPlane(), time);
+        engine.getMetricsManager().getExternalFragmentation()
+              .recordObservation(engine.getControlPlane(), time);
+        engine.getMetricsManager().getRelativeFragmentation()
+              .recordObservation(engine.getControlPlane(), time);
+        engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization()
               .recordObservation(engine.getControlPlane(), time);
     }
 }

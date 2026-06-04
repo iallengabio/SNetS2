@@ -130,6 +130,12 @@ public class ExperimentalPlanner {
         // 8. Collect results into the aggregator (using the scenario map for identifying the row)
         engine.getMetricsManager().getBitRateBlocking().fillResults(aggregatedResult, scenarioMap, repId);
         engine.getMetricsManager().getResourceUtilization().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getPhysicalLayer().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getExternalFragmentation().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getRelativeFragmentation().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getModulationUtilization().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getSpectrumSize().fillResults(aggregatedResult, scenarioMap, repId);
+        engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().fillResults(aggregatedResult, scenarioMap, repId);
         
         if (engine.getMetricsManager().getConsumedEnergy() != null) {
             engine.getMetricsManager().getConsumedEnergy().fillResults(aggregatedResult, scenarioMap, repId, engine.getCurrentTime());

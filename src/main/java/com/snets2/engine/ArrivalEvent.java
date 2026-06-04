@@ -69,8 +69,10 @@ public class ArrivalEvent extends Event {
             // Success: Schedule immediate SetupEvent
             engine.schedule(new SetupEvent(time, solution));
         } else {
-            // Failure: Schedule immediate BlockEvent
-            engine.schedule(new BlockEvent(time, source, destination, bitRate, BlockingCause.OTHER, null));
+            // Failure: Schedule immediate BlockEvent with exact cause
+            BlockingCause cause = engine.getControlPlane().getLastBlockingCause();
+            Integer coreId = engine.getControlPlane().getLastBlockingCoreId();
+            engine.schedule(new BlockEvent(time, source, destination, bitRate, cause, coreId));
         }
     }
 }

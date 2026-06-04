@@ -65,14 +65,15 @@ Monitora o uso de diferentes formatos de modulação pelos BVTs.
   * Percentage of circuits per modulation
   * Percentage of circuits per modulation and bandwidth
 
-### 3.4. Aba: `CrosstalkStatistics`
-Estatísticas da degradação de sinal por acoplamento de núcleos (específico para fibras Multicore).
-* **Dimensões Adicionais:** `Overlaps` (número de conexões adjacentes).
+### 3.4. Aba: `PhysicalLayerStatistics`
+Estatísticas da degradação de sinal e qualidade de transmissão.
+* **Dimensões Adicionais:** `src`, `dest`, `overlaps` (número de slots vizinhos ocupados).
 * **SubMetrics Incluídas:**
-  * Average Crosstalk per overlaps (dB)
-  * Minimum Crosstalk per overlaps (dB)
-  * Maximum Crosstalk per overlaps (dB)
-  * Average Crosstalk per pair `[src]-[dest]`
+  * Average OSNR (dB)
+  * Average XT (dB)
+  * Average Power (dBm)
+  * Min/Max XT per overlaps (dB)
+  * Average OSNR/XT/Power per pair `[src]-[dest]`
 
 ### 3.5. Outras Abas
 * **`SpectrumSizeStatistics`**: Distribuição do tamanho contíguo de espectro requerido.
