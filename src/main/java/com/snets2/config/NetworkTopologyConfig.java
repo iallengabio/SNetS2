@@ -8,29 +8,3 @@ public record NetworkTopologyConfig(
     List<CoreConfig> cores,
     List<ModulationConfig> modulations
 ) {}
-
-record NodeConfig(
-    String id,
-    int tx,
-    int rx,
-    int regenerators
-) {}
-
-record LinkConfig(
-    String source,
-    String destination,
-    double length
-) {}
-
-record CoreConfig(
-    int id,
-    List<Integer> adjacentCores
-) {}
-
-record ModulationConfig(
-    String name,
-    double maxRange,
-    double M,
-    double SNR,
-    double XT
-) {}
