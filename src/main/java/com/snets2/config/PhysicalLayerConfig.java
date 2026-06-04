@@ -1,7 +1,5 @@
 package com.snets2.config;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public record PhysicalLayerConfig(
     int physicalLayerModel,
     int crosstalkModel,

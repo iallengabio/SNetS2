@@ -1,13 +1,13 @@
 package com.snets2.engine;
 
-import com.snets2.SimulationConstants;
-
 /**
  * Base abstract class for all discrete events in the simulation.
  * 
- * <p>Events are ordered in the Future Event List (FEL) by their occurrence time.
- * Each event encapsulates the logic to mutate the system state or schedule 
- * future events.</p>
+ * <p>
+ * Events are ordered in the Future Event List (FEL) by their occurrence time.
+ * Each event encapsulates the logic to mutate the system state or schedule
+ * future events.
+ * </p>
  */
 public abstract class Event implements Comparable<Event> {
     protected final double time;

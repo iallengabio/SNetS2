@@ -23,7 +23,6 @@ public class BitRateBlockingMetrics {
     private double bitRateBlockingByOther = 0;
 
     // Breakdown per Core
-    private final Map<Integer, Double> requestedBitRatePerCore = new HashMap<>();
     private final Map<Integer, Double> bitRateBlockedPerCore = new HashMap<>();
 
     // Breakdown per Node Pair (src-dest)

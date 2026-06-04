@@ -3,7 +3,6 @@ package com.snets2.metrics;
 import com.snets2.config.PhysicalLayerConfig;
 import com.snets2.model.*;
 import com.snets2.rmsca.routing.Path;
-import java.util.List;
 
 /**
  * Mathematical engine for physical layer impairments (OSNR, NLI, ASE, Crosstalk).

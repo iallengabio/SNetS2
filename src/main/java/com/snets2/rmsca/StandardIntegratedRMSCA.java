@@ -5,8 +5,6 @@ import com.snets2.metrics.PhysicalLayerModel;
 import com.snets2.metrics.BlockingCause;
 import com.snets2.model.*;
 import com.snets2.rmsca.core.ICoreAssignment;
-import com.snets2.rmsca.modulation.IModulationSelection;
-import com.snets2.rmsca.modulation.ModulationResult;
 import com.snets2.rmsca.routing.IRouting;
 import com.snets2.rmsca.routing.Path;
 import com.snets2.rmsca.spectrum.ISpectrumAssignment;
@@ -25,12 +23,10 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
     private IRouting routing;
     private ICoreAssignment coreAssignment;
-    private IModulationSelection modulationSelection; // Used to pick candidate modulations
     private ISpectrumAssignment spectrumAssignment;
 
     public void setRouting(IRouting routing) { this.routing = routing; }
     public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
-    public void setModulationSelection(IModulationSelection modulationSelection) { this.modulationSelection = modulationSelection; }
     public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
 
     @Override

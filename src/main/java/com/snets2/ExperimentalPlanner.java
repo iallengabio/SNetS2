@@ -85,7 +85,6 @@ public class ExperimentalPlanner {
 
         if (rmsca instanceof StandardIntegratedRMSCA standard) {
             standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
-            standard.setModulationSelection(AlgorithmFactory.createModulation(setup.simulation().modulationSelection()));
             standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
             standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
         }
