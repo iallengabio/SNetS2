@@ -119,8 +119,6 @@ class PhysicalLayerModelTest {
         assertEquals(0, overlaps0);
         
         // Establish a circuit on adjacent core 1, overlapping slots 10-15
-        Circuit neighbor = new Circuit("c_neighbor", topology.nodes().get(0), topology.nodes().get(1), 
-                                       List.of(link1), List.of(1), 10, 15, qpsk, 100.0);
         
         // Manually allocate in neighbor spectrum for test (or use ControlPlane)
         core1.getSpectrum().allocate(10, 15);

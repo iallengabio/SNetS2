@@ -1,9 +1,6 @@
 package com.snets2.model;
 
 import com.snets2.config.PhysicalLayerConfig;
-import com.snets2.rmsca.IRMSCA;
-import com.snets2.rmsca.routing.Path;
-import com.snets2.rmsca.spectrum.SpectrumInterval;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

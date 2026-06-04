@@ -1,6 +1,5 @@
 package com.snets2.engine;
 
-import com.snets2.SimulationConstants;
 import com.snets2.metrics.EnergyConsumptionModel;
 import com.snets2.model.Circuit;
 
