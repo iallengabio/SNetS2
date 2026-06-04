@@ -22,7 +22,7 @@ public class SimulationResult {
      * Adds a value for a specific metric in a specific replication.
      * The row is identified by the combination of Scenario + SubMetric + Dimensions.
      */
-    public void addValue(String sheet, String subMetric, Map<String, String> dimensions, 
+    public synchronized void addValue(String sheet, String subMetric, Map<String, String> dimensions, 
                          Map<String, Object> scenario, int repId, double value) {
         
         Map<String, MetricRow> sheetData = data.computeIfAbsent(sheet, k -> new HashMap<>());

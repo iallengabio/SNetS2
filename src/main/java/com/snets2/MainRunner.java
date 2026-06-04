@@ -9,8 +9,8 @@ import java.io.File;
 public class MainRunner {
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("Usage: java MainRunner <experiment_folder_path>");
+        if (args.length < 2) {
+            System.err.println("Usage: java MainRunner <experiment_folder_path> <num_threads>");
             return;
         }
 
@@ -22,8 +22,20 @@ public class MainRunner {
             return;
         }
 
+        int numThreads;
         try {
-            ExperimentalPlanner planner = new ExperimentalPlanner(experimentFolder);
+            numThreads = Integer.parseInt(args[1]);
+            if (numThreads < 1) {
+                System.err.println("Number of threads must be at least 1.");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid number of threads: " + args[1]);
+            return;
+        }
+
+        try {
+            ExperimentalPlanner planner = new ExperimentalPlanner(experimentFolder, numThreads);
             planner.run();
 
         } catch (Exception e) {
