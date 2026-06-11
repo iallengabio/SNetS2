@@ -22,6 +22,9 @@ O SNetS2 separa a **captura** de dados (Eventos) do **armazenamento** (Classes d
 - **`ResourceUtilizationMetrics`**: Implementa a técnica de **Média Ponderada pelo Tempo**. Armazena acumuladores de ocupação multiplicados pelo tempo de permanência naquele estado ($\Delta t$).
 - **`PhysicalLayerMetrics`**: Coleta estatísticas de qualidade de sinal (OSNR, XT, Potência) no momento do estabelecimento dos circuitos. Realiza breakdowns por par de nós e por contagem de sobreposições (*overlaps*).
 
+### 1.3. Otimização de Desempenho e Coleta Condicional
+Para evitar o consumo desnecessário de CPU e memória em simulações de grande escala, o `SimulationEngine` consulta o mapa `activeMetrics` (definido no arquivo `setup.json`). Se uma métrica estiver configurada como `false` (inativa), o motor de simulação e os eventos correspondentes ignoram o processamento e a coleta de dados associados. Métricas omitidas ou não configuradas no mapa padrão são consideradas ativas (`true`) por padrão para retrocompatibilidade.
+
 ---
 
 ## 2. Eventos de Observação (`...ObservationEvent`)

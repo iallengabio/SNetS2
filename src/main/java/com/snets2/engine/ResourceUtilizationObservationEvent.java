@@ -22,20 +22,36 @@ public class ResourceUtilizationObservationEvent extends Event {
 
         if (!engine.isWarmUp()) {
             // Perform time-weighted observations
-            engine.getMetricsManager().getResourceUtilization()
-                  .recordObservation(engine.getControlPlane(), time);
-            engine.getMetricsManager().getExternalFragmentation()
-                  .recordObservation(engine.getControlPlane(), time);
-            engine.getMetricsManager().getRelativeFragmentation()
-                  .recordObservation(engine.getControlPlane(), time);
-            engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization()
-                  .recordObservation(engine.getControlPlane(), time);
+            if (engine.isActiveMetric("SpectrumUtilization")) {
+                engine.getMetricsManager().getResourceUtilization()
+                      .recordObservation(engine.getControlPlane(), time);
+            }
+            if (engine.isActiveMetric("ExternalFragmentation")) {
+                engine.getMetricsManager().getExternalFragmentation()
+                      .recordObservation(engine.getControlPlane(), time);
+            }
+            if (engine.isActiveMetric("RelativeFragmentation")) {
+                engine.getMetricsManager().getRelativeFragmentation()
+                      .recordObservation(engine.getControlPlane(), time);
+            }
+            if (engine.isActiveMetric("TransmittersReceiversRegeneratorsUtilization")) {
+                engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization()
+                      .recordObservation(engine.getControlPlane(), time);
+            }
         } else {
             // Keep lastObservationTime up to date to start window fresh at warm-up end
-            engine.getMetricsManager().getResourceUtilization().setLastObservationTime(time);
-            engine.getMetricsManager().getExternalFragmentation().setLastObservationTime(time);
-            engine.getMetricsManager().getRelativeFragmentation().setLastObservationTime(time);
-            engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().setLastObservationTime(time);
+            if (engine.isActiveMetric("SpectrumUtilization")) {
+                engine.getMetricsManager().getResourceUtilization().setLastObservationTime(time);
+            }
+            if (engine.isActiveMetric("ExternalFragmentation")) {
+                engine.getMetricsManager().getExternalFragmentation().setLastObservationTime(time);
+            }
+            if (engine.isActiveMetric("RelativeFragmentation")) {
+                engine.getMetricsManager().getRelativeFragmentation().setLastObservationTime(time);
+            }
+            if (engine.isActiveMetric("TransmittersReceiversRegeneratorsUtilization")) {
+                engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().setLastObservationTime(time);
+            }
         }
     }
 }

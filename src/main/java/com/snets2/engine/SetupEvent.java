@@ -51,20 +51,28 @@ public class SetupEvent extends Event {
         }
 
         if (!engine.isWarmUp()) {
-            engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
-                circuit.getSource().getId(), circuit.getDestination().getId(), 
-                10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
+            if (engine.isActiveMetric("CrosstalkStatistics")) {
+                engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
+                    circuit.getSource().getId(), circuit.getDestination().getId(), 
+                    10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
+            }
 
-            engine.getMetricsManager().getExternalFragmentation().recordCircuitSetup(circuit);
-            engine.getMetricsManager().getModulationUtilization().recordCircuitSetup(circuit);
-            engine.getMetricsManager().getSpectrumSize().recordCircuitSetup(circuit);
+            if (engine.isActiveMetric("ExternalFragmentation")) {
+                engine.getMetricsManager().getExternalFragmentation().recordCircuitSetup(circuit);
+            }
+            if (engine.isActiveMetric("ModulationUtilization")) {
+                engine.getMetricsManager().getModulationUtilization().recordCircuitSetup(circuit);
+            }
+            if (engine.isActiveMetric("SpectrumSizeStatistics")) {
+                engine.getMetricsManager().getSpectrumSize().recordCircuitSetup(circuit);
+            }
         }
 
         // --- COMMIT MUTATION ---
         engine.getControlPlane().establishCircuit(circuit);
 
         // 2. Update energy metrics (dynamic part)
-        if (engine.getMetricsManager().getConsumedEnergy() != null) {
+        if (engine.getMetricsManager().getConsumedEnergy() != null && engine.isActiveMetric("ConsumedEnergy")) {
             engine.getMetricsManager().getConsumedEnergy().update(time, engine.isWarmUp());
             double circuitPower = EnergyConsumptionModel.calculateCircuitPower(circuit, engine.getControlPlane().getSlotBandwidth());
             engine.getMetricsManager().getConsumedEnergy().addCircuitPower(circuitPower);

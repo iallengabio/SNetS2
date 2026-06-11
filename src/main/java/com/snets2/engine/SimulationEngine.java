@@ -8,6 +8,7 @@ import com.snets2.util.RandomGenerator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
+import java.util.Map;
 
 /**
  * The core Discrete Event Simulation (DES) Engine.
@@ -23,6 +24,7 @@ public class SimulationEngine {
     private final ControlPlane controlPlane;
     private final RandomGenerator random;
     private final MetricsManager metricsManager;
+    private final Map<String, Boolean> activeMetrics;
     
     private int arrivalCounter;
     private final int maxArrivals;
@@ -35,16 +37,18 @@ public class SimulationEngine {
     private final double[] cumulativeWeights;
 
     /**
-     * Initializes the simulation engine.
-     *
-     * @param topology     The physical network mesh.
-     * @param controlPlane The network control plane (contains the RMSCA algorithm).
-     * @param maxArrivals  Number of arrivals before stopping the simulation.
-     * @param load         Traffic load in Erlangs.
-     * @param bitRates     List of bit rates and their weights.
-     * @param seed         Random seed for reproducibility.
+     * Initializes the simulation engine with default active metrics.
      */
     public SimulationEngine(NetworkTopology topology, ControlPlane controlPlane, int maxArrivals, int warmUpRequests, double load, 
+                            List<com.snets2.config.TrafficConfig.BitRateConfig> bitRates, long seed) {
+        this(topology, controlPlane, maxArrivals, warmUpRequests, null, load, bitRates, seed);
+    }
+
+    /**
+     * Initializes the simulation engine with specified active metrics.
+     */
+    public SimulationEngine(NetworkTopology topology, ControlPlane controlPlane, int maxArrivals, int warmUpRequests, 
+                            Map<String, Boolean> activeMetrics, double load, 
                             List<com.snets2.config.TrafficConfig.BitRateConfig> bitRates, long seed) {
         this.currentTime = 0;
         this.fel = new PriorityQueue<>();
@@ -52,6 +56,7 @@ public class SimulationEngine {
         this.controlPlane = controlPlane;
         this.maxArrivals = maxArrivals;
         this.warmUpRequests = warmUpRequests;
+        this.activeMetrics = activeMetrics;
         this.arrivalCounter = 0;
         this.random = new RandomGenerator(seed);
         this.metricsManager = new MetricsManager();
@@ -118,7 +123,7 @@ public class SimulationEngine {
         }
 
         // Final energy update at simulation end
-        if (metricsManager.getConsumedEnergy() != null) {
+        if (metricsManager.getConsumedEnergy() != null && isActiveMetric("ConsumedEnergy")) {
             metricsManager.getConsumedEnergy().update(currentTime, false);
         }
     }
@@ -147,6 +152,11 @@ public class SimulationEngine {
     /** @return true if the simulation is currently in the warm-up transient phase. */
     public boolean isWarmUp() {
         return arrivalCounter < warmUpRequests;
+    }
+
+    /** @return true if the metric should be recorded/observed based on configuration. */
+    public boolean isActiveMetric(String metricName) {
+        return activeMetrics == null || activeMetrics.getOrDefault(metricName, true);
     }
 
     /** Generates the next inter-arrival time. */

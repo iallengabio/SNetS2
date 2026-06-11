@@ -44,7 +44,7 @@ public class BlockEvent extends Event {
         }
 
         // Record metrics
-        if (!engine.isWarmUp()) {
+        if (!engine.isWarmUp() && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
             engine.getMetricsManager().getBitRateBlocking().recordBlock(
                 source.getId(), destination.getId(), bitRate, cause, coreId
             );
