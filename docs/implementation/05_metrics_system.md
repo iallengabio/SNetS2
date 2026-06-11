@@ -56,3 +56,12 @@ Os dados são preparados para o **Excel Multi-abas**, onde cada aba corresponde 
 - Aba `ModulationUtilization`: Percentual de circuitos utilizando cada formato de modulação, geral e por taxa de transmissão.
 - Aba `SpectrumSizeStatistics`: Distribuição percentual do número de slots alocados, geral e por link.
 - Aba `TransmittersReceiversRegeneratorsUtilization`: Utilização média (ponderada no tempo) e de pico dos transmissores, receptores e regeneradores, geral e por nó.
+
+### 3.3. Ordenação Natural de Linhas
+Para evitar que colunas de dimensões numéricas (como `slots`, `overlaps`, `c`, `core`, etc.) sejam exibidas em ordem alfabética confusa (por exemplo: `12, 14, 17, 23, 3, 33, 4`...), o `ExcelExporter` implementa um comparador de **Ordenação Natural** (*natural sort*).
+
+Este comparador analisa chaves e valores dos mapas de cenários e dimensões:
+1. Se ambos os valores puderem ser interpretados como números reais (`Double`), eles são comparados numericamente.
+2. Se forem cadeias de caracteres alfanuméricas mistas (como `core_2` e `core_10`), a comparação é segmentada em blocos numéricos e textuais de forma sequencial.
+3. Isso garante que a apresentação dos dados nas planilhas do Excel siga a ordem lógica numérica intuitiva (ex: `0`, `1`, `2`, `10` e `3`, `4`, `9`, `12`, `14`, `33`).
+
