@@ -14,6 +14,10 @@ public class ResourceUtilizationMetrics {
     private double lastObservationTime = 0;
     private double totalSimulationTime = 0;
 
+    public void setLastObservationTime(double lastObservationTime) {
+        this.lastObservationTime = lastObservationTime;
+    }
+
     private double weightedUtilizationGen = 0;
     private final Map<String, Double> weightedUtilizationPerLink = new HashMap<>();
     private final Map<Integer, Double> weightedUtilizationPerCore = new HashMap<>();

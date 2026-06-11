@@ -14,6 +14,10 @@ public class TransmittersReceiversRegeneratorsUtilizationMetrics {
     private double lastObservationTime = 0;
     private double totalSimulationTime = 0;
 
+    public void setLastObservationTime(double lastObservationTime) {
+        this.lastObservationTime = lastObservationTime;
+    }
+
     private double weightedTxUtilizationGen = 0;
     private double weightedRxUtilizationGen = 0;
     private double weightedRegenUtilizationGen = 0;
@@ -65,7 +69,7 @@ public class TransmittersReceiversRegeneratorsUtilizationMetrics {
     }
 
     public void fillResults(SimulationResult result, Map<String, Object> scenario, int repId) {
-        String sheet = "TxRxRegenUtilization";
+        String sheet = "TransmittersReceiversRegeneratorsUtilization";
         if (totalSimulationTime == 0) return;
 
         // General (Average across all nodes)

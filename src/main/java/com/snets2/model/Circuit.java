@@ -19,6 +19,7 @@ public class Circuit {
     private final int endSlot;
     private final ModulationFormat modulation;
     private final double bitRate;
+    private final List<Node> regeneratorNodes;
     
     // Quality of Transmission (QoT) metrics calculated during setup
     private double aseNoise;
@@ -26,21 +27,11 @@ public class Circuit {
     private double crosstalk;
 
     /**
-     * Constructs a Circuit with its assigned resources and parameters.
-     *
-     * @param id          Unique identifier for the circuit.
-     * @param source      Source node.
-     * @param destination Destination node.
-     * @param path        Ordered list of physical links forming the path.
-     * @param coreIndices List of core IDs used in each link of the path.
-     * @param startSlot   Index of the first allocated frequency slot.
-     * @param endSlot     Index of the last allocated frequency slot.
-     * @param modulation  The {@link ModulationFormat} applied to this signal.
-     * @param bitRate     The total bit rate of the connection (in Gbps).
+     * Constructs a Circuit with its assigned resources, parameters, and regenerators.
      */
     public Circuit(String id, Node source, Node destination, List<Link> path, 
                    List<Integer> coreIndices, int startSlot, int endSlot, 
-                   ModulationFormat modulation, double bitRate) {
+                   ModulationFormat modulation, double bitRate, List<Node> regeneratorNodes) {
         if (path.size() != coreIndices.size()) {
             throw new IllegalArgumentException("Path and coreIndices must have the same size");
         }
@@ -53,6 +44,16 @@ public class Circuit {
         this.endSlot = endSlot;
         this.modulation = modulation;
         this.bitRate = bitRate;
+        this.regeneratorNodes = regeneratorNodes != null ? List.copyOf(regeneratorNodes) : List.of();
+    }
+
+    /**
+     * Constructs a Circuit with its assigned resources and parameters, without regenerators.
+     */
+    public Circuit(String id, Node source, Node destination, List<Link> path, 
+                   List<Integer> coreIndices, int startSlot, int endSlot, 
+                   ModulationFormat modulation, double bitRate) {
+        this(id, source, destination, path, coreIndices, startSlot, endSlot, modulation, bitRate, List.of());
     }
 
     public String getId() { return id; }
@@ -64,6 +65,7 @@ public class Circuit {
     public int getEndSlot() { return endSlot; }
     public ModulationFormat getModulation() { return modulation; }
     public double getBitRate() { return bitRate; }
+    public List<Node> getRegeneratorNodes() { return regeneratorNodes; }
 
     /** Returns the calculated Amplified Spontaneous Emission (ASE) noise. */
     public double getAseNoise() { return aseNoise; }

@@ -4,6 +4,7 @@ import java.util.Map;
 
 public record SimulationConfig(
     int requests,
+    int warmUpRequests, // Discards initial requests to reach steady state
     int totalSlots,
     String routing,
     String kRouting,

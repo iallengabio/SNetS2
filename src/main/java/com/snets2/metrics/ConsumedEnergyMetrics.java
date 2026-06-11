@@ -23,13 +23,15 @@ public class ConsumedEnergyMetrics {
     /**
      * Updates the accumulated energy before a state change.
      */
-    public void update(double currentTime) {
+    public void update(double currentTime, boolean isWarmUp) {
         double deltaTime = currentTime - lastUpdateTime;
         if (deltaTime > 0) {
-            double currentPower = staticPower + dynamicPower;
-            totalEnergyJoule += currentPower * deltaTime;
-            if (currentPower > peakPower) {
-                peakPower = currentPower;
+            if (!isWarmUp) {
+                double currentPower = staticPower + dynamicPower;
+                totalEnergyJoule += currentPower * deltaTime;
+                if (currentPower > peakPower) {
+                    peakPower = currentPower;
+                }
             }
         }
         lastUpdateTime = currentTime;
@@ -47,7 +49,7 @@ public class ConsumedEnergyMetrics {
      * Finalizes the average power calculation at the end of simulation.
      */
     public void fillResults(SimulationResult result, Map<String, Object> scenario, int repId, double finalTime) {
-        update(finalTime);
+        update(finalTime, false);
         
         double averagePower = finalTime == 0 ? staticPower : totalEnergyJoule / finalTime;
         String sheet = "ConsumedEnergy";

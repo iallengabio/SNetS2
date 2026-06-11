@@ -16,6 +16,7 @@ public class AlgorithmFactory {
     private static final Map<String, Class<? extends IModulationSelection>> modulationRegistry = new HashMap<>();
     private static final Map<String, Class<? extends ICoreAssignment>> coreRegistry = new HashMap<>();
     private static final Map<String, Class<? extends ISpectrumAssignment>> spectrumRegistry = new HashMap<>();
+    private static final Map<String, Class<? extends com.snets2.rmsca.regenerator.IRegeneratorAssignment>> regeneratorRegistry = new HashMap<>();
 
     static {
         // Integrated
@@ -23,19 +24,30 @@ public class AlgorithmFactory {
         
         // Routing
         routingRegistry.put("djk", DijkstraRouting.class);
+        routingRegistry.put("ksp", KShortestPathsRouting.class);
+        routingRegistry.put("newksp", KShortestPathsRouting.class);
         
         // Modulation
-        modulationRegistry.put("fixed", DistanceAdaptiveModulationSelection.class); // Placeholder for now
+        modulationRegistry.put("fixed", FixedModulationSelection.class);
         modulationRegistry.put("distance-adaptive", DistanceAdaptiveModulationSelection.class);
         
         // Core
         coreRegistry.put("firstfitcore", FirstFitCoreAssignment.class);
         coreRegistry.put("randomfitcore", RandomFitCoreAssignment.class);
+        coreRegistry.put("mincrosstalkcore", MinCrosstalkCoreAssignment.class);
+        coreRegistry.put("mincrosstalk", MinCrosstalkCoreAssignment.class);
         
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);
         spectrumRegistry.put("randomfit", RandomFitSpectrumAssignment.class);
         spectrumRegistry.put("dummyfit", DummyFitSpectrumAssignment.class);
+        spectrumRegistry.put("lastfit", LastFitSpectrumAssignment.class);
+        spectrumRegistry.put("lf", LastFitSpectrumAssignment.class);
+        spectrumRegistry.put("exactfit", ExactFitSpectrumAssignment.class);
+        spectrumRegistry.put("ef", ExactFitSpectrumAssignment.class);
+        
+        // Regenerator
+        regeneratorRegistry.put("aar", com.snets2.rmsca.regenerator.AsSoonAsRequiredRegeneratorAssignment.class);
     }
 
     public static IRMSCA createIntegrated(String id) {
@@ -56,6 +68,11 @@ public class AlgorithmFactory {
 
     public static ISpectrumAssignment createSpectrum(String id) {
         return createInstance(id, spectrumRegistry, "Spectrum Assignment");
+    }
+
+    public static com.snets2.rmsca.regenerator.IRegeneratorAssignment createRegenerator(String id) {
+        if (id == null || id.isEmpty()) return null;
+        return createInstance(id, regeneratorRegistry, "Regenerator Assignment");
     }
 
     private static <T> T createInstance(String id, Map<String, Class<? extends T>> registry, String type) {

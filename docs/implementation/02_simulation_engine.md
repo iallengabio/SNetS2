@@ -11,6 +11,7 @@ Gerencia o ciclo de vida global de uma simulação.
 - **Validação de Causalidade:** Se `strictValidationEnabled` estiver ativo, o motor lança uma exceção caso um evento na FEL tente ser processado com um timestamp anterior ao tempo atual da simulação (violação de causalidade).
 - **Parâmetros de Carga:** Calcula as taxas $\lambda$ (chegada) e $\mu$ (partida) para atingir a carga em Erlangs desejada.
 - **Multi-Bandwidth:** Suporta a geração de requisições com diferentes taxas de bits (`bitRate`) baseada em pesos configuráveis. O método `nextBitRate()` realiza o sorteio estocástico a cada nova chegada.
+- **Descarte de Transiente (Warm-up):** Suporta descartar as primeiras $N$ requisições configuradas via `warmUpRequests` para evitar a contaminação das estatísticas de estado estacionário (Steady State).
 
 ### 1.2. `Event` (com.snets2.engine.Event)
 Classe base abstrata para todas as ações do simulador.
@@ -20,6 +21,8 @@ Classe base abstrata para todas as ações do simulador.
 ---
 
 ## 2. Tipologia e Ciclo de Vida dos Eventos
+
+Os eventos de chegada, estabelecimento, bloqueio e observação integram verificações junto ao método `SimulationEngine.isWarmUp()` para garantir o descarte dos dados de métricas acumulados no período transiente inicial.
 
 ### 2.1. `ArrivalEvent`
 Marca a entrada de uma nova solicitação.

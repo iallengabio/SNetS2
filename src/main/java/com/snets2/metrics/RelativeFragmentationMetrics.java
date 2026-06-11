@@ -12,6 +12,10 @@ public class RelativeFragmentationMetrics {
     private double lastObservationTime = 0;
     private double totalSimulationTime = 0;
 
+    public void setLastObservationTime(double lastObservationTime) {
+        this.lastObservationTime = lastObservationTime;
+    }
+
     private final Set<Integer> possibleSlotSizes = new TreeSet<>();
     private final Map<Integer, Double> weightedRelativeFragGen = new HashMap<>();
 

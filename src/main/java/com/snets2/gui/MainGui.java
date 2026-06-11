@@ -602,7 +602,22 @@ public class MainGui {
         chooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
 
         if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-            pathField.setText(chooser.getSelectedFile().getAbsolutePath());
+            File selectedFolder = chooser.getSelectedFile();
+            pathField.setText(selectedFolder.getAbsolutePath());
+            try {
+                File setupFile = new File(selectedFolder, "setup.json");
+                if (setupFile.exists()) {
+                    com.snets2.config.ExperimentSetup setup = com.snets2.config.ConfigLoader.load(setupFile);
+                    if (setup.simulation() != null) {
+                        int threads = setup.simulation().threads();
+                        if (threads >= 1) {
+                            threadSpinner.setValue(threads);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Warning: could not read threads count from setup.json: " + ex.getMessage());
+            }
         }
     }
 

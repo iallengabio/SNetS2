@@ -16,8 +16,17 @@ public record AllocationSolution(
     int startSlot,
     int endSlot,
     ModulationFormat modulation,
-    double bitRate
+    double bitRate,
+    List<Node> regeneratorNodes
 ) {
+    /**
+     * Backward-compatible constructor for allocations without regenerators.
+     */
+    public AllocationSolution(Node source, Node destination, List<Link> path, List<Integer> coreIndices, 
+                              int startSlot, int endSlot, ModulationFormat modulation, double bitRate) {
+        this(source, destination, path, coreIndices, startSlot, endSlot, modulation, bitRate, List.of());
+    }
+
     /**
      * Converts this solution into a persistent {@link Circuit} object.
      *
@@ -25,6 +34,6 @@ public record AllocationSolution(
      * @return A new Circuit instance.
      */
     public Circuit toCircuit(String id) {
-        return new Circuit(id, source, destination, path, coreIndices, startSlot, endSlot, modulation, bitRate);
+        return new Circuit(id, source, destination, path, coreIndices, startSlot, endSlot, modulation, bitRate, regeneratorNodes);
     }
 }
