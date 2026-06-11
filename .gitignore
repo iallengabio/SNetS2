@@ -35,3 +35,12 @@ target/
 old\ refs/
 @old\ refs/
 @old\ refs/**
+
+# Exclude compliance reports
+docs/codebase_drift_report.md
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+

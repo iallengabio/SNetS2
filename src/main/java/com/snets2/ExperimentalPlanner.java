@@ -37,6 +37,15 @@ public class ExperimentalPlanner {
     private SimulationResult aggregatedResult;
     private final AtomicInteger completedCounter = new AtomicInteger(0);
     private int totalTasks;
+    private ProgressListener progressListener;
+
+    public void setProgressListener(ProgressListener progressListener) {
+        this.progressListener = progressListener;
+    }
+
+    public ProgressListener getProgressListener() {
+        return progressListener;
+    }
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -99,6 +108,9 @@ public class ExperimentalPlanner {
                 if (resumeCount > 0) {
                     double percent = (double) resumeCount * 100.0 / totalTasks;
                     System.out.println(String.format("Progress: %.2f%% (%d/%d replications)", percent, resumeCount, totalTasks));
+                    if (progressListener != null) {
+                        progressListener.onProgress(percent, resumeCount, totalTasks);
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("WARNING: Failed to read progress file: " + e.getMessage() + ". Starting fresh or from partial progress.");
@@ -272,6 +284,9 @@ public class ExperimentalPlanner {
         int current = completedCounter.incrementAndGet();
         double percent = (double) current * 100.0 / totalTasks;
         System.out.println(String.format("Progress: %.2f%% (%d/%d replications)", percent, current, totalTasks));
+        if (progressListener != null) {
+            progressListener.onProgress(percent, current, totalTasks);
+        }
 
         if (SimulationConstants.debugEnabled) {
             double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();

@@ -9,8 +9,19 @@ import java.io.File;
 public class MainRunner {
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            try {
+                com.snets2.gui.MainGui.launch();
+            } catch (Exception e) {
+                System.err.println("Failed to launch GUI: " + e.getMessage());
+                e.printStackTrace();
+            }
+            return;
+        }
+
         if (args.length < 2) {
-            System.err.println("Usage: java MainRunner <experiment_folder_path> <num_threads>");
+            System.err.println("Usage (CLI): java MainRunner <experiment_folder_path> <num_threads>");
+            System.err.println("Or run without arguments to start the graphical user interface (GUI).");
             return;
         }
 
