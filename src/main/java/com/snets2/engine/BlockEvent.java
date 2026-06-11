@@ -44,8 +44,10 @@ public class BlockEvent extends Event {
         }
 
         // Record metrics
-        engine.getMetricsManager().getBitRateBlocking().recordBlock(
-            source.getId(), destination.getId(), bitRate, cause, coreId
-        );
+        if (!engine.isWarmUp()) {
+            engine.getMetricsManager().getBitRateBlocking().recordBlock(
+                source.getId(), destination.getId(), bitRate, cause, coreId
+            );
+        }
     }
 }

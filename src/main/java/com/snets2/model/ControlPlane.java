@@ -111,6 +111,11 @@ public class ControlPlane {
         // 2. Consume Tx/Rx on source/destination
         circuit.getSource().consumeTx();
         circuit.getDestination().consumeRx();
+        
+        // Consume Regenerators on intermediate nodes
+        for (Node regenNode : circuit.getRegeneratorNodes()) {
+            regenNode.consumeRegenerators(1);
+        }
 
         // 3. Add to active circuits
         activeCircuits.put(circuit.getId(), circuit);
@@ -134,6 +139,11 @@ public class ControlPlane {
         }
         if (!circuit.getDestination().hasAvailableRx()) {
             throw new IllegalStateException("Destination node " + circuit.getDestination().getId() + " has no Rx available");
+        }
+        for (Node regenNode : circuit.getRegeneratorNodes()) {
+            if (!regenNode.hasAvailableRegenerators(1)) {
+                throw new IllegalStateException("Intermediate node " + regenNode.getId() + " has no regenerators available");
+            }
         }
 
         // 3. Spectrum Continuity & Core Continuity Check
@@ -196,6 +206,11 @@ public class ControlPlane {
         // 2. Release Tx/Rx
         circuit.getSource().releaseTx();
         circuit.getDestination().releaseRx();
+        
+        // Release Regenerators on intermediate nodes
+        for (Node regenNode : circuit.getRegeneratorNodes()) {
+            regenNode.releaseRegenerators(1);
+        }
     }
 
     private BlockingCause lastBlockingCause = BlockingCause.OTHER;

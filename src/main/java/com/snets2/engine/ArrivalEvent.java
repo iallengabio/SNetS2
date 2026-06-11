@@ -45,7 +45,9 @@ public class ArrivalEvent extends Event {
         }
 
         // 1. Record metric arrival
-        engine.getMetricsManager().getBitRateBlocking().recordArrival(source.getId(), destination.getId(), bitRate);
+        if (!engine.isWarmUp()) {
+            engine.getMetricsManager().getBitRateBlocking().recordArrival(source.getId(), destination.getId(), bitRate);
+        }
 
         // 2. Increment total arrivals processed
         engine.incrementArrivalCounter();

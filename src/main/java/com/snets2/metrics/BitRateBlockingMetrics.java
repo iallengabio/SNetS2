@@ -102,23 +102,34 @@ public class BitRateBlockingMetrics {
     /**
      * Fills the provided SimulationResult with the current metrics.
      */
-    public void fillResults(com.snets2.output.SimulationResult result, Map<String, Object> scenario, int repId) {
+    public void fillResults(com.snets2.output.SimulationResult result, Map<String, Object> scenario, int repId, int totalCores) {
         String sheet = "BlockingProbability";
         
         // General BP
-        result.addValue(sheet, "General Bit Rate BP", Map.of("src", "all", "dest", "all"), scenario, repId, getGeneralBlockingProbability());
+        result.addValue(sheet, "General Bit Rate BP", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, getGeneralBlockingProbability());
         
         // Causes
-        result.addValue(sheet, "BP by Fragmentation", Map.of("src", "all", "dest", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByFragmentation / generalRequestedBitRate);
-        result.addValue(sheet, "BP by Lack of Tx", Map.of("src", "all", "dest", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByLackTransmitters / generalRequestedBitRate);
-        result.addValue(sheet, "BP by Lack of Rx", Map.of("src", "all", "dest", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByLackReceivers / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Fragmentation", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByFragmentation / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Lack of Tx", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByLackTransmitters / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Lack of Rx", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByLackReceivers / generalRequestedBitRate);
+        result.addValue(sheet, "BP by QoT New", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByQoTN / generalRequestedBitRate);
+        result.addValue(sheet, "BP by QoT Others", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByQoTO / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Crosstalk", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByXt / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Crosstalk Others", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByXtOther / generalRequestedBitRate);
+        result.addValue(sheet, "BP by Other", Map.of("src", "all", "dest", "all", "core", "all"), scenario, repId, generalRequestedBitRate == 0 ? 0 : bitRateBlockingByOther / generalRequestedBitRate);
         
+        // Per Core BP (for all available cores)
+        for (int coreId = 0; coreId < totalCores; coreId++) {
+            double block = bitRateBlockedPerCore.getOrDefault(coreId, 0.0);
+            result.addValue(sheet, "BP per core", Map.of("src", "all", "dest", "all", "core", String.valueOf(coreId)), scenario, repId, generalRequestedBitRate == 0 ? 0 : block / generalRequestedBitRate);
+        }
+
         // Per Pair
         for (String pair : requestedBitRatePerPair.keySet()) {
             double req = requestedBitRatePerPair.get(pair);
             double block = bitRateBlockedPerPair.getOrDefault(pair, 0.0);
             String[] nodes = pair.split("-");
-            result.addValue(sheet, "BP per pair", Map.of("src", nodes[0], "dest", nodes[1]), scenario, repId, block / req);
+            result.addValue(sheet, "BP per pair", Map.of("src", nodes[0], "dest", nodes[1], "core", "all"), scenario, repId, block / req);
         }
     }
 }

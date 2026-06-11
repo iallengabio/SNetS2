@@ -12,7 +12,13 @@ O SNetS2 separa a **captura** de dados (Eventos) do **armazenamento** (Classes d
 - **Módulos:** Contém instâncias de `BitRateBlockingMetrics` e `ResourceUtilizationMetrics`.
 
 ### 1.2. Classes de Armazenamento
-- **`BitRateBlockingMetrics`**: Armazena somas brutas de bit rate (solicitado vs bloqueado). Utiliza `HashMap` para realizar breakdowns por par de nós, por core e por faixa de banda.
+- **`BitRateBlockingMetrics`**: Armazena somas brutas de bit rate (solicitado vs bloqueado). Utiliza `HashMap` para realizar breakdowns por par de nós, por core (cobrindo todos os cores disponíveis na topologia, mesmo aqueles com probabilidade de bloqueio zero) e por causas raízes detalhadas:
+  - *BP by Fragmentation*: Bloqueio devido à fragmentação de slots espectrais.
+  - *BP by Lack of Tx / Lack of Rx*: Falta de transmissores ou receptores disponíveis nos nós.
+  - *BP by QoT New*: Falta de qualidade de transmissão (QoT) para o circuito entrante.
+  - *BP by QoT Others*: Degradação inaceitável induzida pelo circuito entrante em circuitos já ativos na rede.
+  - *BP by Crosstalk*: Crosstalk inter-núcleo excessivo para o circuito entrante.
+  - *BP by Crosstalk Others*: Degradação inaceitável por crosstalk inter-núcleo induzida em conexões ativas na rede.
 - **`ResourceUtilizationMetrics`**: Implementa a técnica de **Média Ponderada pelo Tempo**. Armazena acumuladores de ocupação multiplicados pelo tempo de permanência naquele estado ($\Delta t$).
 - **`PhysicalLayerMetrics`**: Coleta estatísticas de qualidade de sinal (OSNR, XT, Potência) no momento do estabelecimento dos circuitos. Realiza breakdowns por par de nós e por contagem de sobreposições (*overlaps*).
 

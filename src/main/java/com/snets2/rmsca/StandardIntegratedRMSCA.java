@@ -24,10 +24,12 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     private IRouting routing;
     private ICoreAssignment coreAssignment;
     private ISpectrumAssignment spectrumAssignment;
+    private com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment;
 
     public void setRouting(IRouting routing) { this.routing = routing; }
     public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
     public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
+    public void setRegeneratorAssignment(com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment) { this.regeneratorAssignment = regeneratorAssignment; }
 
     @Override
     public AllocationSolution allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
@@ -55,13 +57,6 @@ public class StandardIntegratedRMSCA implements IRMSCA {
             cp.setLastBlockingCause(BlockingCause.NO_PATH);
             return null;
         }
-        Path path = candidatePaths.get(0);
-
-        // 3. Modulation Loop (Interleaved with Core, Spectrum and QoT)
-        // Sort available modulations by spectral efficiency (M) descending
-        List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
-            .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
-            .toList();
 
         PhysicalLayerConfig physConfig = cp.getPhysicalLayerConfig();
         boolean checkQoT = physConfig != null && physConfig.activeQoT();
@@ -70,57 +65,127 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         boolean foundFreeSlots = false;
         Integer lastAttemptedCore = null;
 
-        for (ModulationFormat mod : availableModulations) {
-            // a. Distance check
-            if (path.getLength() > mod.maxReach()) continue;
+        for (Path path : candidatePaths) {
+            // 3. Modulation Loop (Interleaved with Core, Spectrum and QoT)
+            // Sort available modulations by spectral efficiency (M) descending
+            List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
+                .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
+                .toList();
 
-            foundPathAndMod = true;
+            for (ModulationFormat mod : availableModulations) {
+                // a. Distance check (only bypass if no regenerator assignment is configured)
+                if (path.getLength() > mod.maxReach() && regeneratorAssignment == null) continue;
 
-            // b. Calculate slots required
-            int bitsPerSymbol = mod.getBitsPerSymbol();
-            int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * cp.getSlotBandwidth()));
-            numSlots += cp.getGuardBand();
+                foundPathAndMod = true;
 
-            // c. Iterate through candidate Cores provided by the strategy
-            List<Integer> candidateCores = coreAssignment.selectCores(cp, path);
-            for (Integer coreId : candidateCores) {
-                lastAttemptedCore = coreId;
+                // b. Calculate slots required
+                int bitsPerSymbol = mod.getBitsPerSymbol();
+                int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * cp.getSlotBandwidth()));
+                numSlots += cp.getGuardBand();
 
-                // d. Spectrum Assignment
-                SpectrumInterval slots = spectrumAssignment.findSlots(cp, path, coreId, numSlots);
-                if (slots == null) continue;
+                // c. Iterate through candidate Cores provided by the strategy
+                List<Integer> candidateCores = coreAssignment.selectCores(cp, path);
+                for (Integer coreId : candidateCores) {
+                    lastAttemptedCore = coreId;
 
-                foundFreeSlots = true;
+                    // d. Spectrum Assignment
+                    SpectrumInterval slots = spectrumAssignment.findSlots(cp, path, coreId, numSlots);
+                    if (slots == null) continue;
 
-                // e. QoT Validation
-                if (checkQoT) {
-                    double snr = PhysicalLayerModel.predictSNR(cp, path, coreId, slots.start(), slots.end(), mod, bitRate);
-                    if (snr < mod.getSnrThresholdLinear()) {
-                        // Check if it would pass without crosstalk to isolate the cause
-                        if (physConfig.activeXT()) {
-                            double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, coreId, slots.start(), slots.end(), mod, bitRate);
-                            if (snrNoXt >= mod.getSnrThresholdLinear()) {
-                                cp.setLastBlockingCause(BlockingCause.CROSSTALK);
-                                cp.setLastBlockingCoreId(coreId);
-                                continue;
+                    foundFreeSlots = true;
+
+                    List<Node> regens = List.of();
+                    boolean reachViolated = path.getLength() > mod.maxReach();
+
+                    if (reachViolated) {
+                        if (regeneratorAssignment == null) continue;
+                        regens = regeneratorAssignment.assignRegenerators(cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
+                        if (regens == null) continue;
+                    }
+
+                    // e. QoT Validation
+                    if (checkQoT) {
+                        double snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
+                        if (snr < mod.getSnrThresholdLinear()) {
+                            // If we haven't tried assigning regenerators yet, let's try now to see if they can fix the QoT
+                            if (!reachViolated && regeneratorAssignment != null) {
+                                regens = regeneratorAssignment.assignRegenerators(cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
+                                if (regens != null && !regens.isEmpty()) {
+                                    snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
+                                    if (snr >= mod.getSnrThresholdLinear()) {
+                                        // Passed with regenerators!
+                                        List<Integer> coreIndices = new ArrayList<>();
+                                        for (int i = 0; i < path.links().size(); i++) {
+                                            coreIndices.add(coreId);
+                                        }
+                                        return new AllocationSolution(
+                                            source, destination, path.links(), coreIndices, 
+                                            slots.start(), slots.end(), mod, bitRate, regens
+                                        );
+                                    }
+                                }
+                            }
+
+                            // Check if it would pass without crosstalk to isolate the cause
+                            if (physConfig.activeXT()) {
+                                double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
+                                if (snrNoXt >= mod.getSnrThresholdLinear()) {
+                                    cp.setLastBlockingCause(BlockingCause.CROSSTALK);
+                                    cp.setLastBlockingCoreId(coreId);
+                                    continue;
+                                }
+                            }
+                            cp.setLastBlockingCause(BlockingCause.QOT_NEW);
+                            cp.setLastBlockingCoreId(coreId);
+                            continue; // Try next core or modulation
+                        }
+                    }
+
+                    // e2. Check QoT of other active circuits
+                    boolean otherQotOk = true;
+                    if (checkQoT && physConfig.activeQoTForOther()) {
+                        applyTemporaryNoise(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens);
+                        for (Circuit activeCircuit : cp.getActiveCircuits()) {
+                            double activeSnr = PhysicalLayerModel.predictSNR(
+                                cp, new Path(activeCircuit.getPath()), activeCircuit.getRegeneratorNodes(),
+                                activeCircuit.getCoreIndices().get(0), activeCircuit.getStartSlot(), activeCircuit.getEndSlot(),
+                                activeCircuit.getModulation(), activeCircuit.getBitRate()
+                            );
+                            if (activeSnr < activeCircuit.getModulation().getSnrThresholdLinear()) {
+                                otherQotOk = false;
+                                cp.setLastBlockingCause(BlockingCause.QOT_OTHERS);
+                                if (physConfig.activeXTForOther()) {
+                                    double activeSnrNoXt = PhysicalLayerModel.predictSnrWithoutXt(
+                                        cp, new Path(activeCircuit.getPath()), activeCircuit.getRegeneratorNodes(),
+                                        activeCircuit.getCoreIndices().get(0), activeCircuit.getStartSlot(), activeCircuit.getEndSlot(),
+                                        activeCircuit.getModulation(), activeCircuit.getBitRate()
+                                    );
+                                    if (activeSnrNoXt >= activeCircuit.getModulation().getSnrThresholdLinear()) {
+                                        cp.setLastBlockingCause(BlockingCause.XT_OTHERS);
+                                    }
+                                }
+                                break;
                             }
                         }
-                        cp.setLastBlockingCause(BlockingCause.QOT_NEW);
+                        removeTemporaryNoise(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens);
+                    }
+
+                    if (!otherQotOk) {
                         cp.setLastBlockingCoreId(coreId);
                         continue; // Try next core or modulation
                     }
-                }
 
-                // f. Success: Return Solution
-                List<Integer> coreIndices = new ArrayList<>();
-                for (int i = 0; i < path.links().size(); i++) {
-                    coreIndices.add(coreId);
-                }
+                    // f. Success: Return Solution
+                    List<Integer> coreIndices = new ArrayList<>();
+                    for (int i = 0; i < path.links().size(); i++) {
+                        coreIndices.add(coreId);
+                    }
 
-                return new AllocationSolution(
-                    source, destination, path.links(), coreIndices, 
-                    slots.start(), slots.end(), mod, bitRate
-                );
+                    return new AllocationSolution(
+                        source, destination, path.links(), coreIndices, 
+                        slots.start(), slots.end(), mod, bitRate, regens
+                    );
+                }
             }
         }
 
@@ -133,5 +198,79 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         }
 
         return null;
+    }
+
+    private void applyTemporaryNoise(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens) {
+        PhysicalLayerConfig physicalLayerConfig = cp.getPhysicalLayerConfig();
+        if (physicalLayerConfig == null) return;
+        
+        Circuit tempCircuit = new Circuit("temp", cp.getNode(path.links().get(0).getSourceId()), 
+                                          cp.getNode(path.links().get(path.links().size()-1).getDestinationId()), 
+                                          path.links(), getCoreIndicesList(path.links().size(), coreId), 
+                                          startSlot, endSlot, mod, bitRate, regens);
+                                          
+        for (int i = 0; i < tempCircuit.getPath().size(); i++) {
+            Link link = tempCircuit.getPath().get(i);
+            int coreIndex = tempCircuit.getCoreIndices().get(i);
+            Core core = link.getCore(coreIndex);
+            
+            // NLI
+            double[] nliMask = PhysicalLayerModel.generateNliMask(link, physicalLayerConfig, tempCircuit, core.getSpectrum().getNumSlots());
+            for (int s = 0; s < nliMask.length; s++) {
+                core.addNliNoise(s, nliMask[s]);
+            }
+            
+            // XT
+            double xtContribution = PhysicalLayerModel.calculateXtContribution(link, physicalLayerConfig, tempCircuit);
+            for (int adjId : core.getAdjacentCores()) {
+                Core adjCore = link.getCore(adjId);
+                if (adjCore != null) {
+                    for (int s = tempCircuit.getStartSlot(); s <= tempCircuit.getEndSlot(); s++) {
+                        adjCore.addXtNoise(s, xtContribution);
+                    }
+                }
+            }
+        }
+    }
+
+    private void removeTemporaryNoise(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens) {
+        PhysicalLayerConfig physicalLayerConfig = cp.getPhysicalLayerConfig();
+        if (physicalLayerConfig == null) return;
+        
+        Circuit tempCircuit = new Circuit("temp", cp.getNode(path.links().get(0).getSourceId()), 
+                                          cp.getNode(path.links().get(path.links().size()-1).getDestinationId()), 
+                                          path.links(), getCoreIndicesList(path.links().size(), coreId), 
+                                          startSlot, endSlot, mod, bitRate, regens);
+                                          
+        for (int i = 0; i < tempCircuit.getPath().size(); i++) {
+            Link link = tempCircuit.getPath().get(i);
+            int coreIndex = tempCircuit.getCoreIndices().get(i);
+            Core core = link.getCore(coreIndex);
+            
+            // NLI
+            double[] nliMask = PhysicalLayerModel.generateNliMask(link, physicalLayerConfig, tempCircuit, core.getSpectrum().getNumSlots());
+            for (int s = 0; s < nliMask.length; s++) {
+                core.removeNliNoise(s, nliMask[s]);
+            }
+            
+            // XT
+            double xtContribution = PhysicalLayerModel.calculateXtContribution(link, physicalLayerConfig, tempCircuit);
+            for (int adjId : core.getAdjacentCores()) {
+                Core adjCore = link.getCore(adjId);
+                if (adjCore != null) {
+                    for (int s = tempCircuit.getStartSlot(); s <= tempCircuit.getEndSlot(); s++) {
+                        adjCore.removeXtNoise(s, xtContribution);
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Integer> getCoreIndicesList(int size, int coreId) {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            list.add(coreId);
+        }
+        return list;
     }
 }

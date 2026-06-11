@@ -39,7 +39,7 @@ class SimulationEngineTest {
         ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9, 1, null);
 
         // 4. Initialize Engine (with Topology and Control Plane)
-        SimulationEngine engine = new SimulationEngine(topology, cp, 10, 1.0, List.of(), 42L);
+        SimulationEngine engine = new SimulationEngine(topology, cp, 10, 0, 1.0, List.of(), 42L);
         
         // 5. Schedule first arrival
         engine.schedule(new ArrivalEvent(0.0, n1, n2, 100.0));

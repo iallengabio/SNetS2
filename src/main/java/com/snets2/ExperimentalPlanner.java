@@ -194,6 +194,7 @@ public class ExperimentalPlanner {
             standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
             standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
             standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
+            standard.setRegeneratorAssignment(AlgorithmFactory.createRegenerator(setup.simulation().regeneratorAssignment()));
         }
 
         // 3. Initialize Control Plane
@@ -211,6 +212,7 @@ public class ExperimentalPlanner {
             topology, 
             cp, 
             setup.simulation().requests(), 
+            setup.simulation().warmUpRequests(),
             load, 
             setup.traffic().bitRates(),
             repId // Seed
@@ -234,7 +236,11 @@ public class ExperimentalPlanner {
         engine.run();
 
         // 8. Collect results locally
-        engine.getMetricsManager().getBitRateBlocking().fillResults(repResult, scenarioMap, repId);
+        int totalCores = 1;
+        if (engine.getTopology() != null && !engine.getTopology().links().isEmpty()) {
+            totalCores = engine.getTopology().links().get(0).getCores().size();
+        }
+        engine.getMetricsManager().getBitRateBlocking().fillResults(repResult, scenarioMap, repId, totalCores);
         engine.getMetricsManager().getResourceUtilization().fillResults(repResult, scenarioMap, repId);
         engine.getMetricsManager().getPhysicalLayer().fillResults(repResult, scenarioMap, repId);
         engine.getMetricsManager().getExternalFragmentation().fillResults(repResult, scenarioMap, repId);

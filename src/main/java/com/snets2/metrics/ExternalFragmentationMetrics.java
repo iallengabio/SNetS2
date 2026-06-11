@@ -13,6 +13,10 @@ public class ExternalFragmentationMetrics {
     private double lastObservationTime = 0;
     private double totalSimulationTime = 0;
 
+    public void setLastObservationTime(double lastObservationTime) {
+        this.lastObservationTime = lastObservationTime;
+    }
+
     private double weightedExternalFragVerticalGen = 0;
     private double weightedEntropyExternalFragVerticalGen = 0;
 

@@ -60,4 +60,49 @@ class ControlPlaneTest {
         assertEquals(10, nodeB.getAvailableRx());
         assertTrue(core0.getSpectrum().isRangeFree(10, 20));
     }
+
+    @Test
+    void testEstablishAndTeardownCircuitWithRegenerators() {
+        Node nodeC = new Node("C", 10, 10, 5);
+        Core core1 = new Core(0, List.of(), 320);
+        Link linkAC = new Link("A", "C", 50.0, List.of(core0), List.of());
+        Link linkCB = new Link("C", "B", 50.0, List.of(core1), List.of());
+        
+        NetworkTopology topology = new NetworkTopology(List.of(nodeA, nodeB, nodeC), List.of(linkAC, linkCB), List.of(qpsk));
+        ControlPlane cp = new ControlPlane(topology, null, 12.5E9, 1, null);
+
+        Circuit circuit = new Circuit("c2", nodeA, nodeB, List.of(linkAC, linkCB), List.of(0, 0), 10, 20, qpsk, 100.0, List.of(nodeC));
+
+        assertEquals(5, nodeC.getAvailableRegenerators());
+
+        // Establish
+        cp.establishCircuit(circuit);
+
+        assertEquals(4, nodeC.getAvailableRegenerators());
+        assertEquals(9, nodeA.getAvailableTx());
+        assertEquals(9, nodeB.getAvailableRx());
+
+        // Teardown
+        cp.teardownCircuit("c2");
+
+        assertEquals(5, nodeC.getAvailableRegenerators());
+        assertEquals(10, nodeA.getAvailableTx());
+        assertEquals(10, nodeB.getAvailableRx());
+    }
+
+    @Test
+    void testEstablishCircuitRegeneratorValidation() {
+        Node nodeC = new Node("C", 10, 10, 0); // 0 regenerators
+        Core core1 = new Core(0, List.of(), 320);
+        Link linkAC = new Link("A", "C", 50.0, List.of(core0), List.of());
+        Link linkCB = new Link("C", "B", 50.0, List.of(core1), List.of());
+        
+        NetworkTopology topology = new NetworkTopology(List.of(nodeA, nodeB, nodeC), List.of(linkAC, linkCB), List.of(qpsk));
+        ControlPlane cp = new ControlPlane(topology, null, 12.5E9, 1, null);
+
+        Circuit circuit = new Circuit("c3", nodeA, nodeB, List.of(linkAC, linkCB), List.of(0, 0), 10, 20, qpsk, 100.0, List.of(nodeC));
+
+        // Should throw exception since nodeC has no regenerators
+        assertThrows(IllegalStateException.class, () -> cp.establishCircuit(circuit));
+    }
 }

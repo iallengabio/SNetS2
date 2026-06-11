@@ -16,18 +16,26 @@ public class ResourceUtilizationObservationEvent extends Event {
 
     @Override
     public void execute(SimulationEngine engine) {
-        if (SimulationConstants.debugEnabled) {
+        if (com.snets2.SimulationConstants.debugEnabled) {
             System.out.println(String.format("[DEBUG] t=%.4f | ResourceUtilizationObservation", time));
         }
 
-        // Perform time-weighted observations
-        engine.getMetricsManager().getResourceUtilization()
-              .recordObservation(engine.getControlPlane(), time);
-        engine.getMetricsManager().getExternalFragmentation()
-              .recordObservation(engine.getControlPlane(), time);
-        engine.getMetricsManager().getRelativeFragmentation()
-              .recordObservation(engine.getControlPlane(), time);
-        engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization()
-              .recordObservation(engine.getControlPlane(), time);
+        if (!engine.isWarmUp()) {
+            // Perform time-weighted observations
+            engine.getMetricsManager().getResourceUtilization()
+                  .recordObservation(engine.getControlPlane(), time);
+            engine.getMetricsManager().getExternalFragmentation()
+                  .recordObservation(engine.getControlPlane(), time);
+            engine.getMetricsManager().getRelativeFragmentation()
+                  .recordObservation(engine.getControlPlane(), time);
+            engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization()
+                  .recordObservation(engine.getControlPlane(), time);
+        } else {
+            // Keep lastObservationTime up to date to start window fresh at warm-up end
+            engine.getMetricsManager().getResourceUtilization().setLastObservationTime(time);
+            engine.getMetricsManager().getExternalFragmentation().setLastObservationTime(time);
+            engine.getMetricsManager().getRelativeFragmentation().setLastObservationTime(time);
+            engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().setLastObservationTime(time);
+        }
     }
 }

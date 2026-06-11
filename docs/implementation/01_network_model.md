@@ -27,9 +27,9 @@ Modela amplificadores ópticos (ex: EDFA) ao longo dos enlaces.
 
 ### 1.5. `Node` (com.snets2.model.Node)
 Representa um ROADM óptico.
-- **Gerenciamento de Recursos:** Controla a contagem finita de Transmissores (`availableTx`), Receptores (`availableRx`) e `Regenerators`.
+- **Gerenciamento de Recursos:** Controla a contagem finita de Transmissores (`availableTx`), Receptores (`availableRx`) e Regeneradores (`availableRegenerators`).
 - **Prevenção de Overflow/Underflow:** Valida se a liberação de recursos não excede a capacidade total do nó e se o consumo não ultrapassa a disponibilidade atual.
-- **Bloqueio:** Se um nó destino não possui `Rx` livre ou o origem não possui `Tx`, a requisição é bloqueada antes mesmo do cálculo de espectro.
+- **Bloqueio:** Se um nó destino não possui `Rx` livre ou o origem não possui `Tx`, a requisição é bloqueada antes mesmo do cálculo de espectro. De forma análoga, se nós intermediários escolhidos para regeneração não possuírem regeneradores livres, a conexão é bloqueada.
 
 ---
 
@@ -42,7 +42,7 @@ Define as propriedades de um formato de modulação (ex: QPSK, 16QAM).
 
 ### 2.2. `Circuit` (com.snets2.model.Circuit)
 Representa uma conexão ativa (Lightpath).
-- **Snapshot:** Armazena o caminho percorrido, o índice do núcleo em cada enlace e os slots alocados.
+- **Snapshot:** Armazena o caminho percorrido, o índice do núcleo em cada enlace, os slots alocados e a lista de nós intermediários atuando como regeneradores (`regeneratorNodes`).
 - **QoT Repository:** Guarda as métricas de qualidade de transmissão (`aseNoise`, `nliNoise`, `crosstalk`) calculadas no momento do *setup*.
 
 ### 2.3. `ControlPlane` (com.snets2.model.ControlPlane)
@@ -51,5 +51,5 @@ O orquestrador central do estado da rede.
 - **Camada de Validação Estrita:** Antes de qualquer mutação, o método `establishCircuit` valida:
     - **Continuidades e Contiguidade:** Verifica se o mesmo bloco contíguo de slots está livre no núcleo especificado em todos os enlaces do caminho.
     - **Integridade de Core:** Garante que os índices de núcleos solicitados existam nos respectivos enlaces.
-    - **Disponibilidade de Hardware:** Confirma se os nós de origem e destino possuem transceptores (Tx/Rx) livres no instante exato da alocação.
-- **Atomicidade:** As mudanças de estado só ocorrem se todas as validações acima passarem, evitando corrupção do estado da simulação por algoritmos defeituosos.
+    - **Disponibilidade de Hardware:** Confirma se os nós de origem e destino possuem transceptores (Tx/Rx) livres, e se os nós intermediários no trajeto possuem regeneradores disponíveis.
+- **Atomicidade:** As mudanças de estado só ocorrem se todas as validações acima passarem, consumindo os recursos de Tx, Rx e Regeneradores de forma atômica e evitando a corrupção do estado da simulação. Na desmontagem, o método `teardownCircuit` libera todos os slots, transceptores e regeneradores associados.

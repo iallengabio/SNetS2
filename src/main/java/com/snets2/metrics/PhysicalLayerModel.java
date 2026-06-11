@@ -3,6 +3,7 @@ package com.snets2.metrics;
 import com.snets2.config.PhysicalLayerConfig;
 import com.snets2.model.*;
 import com.snets2.rmsca.routing.Path;
+import java.util.List;
 
 /**
  * Mathematical engine for physical layer impairments (OSNR, NLI, ASE, Crosstalk).
@@ -190,5 +191,68 @@ public class PhysicalLayerModel {
         double iCh = pLinear / bandwidth;
 
         return iCh / Math.max(1E-30, totalNoiseDensity);
+    }
+
+    public static double predictSNR(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
+        List<Path> segments = getPathSegments(path, regenerators);
+        double minSnr = Double.MAX_VALUE;
+        for (Path segment : segments) {
+            double snr = predictSNR(cp, segment, coreId, startSlot, endSlot, mod, bitRate);
+            if (snr < minSnr) {
+                minSnr = snr;
+            }
+        }
+        return minSnr;
+    }
+
+    public static double predictSnrWithoutXt(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
+        List<Path> segments = getPathSegments(path, regenerators);
+        double minSnr = Double.MAX_VALUE;
+        for (Path segment : segments) {
+            double snr = predictSnrWithoutXt(cp, segment, coreId, startSlot, endSlot, mod, bitRate);
+            if (snr < minSnr) {
+                minSnr = snr;
+            }
+        }
+        return minSnr;
+    }
+
+    public static double predictXT(Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
+        List<Path> segments = getPathSegments(path, regenerators);
+        double maxXtDb = -Double.MAX_VALUE;
+        for (Path segment : segments) {
+            double xtDb = predictXT(segment, coreId, startSlot, endSlot);
+            if (xtDb > maxXtDb) {
+                maxXtDb = xtDb;
+            }
+        }
+        return maxXtDb;
+    }
+
+    private static List<Path> getPathSegments(Path path, List<Node> regenerators) {
+        List<Path> segments = new java.util.ArrayList<>();
+        if (regenerators == null || regenerators.isEmpty()) {
+            segments.add(path);
+            return segments;
+        }
+        
+        java.util.Set<String> regenIds = new java.util.HashSet<>();
+        for (Node n : regenerators) {
+            regenIds.add(n.getId());
+        }
+        
+        List<Link> currentSegment = new java.util.ArrayList<>();
+        for (Link link : path.links()) {
+            if (regenIds.contains(link.getSourceId()) && !currentSegment.isEmpty()) {
+                segments.add(new Path(currentSegment));
+                currentSegment = new java.util.ArrayList<>();
+            }
+            currentSegment.add(link);
+        }
+        if (!currentSegment.isEmpty()) {
+            segments.add(new Path(currentSegment));
+        }
+        
+        return segments;
     }
 }

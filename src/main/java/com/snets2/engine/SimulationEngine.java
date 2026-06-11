@@ -26,6 +26,7 @@ public class SimulationEngine {
     
     private int arrivalCounter;
     private final int maxArrivals;
+    private final int warmUpRequests;
     
     // Traffic parameters
     private final double lambda; // Arrival rate
@@ -43,13 +44,14 @@ public class SimulationEngine {
      * @param bitRates     List of bit rates and their weights.
      * @param seed         Random seed for reproducibility.
      */
-    public SimulationEngine(NetworkTopology topology, ControlPlane controlPlane, int maxArrivals, double load, 
+    public SimulationEngine(NetworkTopology topology, ControlPlane controlPlane, int maxArrivals, int warmUpRequests, double load, 
                             List<com.snets2.config.TrafficConfig.BitRateConfig> bitRates, long seed) {
         this.currentTime = 0;
         this.fel = new PriorityQueue<>();
         this.topology = topology;
         this.controlPlane = controlPlane;
         this.maxArrivals = maxArrivals;
+        this.warmUpRequests = warmUpRequests;
         this.arrivalCounter = 0;
         this.random = new RandomGenerator(seed);
         this.metricsManager = new MetricsManager();
@@ -117,7 +119,7 @@ public class SimulationEngine {
 
         // Final energy update at simulation end
         if (metricsManager.getConsumedEnergy() != null) {
-            metricsManager.getConsumedEnergy().update(currentTime);
+            metricsManager.getConsumedEnergy().update(currentTime, false);
         }
     }
 
@@ -141,6 +143,11 @@ public class SimulationEngine {
     
     /** @return The number of arrivals processed so far. */
     public int getArrivalCounter() { return arrivalCounter; }
+
+    /** @return true if the simulation is currently in the warm-up transient phase. */
+    public boolean isWarmUp() {
+        return arrivalCounter < warmUpRequests;
+    }
 
     /** Generates the next inter-arrival time. */
     public double nextArrivalTime() {

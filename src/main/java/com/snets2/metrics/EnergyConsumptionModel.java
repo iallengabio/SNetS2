@@ -10,7 +10,7 @@ import java.util.Map;
 public class EnergyConsumptionModel {
 
     /**
-     * Calculates the static power consumption of the entire network (OXCs and EDFAs).
+     * Calculates the static power consumption of the entire network (OXCs, EDFAs, and idle Regenerators).
      * 
      * @param topology The network topology.
      * @return Total static power in Watts.
@@ -27,18 +27,19 @@ public class EnergyConsumptionModel {
         for (Node node : topology.nodes()) {
             int n = nodeDegrees.getOrDefault(node.getId(), 0);
             int a = node.getTotalTx() + node.getTotalRx();
-            totalOXCPower += (n * 85.0) + (a * 100.0) + 150.0;
+            double regenStaticPower = node.getTotalRegenerators() * 80.0; // 80W static power per regenerator
+            totalOXCPower += (n * 85.0) + (a * 100.0) + regenStaticPower + 150.0;
         }
 
         return totalEDFAPower + totalOXCPower;
     }
 
     /**
-     * Calculates the dynamic power consumption of a specific circuit (BVTs).
+     * Calculates the dynamic power consumption of a specific circuit (BVTs + Regenerators).
      * 
      * @param circuit       The active circuit.
      * @param slotBandwidth The bandwidth of a single slot in Hz.
-     * @return Power consumed by the circuit's transponders in Watts.
+     * @return Power consumed by the circuit's transponders and active regenerators in Watts.
      */
     public static double calculateCircuitPower(Circuit circuit, double slotBandwidth) {
         // tr (Gbps) = (fs * log2(M)) / 1.0E+9
@@ -51,8 +52,9 @@ public class EnergyConsumptionModel {
         int numSlots = circuit.getEndSlot() - circuit.getStartSlot() + 1;
         double PCtran = (numSlots * PCofdm) + 91.333;
         
-        // Each circuit uses 2 transponders (Source Tx and Destination Rx)
-        return 2.0 * PCtran;
+        // Each circuit uses 2 transponders (Source Tx and Destination Rx) plus 2 transponders per regenerator
+        int numRegenerators = circuit.getRegeneratorNodes().size();
+        return 2.0 * (1 + numRegenerators) * PCtran;
     }
 
     private static Map<String, Integer> calculateNodeDegrees(NetworkTopology topology) {

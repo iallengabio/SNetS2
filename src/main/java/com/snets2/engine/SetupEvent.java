@@ -32,11 +32,13 @@ public class SetupEvent extends Event {
         // We record the quality of the circuit as it is being established.
         double snrLinear = com.snets2.metrics.PhysicalLayerModel.predictSNR(
             engine.getControlPlane(), new com.snets2.rmsca.routing.Path(circuit.getPath()), 
+            circuit.getRegeneratorNodes(),
             circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot(), 
             circuit.getModulation(), circuit.getBitRate());
         
         double xtDb = com.snets2.metrics.PhysicalLayerModel.predictXT(
             new com.snets2.rmsca.routing.Path(circuit.getPath()), 
+            circuit.getRegeneratorNodes(),
             circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot());
             
         int overlaps = com.snets2.metrics.PhysicalLayerModel.calculateTotalOverlaps(
@@ -48,20 +50,22 @@ public class SetupEvent extends Event {
             powerDbm = engine.getControlPlane().getPhysicalLayerConfig().power();
         }
 
-        engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
-            circuit.getSource().getId(), circuit.getDestination().getId(), 
-            10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
+        if (!engine.isWarmUp()) {
+            engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
+                circuit.getSource().getId(), circuit.getDestination().getId(), 
+                10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
 
-        engine.getMetricsManager().getExternalFragmentation().recordCircuitSetup(circuit);
-        engine.getMetricsManager().getModulationUtilization().recordCircuitSetup(circuit);
-        engine.getMetricsManager().getSpectrumSize().recordCircuitSetup(circuit);
+            engine.getMetricsManager().getExternalFragmentation().recordCircuitSetup(circuit);
+            engine.getMetricsManager().getModulationUtilization().recordCircuitSetup(circuit);
+            engine.getMetricsManager().getSpectrumSize().recordCircuitSetup(circuit);
+        }
 
         // --- COMMIT MUTATION ---
         engine.getControlPlane().establishCircuit(circuit);
 
         // 2. Update energy metrics (dynamic part)
         if (engine.getMetricsManager().getConsumedEnergy() != null) {
-            engine.getMetricsManager().getConsumedEnergy().update(time);
+            engine.getMetricsManager().getConsumedEnergy().update(time, engine.isWarmUp());
             double circuitPower = EnergyConsumptionModel.calculateCircuitPower(circuit, engine.getControlPlane().getSlotBandwidth());
             engine.getMetricsManager().getConsumedEnergy().addCircuitPower(circuitPower);
         }
