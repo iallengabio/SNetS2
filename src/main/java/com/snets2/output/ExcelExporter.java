@@ -27,9 +27,9 @@ public class ExcelExporter {
                 sortedRows.sort((r1, r2) -> {
                     int c = r1.getSubMetric().compareTo(r2.getSubMetric());
                     if (c != 0) return c;
-                    c = r1.getScenario().toString().compareTo(r2.getScenario().toString());
+                    c = compareMaps(r1.getScenario(), r2.getScenario());
                     if (c != 0) return c;
-                    return r1.getDimensions().toString().compareTo(r2.getDimensions().toString());
+                    return compareMaps(r1.getDimensions(), r2.getDimensions());
                 });
 
                 // --- 2. Prepare Header ---
@@ -91,5 +91,83 @@ public class ExcelExporter {
                 workbook.write(fileOut);
             }
         }
+    }
+
+    private static int compareMaps(Map<String, ?> m1, Map<String, ?> m2) {
+        if (m1 == m2) return 0;
+        if (m1 == null) return -1;
+        if (m2 == null) return 1;
+
+        // Compare by keys first, to ensure consistent ordering
+        Set<String> allKeys = new TreeSet<>(m1.keySet());
+        allKeys.addAll(m2.keySet());
+        
+        for (String key : allKeys) {
+            Object v1 = m1.get(key);
+            Object v2 = m2.get(key);
+            
+            if (v1 == null && v2 == null) continue;
+            if (v1 == null) return -1;
+            if (v2 == null) return 1;
+            
+            int c = compareObjects(v1, v2);
+            if (c != 0) return c;
+        }
+        return 0;
+    }
+
+    private static int compareObjects(Object o1, Object o2) {
+        if (o1 instanceof Number && o2 instanceof Number) {
+            return Double.compare(((Number) o1).doubleValue(), ((Number) o2).doubleValue());
+        }
+        return compareStringsNaturally(o1.toString(), o2.toString());
+    }
+
+    private static int compareStringsNaturally(String s1, String s2) {
+        try {
+            double d1 = Double.parseDouble(s1);
+            double d2 = Double.parseDouble(s2);
+            return Double.compare(d1, d2);
+        } catch (NumberFormatException e) {
+            // Proceed to natural alphanumeric chunk sorting
+        }
+
+        int i1 = 0, i2 = 0;
+        int len1 = s1.length();
+        int len2 = s2.length();
+        
+        while (i1 < len1 && i2 < len2) {
+            char c1 = s1.charAt(i1);
+            char c2 = s2.charAt(i2);
+            
+            if (Character.isDigit(c1) && Character.isDigit(c2)) {
+                StringBuilder num1 = new StringBuilder();
+                while (i1 < len1 && Character.isDigit(s1.charAt(i1))) {
+                    num1.append(s1.charAt(i1));
+                    i1++;
+                }
+                StringBuilder num2 = new StringBuilder();
+                while (i2 < len2 && Character.isDigit(s2.charAt(i2))) {
+                    num2.append(s2.charAt(i2));
+                    i2++;
+                }
+                
+                try {
+                    double n1 = Double.parseDouble(num1.toString());
+                    double n2 = Double.parseDouble(num2.toString());
+                    int cmp = Double.compare(n1, n2);
+                    if (cmp != 0) return cmp;
+                } catch (NumberFormatException e) {
+                    int cmp = num1.toString().compareTo(num2.toString());
+                    if (cmp != 0) return cmp;
+                }
+            } else {
+                int cmp = Character.compare(c1, c2);
+                if (cmp != 0) return cmp;
+                i1++;
+                i2++;
+            }
+        }
+        return Integer.compare(len1, len2);
     }
 }

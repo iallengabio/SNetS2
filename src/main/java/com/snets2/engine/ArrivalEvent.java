@@ -45,7 +45,7 @@ public class ArrivalEvent extends Event {
         }
 
         // 1. Record metric arrival
-        if (!engine.isWarmUp()) {
+        if (!engine.isWarmUp() && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
             engine.getMetricsManager().getBitRateBlocking().recordArrival(source.getId(), destination.getId(), bitRate);
         }
 

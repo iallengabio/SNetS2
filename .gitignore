@@ -43,4 +43,6 @@ docs/codebase_drift_report.md
 .DS_Store
 **/.DS_Store
 
+# Excel results
+*.xlsx
 

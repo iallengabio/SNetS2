@@ -213,6 +213,7 @@ public class ExperimentalPlanner {
             cp, 
             setup.simulation().requests(), 
             setup.simulation().warmUpRequests(),
+            setup.simulation().activeMetrics(),
             load, 
             setup.traffic().bitRates(),
             repId // Seed
