@@ -196,7 +196,8 @@
     "modulationSelection": "fixed",
     "activeMetrics": {
       "BlockingProbability": true,
-      "SpectrumUtilization": true
+      "SpectrumUtilization": true,
+      "SimulationMetadata": true
     }
   },
   "traffic": {
