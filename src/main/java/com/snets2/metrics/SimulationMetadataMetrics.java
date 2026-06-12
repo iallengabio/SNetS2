@@ -71,6 +71,14 @@ public class SimulationMetadataMetrics {
         return index > 0 ? history.get(index - 1).value : history.get(0).value;
     }
 
+    private Map<String, String> getDimensions(String metric, String bitrate, String timePercentage) {
+        Map<String, String> dims = new java.util.TreeMap<>();
+        dims.put("metric", metric);
+        dims.put("bitrate", bitrate);
+        dims.put("time_percentage", timePercentage);
+        return dims;
+    }
+
     /**
      * Populates the simulation results under the "SimulationMetadata" sheet.
      */
@@ -78,28 +86,31 @@ public class SimulationMetadataMetrics {
         String sheet = "SimulationMetadata";
 
         // 1. Total Simulated Time
-        result.addValue(sheet, "Total Simulated Time", Map.of("metric", "value"), scenario, repId, totalSimTime);
+        result.addValue(sheet, "Total Simulated Time", 
+                        getDimensions("Total Simulated Time", "N/A", "N/A"), scenario, repId, totalSimTime);
 
         // 2. Average Request Duration
         double avgDuration = requestCount == 0 ? 0.0 : totalDuration / requestCount;
-        result.addValue(sheet, "Average Request Duration", Map.of("bitrate", "all"), scenario, repId, avgDuration);
+        result.addValue(sheet, "Average Request Duration", 
+                        getDimensions("Average Request Duration", "all", "N/A"), scenario, repId, avgDuration);
 
         // 3. Average Request Duration per Bit Rate
         for (Double br : countPerBitRate.keySet()) {
             double avgBr = durationPerBitRate.get(br) / countPerBitRate.get(br);
             result.addValue(sheet, "Average Request Duration per Bit Rate", 
-                            Map.of("bitrate", String.format(java.util.Locale.US, "%.1f", br)), scenario, repId, avgBr);
+                            getDimensions("Average Request Duration per Bit Rate", String.format(java.util.Locale.US, "%.1f", br), "N/A"), scenario, repId, avgBr);
         }
 
         // 4. Average Active Requests
-        result.addValue(sheet, "Average Active Requests", Map.of("metric", "value"), scenario, repId, getAverageActiveRequests());
+        result.addValue(sheet, "Average Active Requests", 
+                        getDimensions("Average Active Requests", "N/A", "N/A"), scenario, repId, getAverageActiveRequests());
 
         // 5. Active Requests Over Time (sampled at 10% intervals)
         for (int i = 1; i <= 10; i++) {
             double targetTime = i * 0.1 * totalSimTime;
             int countAtTime = getActiveRequestsAtTime(targetTime);
             result.addValue(sheet, "Active Requests Over Time", 
-                            Map.of("time_percentage", (i * 10) + "%"), scenario, repId, (double) countAtTime);
+                            getDimensions("Active Requests Over Time", "N/A", (i * 10) + "%"), scenario, repId, (double) countAtTime);
         }
     }
 }
