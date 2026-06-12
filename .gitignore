@@ -46,3 +46,6 @@ docs/codebase_drift_report.md
 # Excel results
 *.xlsx
 
+# Temporary progress checkpoints
+*progress.json*
+

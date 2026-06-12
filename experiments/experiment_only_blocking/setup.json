@@ -204,7 +204,8 @@
       "TransmittersReceiversRegeneratorsUtilization": false,
       "ModulationUtilization": false,
       "ConsumedEnergy": false,
-      "CrosstalkStatistics": false
+      "CrosstalkStatistics": false,
+      "SimulationMetadata": false
     }
   },
   "traffic": {

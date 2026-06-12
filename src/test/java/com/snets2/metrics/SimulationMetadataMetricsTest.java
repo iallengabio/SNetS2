@@ -58,41 +58,49 @@ class SimulationMetadataMetricsTest {
         Map<String, SimulationResult.MetricRow> sheetRows = data.get("SimulationMetadata");
 
         // Verify total simulated time
-        String timeKey = scenario.toString() + "_Total Simulated Time_" + Map.of("metric", "value").toString();
+        String timeKey = scenario.toString() + "_Total Simulated Time_" + getExpectedDimensions("Total Simulated Time", "N/A", "N/A").toString();
         assertTrue(sheetRows.containsKey(timeKey));
         assertEquals(30.0, sheetRows.get(timeKey).getRepValues().get(0));
 
         // Verify average request duration: (10 + 20 + 30) / 3 = 20.0
-        String avgDurKey = scenario.toString() + "_Average Request Duration_" + Map.of("bitrate", "all").toString();
+        String avgDurKey = scenario.toString() + "_Average Request Duration_" + getExpectedDimensions("Average Request Duration", "all", "N/A").toString();
         assertTrue(sheetRows.containsKey(avgDurKey));
         assertEquals(20.0, sheetRows.get(avgDurKey).getRepValues().get(0));
 
         // Verify duration by bit rate: 100.0 has (10 + 20) / 2 = 15.0; 200.0 has 30.0
-        String avgDurBr100Key = scenario.toString() + "_Average Request Duration per Bit Rate_" + Map.of("bitrate", "100.0").toString();
-        String avgDurBr200Key = scenario.toString() + "_Average Request Duration per Bit Rate_" + Map.of("bitrate", "200.0").toString();
+        String avgDurBr100Key = scenario.toString() + "_Average Request Duration per Bit Rate_" + getExpectedDimensions("Average Request Duration per Bit Rate", "100.0", "N/A").toString();
+        String avgDurBr200Key = scenario.toString() + "_Average Request Duration per Bit Rate_" + getExpectedDimensions("Average Request Duration per Bit Rate", "200.0", "N/A").toString();
         assertTrue(sheetRows.containsKey(avgDurBr100Key));
         assertEquals(15.0, sheetRows.get(avgDurBr100Key).getRepValues().get(0));
         assertTrue(sheetRows.containsKey(avgDurBr200Key));
         assertEquals(30.0, sheetRows.get(avgDurBr200Key).getRepValues().get(0));
 
         // Verify average active requests: (1*10 + 2*10 + 1*10) / 30 = 40 / 30 = 1.3333333333333333
-        String avgActiveKey = scenario.toString() + "_Average Active Requests_" + Map.of("metric", "value").toString();
+        String avgActiveKey = scenario.toString() + "_Average Active Requests_" + getExpectedDimensions("Average Active Requests", "N/A", "N/A").toString();
         assertTrue(sheetRows.containsKey(avgActiveKey));
         assertEquals(40.0 / 30.0, sheetRows.get(avgActiveKey).getRepValues().get(0), 1E-9);
 
         // Verify active requests over time at 10% (t=3.0) -> index before t=3 is t=0 which had 0
-        String active10PercentKey = scenario.toString() + "_Active Requests Over Time_" + Map.of("time_percentage", "10%").toString();
+        String active10PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "10%").toString();
         assertTrue(sheetRows.containsKey(active10PercentKey));
         assertEquals(0.0, sheetRows.get(active10PercentKey).getRepValues().get(0));
 
         // Verify at 50% (t=15.0) -> index before t=15 is t=10 which had 1
-        String active50PercentKey = scenario.toString() + "_Active Requests Over Time_" + Map.of("time_percentage", "50%").toString();
+        String active50PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "50%").toString();
         assertTrue(sheetRows.containsKey(active50PercentKey));
         assertEquals(1.0, sheetRows.get(active50PercentKey).getRepValues().get(0));
 
         // Verify at 100% (t=30.0) -> t=30.0 has 1
-        String active100PercentKey = scenario.toString() + "_Active Requests Over Time_" + Map.of("time_percentage", "100%").toString();
+        String active100PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "100%").toString();
         assertTrue(sheetRows.containsKey(active100PercentKey));
         assertEquals(1.0, sheetRows.get(active100PercentKey).getRepValues().get(0));
+    }
+
+    private Map<String, String> getExpectedDimensions(String metric, String bitrate, String timePercentage) {
+        Map<String, String> dims = new java.util.TreeMap<>();
+        dims.put("metric", metric);
+        dims.put("bitrate", bitrate);
+        dims.put("time_percentage", timePercentage);
+        return dims;
     }
 }
