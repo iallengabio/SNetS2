@@ -702,7 +702,7 @@ public class MainGui {
     /**
      * Rounded container card with borders conforming to dashboard aesthetics.
      */
-    public static class CardPanel extends JPanel {
+    public static final class CardPanel extends JPanel {
         private static final long serialVersionUID = 1L;
         private final int radius = 12;
         private final Color borderCol = new Color(30, 41, 59);
@@ -731,7 +731,7 @@ public class MainGui {
     /**
      * Dashboard styled sidebar navigation button.
      */
-    public static class SidebarButton extends JButton {
+    public static final class SidebarButton extends JButton {
         private static final long serialVersionUID = 1L;
         private boolean active = false;
         private final Color activeBg = new Color(79, 70, 229); // Indigo background
