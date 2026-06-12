@@ -22,6 +22,10 @@ public class ResourceUtilizationObservationEvent extends Event {
 
         if (!engine.isWarmUp()) {
             // Perform time-weighted observations
+            if (engine.isActiveMetric("SimulationMetadata")) {
+                engine.getMetricsManager().getSimulationMetadata()
+                      .recordObservation(engine.getControlPlane(), time);
+            }
             if (engine.isActiveMetric("SpectrumUtilization")) {
                 engine.getMetricsManager().getResourceUtilization()
                       .recordObservation(engine.getControlPlane(), time);
@@ -40,6 +44,9 @@ public class ResourceUtilizationObservationEvent extends Event {
             }
         } else {
             // Keep lastObservationTime up to date to start window fresh at warm-up end
+            if (engine.isActiveMetric("SimulationMetadata")) {
+                engine.getMetricsManager().getSimulationMetadata().setLastObservationTime(time);
+            }
             if (engine.isActiveMetric("SpectrumUtilization")) {
                 engine.getMetricsManager().getResourceUtilization().setLastObservationTime(time);
             }

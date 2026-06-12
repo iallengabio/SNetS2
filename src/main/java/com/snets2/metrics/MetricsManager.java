@@ -19,6 +19,7 @@ public class MetricsManager {
     private final ModulationUtilizationMetrics modulationUtilization;
     private final SpectrumSizeMetrics spectrumSize;
     private final TransmittersReceiversRegeneratorsUtilizationMetrics transmittersReceiversRegeneratorsUtilization;
+    private final SimulationMetadataMetrics simulationMetadata;
 
     public MetricsManager() {
         this.bitRateBlocking = new BitRateBlockingMetrics();
@@ -29,6 +30,7 @@ public class MetricsManager {
         this.modulationUtilization = new ModulationUtilizationMetrics();
         this.spectrumSize = new SpectrumSizeMetrics();
         this.transmittersReceiversRegeneratorsUtilization = new TransmittersReceiversRegeneratorsUtilizationMetrics();
+        this.simulationMetadata = new SimulationMetadataMetrics();
     }
 
     /**
@@ -61,5 +63,9 @@ public class MetricsManager {
     public SpectrumSizeMetrics getSpectrumSize() { return spectrumSize; }
     public TransmittersReceiversRegeneratorsUtilizationMetrics getTransmittersReceiversRegeneratorsUtilization() {
         return transmittersReceiversRegeneratorsUtilization;
+    }
+
+    public SimulationMetadataMetrics getSimulationMetadata() {
+        return simulationMetadata;
     }
 }

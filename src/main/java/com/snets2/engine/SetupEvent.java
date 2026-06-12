@@ -82,6 +82,10 @@ public class SetupEvent extends Event {
         double holdTime = engine.nextHoldTime();
         engine.schedule(new DepartureEvent(time + holdTime, circuitId));
 
+        if (!engine.isWarmUp() && engine.isActiveMetric("SimulationMetadata")) {
+            engine.getMetricsManager().getSimulationMetadata().recordRequestDuration(holdTime, circuit.getBitRate());
+        }
+
         // 4. Trigger observation following the organizational pattern
         engine.schedule(new ResourceUtilizationObservationEvent(time));
     }

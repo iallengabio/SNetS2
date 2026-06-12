@@ -250,6 +250,10 @@ public class ExperimentalPlanner {
         engine.getMetricsManager().getSpectrumSize().fillResults(repResult, scenarioMap, repId);
         engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().fillResults(repResult, scenarioMap, repId);
         
+        if (engine.isActiveMetric("SimulationMetadata")) {
+            engine.getMetricsManager().getSimulationMetadata().fillResults(repResult, scenarioMap, repId, engine.getCurrentTime());
+        }
+        
         if (engine.getMetricsManager().getConsumedEnergy() != null) {
             engine.getMetricsManager().getConsumedEnergy().fillResults(repResult, scenarioMap, repId, engine.getCurrentTime());
         }
