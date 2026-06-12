@@ -35,14 +35,14 @@ class SimulationLifecycleTest {
             // Very simple routing: if N1 to N3, use both links
             if (source.getId().equals("N1") && destination.getId().equals("N3")) {
                 if (core12.getSpectrum().isRangeFree(0, 4) && core23.getSpectrum().isRangeFree(0, 4)) {
-                    return new AllocationSolution(source, destination, List.of(link12, link23), List.of(0, 0), 0, 4, mod, bitRate);
+                    return new AllocationResult(source, destination, List.of(link12, link23), List.of(0, 0), 0, 4, mod, bitRate);
                 }
             } else if (source.getId().equals("N1") && destination.getId().equals("N2")) {
                 if (core12.getSpectrum().isRangeFree(0, 4)) {
-                    return new AllocationSolution(source, destination, List.of(link12), List.of(0), 0, 4, mod, bitRate);
+                    return new AllocationResult(source, destination, List.of(link12), List.of(0), 0, 4, mod, bitRate);
                 }
             }
-            return null;
+            return new AllocationResult(source, destination, bitRate, com.snets2.metrics.BlockingCause.OTHER);
         };
 
         // 3. Init Control Plane and Engine

@@ -22,9 +22,9 @@ class ConditionalMetricsTest {
 
         IRMSCA mockRmsca = (cp, source, destination, bitRate) -> {
             if (core.getSpectrum().isRangeFree(0, 4)) {
-                return new AllocationSolution(source, destination, List.of(link), List.of(0), 0, 4, mod, bitRate);
+                return new AllocationResult(source, destination, List.of(link), List.of(0), 0, 4, mod, bitRate);
             }
-            return null;
+            return new AllocationResult(source, destination, bitRate, com.snets2.metrics.BlockingCause.OTHER);
         };
 
         ControlPlane cp = new ControlPlane(topology, mockRmsca, 12.5E9, 1, null);

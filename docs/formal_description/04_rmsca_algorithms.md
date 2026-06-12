@@ -19,7 +19,7 @@ Para garantir a interoperabilidade, cada tipo de algoritmo deve implementar uma 
 *   **`ICoreAssignment`**: Recebe um caminho e retorna o índice do núcleo (`Core`) a ser utilizado.
 *   **`IModulationSelection`**: Recebe um caminho e requisitos de banda, retornando o formato de modulação e o número de slots necessários.
 *   **`ISpectrumAssignment`**: Recebe o caminho, o núcleo e a quantidade de slots, retornando os índices de início/fim dos slots (`SpectrumInterval`).
-*   **`IIntegratedRMSCA`**: Interface única que recebe a requisição completa e retorna um objeto `AllocationSolution` (ou nulo em caso de bloqueio).
+*   **`IRMSCA`**: Interface única que recebe a requisição completa e retorna um objeto `AllocationResult` (indicando o sucesso da alocação ou contendo os detalhes do bloqueio).
 
 ---
 

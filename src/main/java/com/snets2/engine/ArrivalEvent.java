@@ -2,7 +2,7 @@ package com.snets2.engine;
 
 import com.snets2.SimulationConstants;
 import com.snets2.metrics.BlockingCause;
-import com.snets2.model.AllocationSolution;
+import com.snets2.model.AllocationResult;
 import com.snets2.model.Node;
 import java.util.List;
 
@@ -65,15 +65,15 @@ public class ArrivalEvent extends Event {
         engine.schedule(new ArrivalEvent(nextTime, nextSrc, nextDest, nextBitRate));
 
         // 4. Request allocation from Control Plane / RMSCA (now accessed via ControlPlane)
-        AllocationSolution solution = engine.getControlPlane().getRmsca().allocate(engine.getControlPlane(), source, destination, bitRate);
+        AllocationResult result = engine.getControlPlane().getRmsca().allocate(engine.getControlPlane(), source, destination, bitRate);
 
-        if (solution != null) {
+        if (!result.isBlocked()) {
             // Success: Schedule immediate SetupEvent
-            engine.schedule(new SetupEvent(time, solution));
+            engine.schedule(new SetupEvent(time, result));
         } else {
             // Failure: Schedule immediate BlockEvent with exact cause
-            BlockingCause cause = engine.getControlPlane().getLastBlockingCause();
-            Integer coreId = engine.getControlPlane().getLastBlockingCoreId();
+            BlockingCause cause = result.blockingCause();
+            Integer coreId = result.blockingCoreId();
             engine.schedule(new BlockEvent(time, source, destination, bitRate, cause, coreId));
         }
     }

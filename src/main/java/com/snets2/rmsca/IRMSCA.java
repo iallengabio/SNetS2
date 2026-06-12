@@ -1,6 +1,6 @@
 package com.snets2.rmsca;
 
-import com.snets2.model.AllocationSolution;
+import com.snets2.model.AllocationResult;
 import com.snets2.model.ControlPlane;
 import com.snets2.model.Node;
 
@@ -15,7 +15,7 @@ public interface IRMSCA {
      * @param source      The source node of the request.
      * @param destination The destination node of the request.
      * @param bitRate     The requested bit rate in Gbps.
-     * @return An {@link AllocationSolution} if resources are available, null otherwise.
+     * @return An {@link AllocationResult} indicating success or containing details about the block.
      */
-    AllocationSolution allocate(ControlPlane cp, Node source, Node destination, double bitRate);
+    AllocationResult allocate(ControlPlane cp, Node source, Node destination, double bitRate);
 }

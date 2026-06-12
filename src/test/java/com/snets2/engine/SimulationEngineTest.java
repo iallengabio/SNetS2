@@ -1,6 +1,6 @@
 package com.snets2.engine;
 
-import com.snets2.model.AllocationSolution;
+import com.snets2.model.AllocationResult;
 import com.snets2.model.ControlPlane;
 import com.snets2.model.Core;
 import com.snets2.model.Link;
@@ -30,9 +30,9 @@ class SimulationEngineTest {
         // 2. Mock RMSCA: Always allocates 10 slots on the only core/link
         IRMSCA mockRmsca = (controlPlane, source, destination, bitRate) -> {
             if (core.getSpectrum().isRangeFree(0, 9)) {
-                return new AllocationSolution(source, destination, List.of(link), List.of(0), 0, 9, m1, bitRate);
+                return new AllocationResult(source, destination, List.of(link), List.of(0), 0, 9, m1, bitRate);
             }
-            return null;
+            return new AllocationResult(source, destination, bitRate, com.snets2.metrics.BlockingCause.OTHER);
         };
 
         // 3. Initialize Control Plane (with RMSCA and slotBandwidth)
