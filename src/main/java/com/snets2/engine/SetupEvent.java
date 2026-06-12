@@ -2,18 +2,18 @@ package com.snets2.engine;
 
 import com.snets2.SimulationConstants;
 import com.snets2.metrics.EnergyConsumptionModel;
-import com.snets2.model.AllocationSolution;
+import com.snets2.model.AllocationResult;
 import com.snets2.model.Circuit;
 
 /**
  * Executes the actual establishment of a lightpath in the network.
  */
 public class SetupEvent extends Event {
-    private final AllocationSolution solution;
+    private final AllocationResult result;
 
-    public SetupEvent(double time, AllocationSolution solution) {
+    public SetupEvent(double time, AllocationResult result) {
         super(time);
-        this.solution = solution;
+        this.result = result;
     }
 
     @Override
@@ -25,7 +25,7 @@ public class SetupEvent extends Event {
         String circuitId = "c_" + engine.getArrivalCounter();
 
         // 1. Commit state mutation in the Control Plane
-        Circuit circuit = solution.toCircuit(circuitId);
+        Circuit circuit = result.toCircuit(circuitId);
         
         // --- PRE-ESTABLISHMENT STATS (to capture state before mutation) ---
         // Note: predictSNR/predictXT work on the current cache state.

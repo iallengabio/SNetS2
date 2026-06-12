@@ -43,4 +43,22 @@ Esta classe implementa a interface `IRMSCA` e atua como um coordenador sequencia
 3.  **Modulation:** Invoca `IModulationSelection`.
 4.  **Core:** Invoca `ICoreAssignment`.
 5.  **Spectrum:** Invoca `ISpectrumAssignment`.
-6.  **Solution:** Retorna um objeto `AllocationSolution` contendo todos os detalhes técnicos da proposta de alocação.
+6.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).
+
+---
+
+## 3. Resultado de Alocação (`AllocationResult`)
+
+O objeto `AllocationResult` encapsula o resultado de uma tentativa de alocação efetuada pelo algoritmo RMSCA. Diferente da abordagem anterior (onde a falha retornava `null` e a causa era armazenada de forma transiente no Plano de Controle), o RMSCA agora retorna sempre uma instância de `AllocationResult` que descreve deterministicamente o sucesso ou o bloqueio.
+
+### 3.1. Campos e Estrutura
+- **`source` / `destination` / `bitRate`:** Informações originais da requisição de conexão.
+- **`isBlocked`:** Flag indicando se a requisição foi bloqueada (`true`) ou estabelecida com sucesso (`false`).
+- **`blockingCause`:** Instância de `BlockingCause` contendo a causa raiz do bloqueio (ex: `LACK_OF_TRANSMITTERS`, `NO_PATH`, `FRAGMENTATION`, `CROSSTALK`, etc.).
+- **`blockingCoreId`:** Índice do núcleo onde ocorreu a falha espectral ou física (se aplicável, caso contrário `null`).
+- **`path` / `coreIndices` / `startSlot` / `endSlot` / `modulation` / `regeneratorNodes`:** Parâmetros técnicos da alocação (válidos apenas se `isBlocked` for `false`).
+
+### 3.2. Interações e Ciclo de Vida
+1. **Geração:** O algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) decide os parâmetros de alocação ou identifica o gargalo físico, instanciando `AllocationResult` através de seus construtores dedicados.
+2. **Processamento no Evento de Chegada (`ArrivalEvent`):** O evento analisa `result.isBlocked()`. Se bem-sucedido, agenda um `SetupEvent` passando o resultado. Se bloqueado, extrai a causa e o núcleo de falha diretamente do `AllocationResult` e agenda um `BlockEvent`.
+3. **Conversão para Circuito (`Circuit`):** O `SetupEvent` invoca `result.toCircuit(id)`, que valida o estado de sucesso e retorna um novo `Circuit` pronto para ser estabelecido no Plano de Controle.

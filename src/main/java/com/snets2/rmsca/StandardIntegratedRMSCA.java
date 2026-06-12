@@ -32,30 +32,27 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     public void setRegeneratorAssignment(com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment) { this.regeneratorAssignment = regeneratorAssignment; }
 
     @Override
-    public AllocationSolution allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
+    public AllocationResult allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
         if (routing == null || coreAssignment == null || spectrumAssignment == null) {
             throw new IllegalStateException("StandardIntegratedRMSCA sub-algorithms not properly initialized.");
         }
 
-        // Default blocking cause
-        cp.setLastBlockingCause(BlockingCause.OTHER);
-        cp.setLastBlockingCoreId(null);
+        // Default blocking cause tracked locally
+        BlockingCause currentCause = BlockingCause.OTHER;
+        Integer currentCoreId = null;
 
         // 1. Hardware check
         if (!source.hasAvailableTx()) {
-            cp.setLastBlockingCause(BlockingCause.LACK_OF_TRANSMITTERS);
-            return null;
+            return new AllocationResult(source, destination, bitRate, BlockingCause.LACK_OF_TRANSMITTERS);
         }
         if (!destination.hasAvailableRx()) {
-            cp.setLastBlockingCause(BlockingCause.LACK_OF_RECEIVERS);
-            return null;
+            return new AllocationResult(source, destination, bitRate, BlockingCause.LACK_OF_RECEIVERS);
         }
 
         // 2. Routing
         List<Path> candidatePaths = routing.findPaths(cp, source, destination);
         if (candidatePaths.isEmpty()) {
-            cp.setLastBlockingCause(BlockingCause.NO_PATH);
-            return null;
+            return new AllocationResult(source, destination, bitRate, BlockingCause.NO_PATH);
         }
 
         PhysicalLayerConfig physConfig = cp.getPhysicalLayerConfig();
@@ -118,7 +115,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                                         for (int i = 0; i < path.links().size(); i++) {
                                             coreIndices.add(coreId);
                                         }
-                                        return new AllocationSolution(
+                                        return new AllocationResult(
                                             source, destination, path.links(), coreIndices, 
                                             slots.start(), slots.end(), mod, bitRate, regens
                                         );
@@ -130,13 +127,13 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                             if (physConfig.activeXT()) {
                                 double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
                                 if (snrNoXt >= mod.getSnrThresholdLinear()) {
-                                    cp.setLastBlockingCause(BlockingCause.CROSSTALK);
-                                    cp.setLastBlockingCoreId(coreId);
+                                    currentCause = BlockingCause.CROSSTALK;
+                                    currentCoreId = coreId;
                                     continue;
                                 }
                             }
-                            cp.setLastBlockingCause(BlockingCause.QOT_NEW);
-                            cp.setLastBlockingCoreId(coreId);
+                            currentCause = BlockingCause.QOT_NEW;
+                            currentCoreId = coreId;
                             continue; // Try next core or modulation
                         }
                     }
@@ -153,7 +150,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                             );
                             if (activeSnr < activeCircuit.getModulation().getSnrThresholdLinear()) {
                                 otherQotOk = false;
-                                cp.setLastBlockingCause(BlockingCause.QOT_OTHERS);
+                                currentCause = BlockingCause.QOT_OTHERS;
                                 if (physConfig.activeXTForOther()) {
                                     double activeSnrNoXt = PhysicalLayerModel.predictSnrWithoutXt(
                                         cp, new Path(activeCircuit.getPath()), activeCircuit.getRegeneratorNodes(),
@@ -161,7 +158,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                                         activeCircuit.getModulation(), activeCircuit.getBitRate()
                                     );
                                     if (activeSnrNoXt >= activeCircuit.getModulation().getSnrThresholdLinear()) {
-                                        cp.setLastBlockingCause(BlockingCause.XT_OTHERS);
+                                        currentCause = BlockingCause.XT_OTHERS;
                                     }
                                 }
                                 break;
@@ -171,7 +168,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                     }
 
                     if (!otherQotOk) {
-                        cp.setLastBlockingCoreId(coreId);
+                        currentCoreId = coreId;
                         continue; // Try next core or modulation
                     }
 
@@ -181,7 +178,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                         coreIndices.add(coreId);
                     }
 
-                    return new AllocationSolution(
+                    return new AllocationResult(
                         source, destination, path.links(), coreIndices, 
                         slots.start(), slots.end(), mod, bitRate, regens
                     );
@@ -191,13 +188,13 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
         // Set failure cause if not already set specifically by QoT
         if (!foundPathAndMod) {
-            cp.setLastBlockingCause(BlockingCause.NO_PATH);
+            currentCause = BlockingCause.NO_PATH;
         } else if (!foundFreeSlots) {
-            cp.setLastBlockingCause(BlockingCause.FRAGMENTATION);
-            cp.setLastBlockingCoreId(lastAttemptedCore);
+            currentCause = BlockingCause.FRAGMENTATION;
+            currentCoreId = lastAttemptedCore;
         }
 
-        return null;
+        return new AllocationResult(source, destination, bitRate, currentCause, currentCoreId);
     }
 
     private void applyTemporaryNoise(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens) {
