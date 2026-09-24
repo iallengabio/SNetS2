@@ -19,6 +19,7 @@ Este diretório contém o detalhamento técnico minucioso de cada componente do 
 5.  **[Metrics System](05_metrics_system.md)**: Detalhes sobre a coleta de dados, eventos de observação ponderados pelo tempo e formatação de saída.
 6.  **[Physical Layer Architecture](06_physical_layer_architecture.md)**: Estratégia de otimização via Incremental State Caching para OSNR e Crosstalk.
 7.  **[Multithreading and Checkpointing](07_multithreading_and_checkpointing.md)**: Detalhes sobre execução concorrente de replicações e persistência de progresso incremental.
+8.  **[Build and Packaging](08_build_and_packaging.md)**: Configuração de build Maven, plugin shade, geração de fat JAR e scripts de automação.
 
 ---
 *Este conjunto de documentos visa viabilizar um desenvolvimento agentico saudável e garantir a manutenibilidade a longo prazo do simulador.*

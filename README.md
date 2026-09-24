@@ -54,25 +54,39 @@ SNetS2 is a high-performance, modular Discrete Event Simulator (DES) designed sp
 
 ### Installation & Build
 
-Compile the project and run all unit tests:
+Build the project and produce the standalone executable Fat JAR (`target/SNetS2-1.0-SNAPSHOT.jar`):
 
 ```bash
-mvn clean install
+./build.sh
 ```
 
-### Running Simulations
+Or using Maven directly:
 
-You can run experiments using the custom runner script or directly invoking Maven:
+```bash
+mvn clean package
+```
 
+*(To run tests during installation, you can also run `mvn clean install`)*.
+
+### Running Simulations & GUI
+
+#### 1. Running the Executable JAR
+- **Graphical User Interface (GUI):**
+  ```bash
+  java -jar target/SNetS2-1.0-SNAPSHOT.jar
+  ```
+- **CLI Simulation:**
+  ```bash
+  java -jar target/SNetS2-1.0-SNAPSHOT.jar experiments/experiment01 [threads]
+  ```
+
+#### 2. Running via Script or Maven Exec
+```bash
+./run_sim.sh
+```
+or:
 ```bash
 mvn exec:java -Dexec.mainClass="com.snets2.MainRunner" -Dexec.args="experiments/experiment01"
-```
-
-Alternatively, use the provided wrapper script:
-
-```bash
-chmod +x run_sim.sh
-./run_sim.sh
 ```
 
 ---
