@@ -15,6 +15,7 @@ public class Core {
     private final Spectrum spectrum;
     private final double[] nliNoiseCache;
     private final double[] xtNoiseCache;
+    private double totalLaunchPower; // W, sum over active circuits in this core
 
     /**
      * Constructs a Core with its spatial and spectral properties.
@@ -59,6 +60,29 @@ public class Core {
     public void removeXtNoise(int slot, double noise) {
         xtNoiseCache[slot] -= noise;
         if (xtNoiseCache[slot] < 0) xtNoiseCache[slot] = 0;
+    }
+
+    /**
+     * Adds a circuit's launch power (W) to the total optical power carried by this core.
+     * Used by the saturated-gain amplifier model.
+     */
+    public void addLaunchPower(double powerWatts) {
+        totalLaunchPower += powerWatts;
+    }
+
+    /**
+     * Removes a circuit's launch power (W) from the total optical power carried by this core.
+     */
+    public void removeLaunchPower(double powerWatts) {
+        totalLaunchPower -= powerWatts;
+        if (totalLaunchPower < 0) totalLaunchPower = 0;
+    }
+
+    /**
+     * @return Sum of the launch powers (W) of the circuits currently carried by this core.
+     */
+    public double getTotalLaunchPower() {
+        return totalLaunchPower;
     }
 
     /**

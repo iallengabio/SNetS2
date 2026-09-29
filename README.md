@@ -16,6 +16,17 @@ SNetS2 is a high-performance, modular Discrete Event Simulator (DES) designed sp
 
 ---
 
+## 🧬 Lineage: SNetS v1
+
+SNetS2 is a rewrite of **SNetS v1**, whose latest version is the SBRC 2026 artifact
+[alexandrefontinele/SNetS-SDM-SBRC26](https://github.com/alexandrefontinele/SNetS-SDM-SBRC26).
+SNetS2 inherits from it the `physicalLayer` configuration keys and the physical layer models (amplifier chain, gain
+saturation and noise factor model, ROADM insertion loss, fixed/variable power spectral density, inter-core crosstalk),
+adapted to an incremental noise cache. Deviations from v1 and the v1 keys that were dropped are documented in
+[docs/formal_description/07_physical_layer_models.md](docs/formal_description/07_physical_layer_models.md).
+
+---
+
 ## 🛠️ Technical Stack
 
 * **Language**: Java 25 (utilizing modern language features).

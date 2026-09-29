@@ -152,8 +152,6 @@
     ]
   },
   "physicalLayer": {
-    "physicalLayerModel": 0,
-    "crosstalkModel": 0,
     "activeQoT": true,
     "activeQoTForOther": true,
     "activeASE": true,
@@ -161,7 +159,6 @@
     "activeXT": true,
     "activeXTForOther": true,
     "rateOfFEC": 0.25,
-    "typeOfTestQoT": 0,
     "power": 0.0,
     "spanLength": 80.0,
     "fiberLoss": 0.2,

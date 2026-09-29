@@ -22,8 +22,8 @@ Conecta dois nós `Node` na malha física.
 
 ### 1.4. `Amplifier` (com.snets2.model.Amplifier)
 Modela amplificadores ópticos (ex: EDFA) ao longo dos enlaces.
-- **Parâmetros:** `gain` (dB), `noiseFigure` (dB), e consumo de potência.
-- **Papel:** Utilizado para calcular o ruído **ASE (Amplified Spontaneous Emission)** acumulado e o consumo energético da rede.
+- **Parâmetros:** `gain` (dB, `fiberLoss × spanLength`), `noiseFigure` (dB, `noiseFigureOfOpticalAmplifier`), consumo de potência e `saturatedOutputPower` (dBm, `powerSaturationOfOpticalAmplifier`), preenchidos pelo `TopologyMapper` a partir da config.
+- **Papel:** A lista de `Amplifier`s do enlace é usada no consumo energético. O ruído **ASE** é calculado pelo `PhysicalLayerModel` a partir da cadeia booster + linha + pré-amplificador descrita em [07_physical_layer_models.md](../formal_description/07_physical_layer_models.md#3-ruído-ase-i_ase).
 
 ### 1.5. `Node` (com.snets2.model.Node)
 Representa um ROADM óptico.

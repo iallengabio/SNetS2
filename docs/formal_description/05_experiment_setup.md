@@ -44,8 +44,6 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
 
 ```json
 "physicalLayer": {
-  "physicalLayerModel": 0,
-  "crosstalkModel": 0,
   "activeQoT": true,
   "activeQoTForOther": true,
   "activeASE": true,
@@ -53,7 +51,6 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
   "activeXT": true,
   "activeXTForOther": true,
   "rateOfFEC": 0.25,
-  "typeOfTestQoT": 0,
   "power": 0.0,
   "spanLength": 80.0,
   "fiberLoss": 0.2,
@@ -80,6 +77,15 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
 }
 ```
 * **Parâmetros Baseados em Componentes:** Perdas de fibra, não-linearidades, dispersão e parâmetros dos amplificadores ópticos.
+* **Amplificadores e ROADM** (equações em [07_physical_layer_models.md](07_physical_layer_models.md), Seção 3):
+  * `typeOfAmplifierGain`: `0` = ganho fixo ($G = G_0$); `1` = ganho saturado pela potência total do núcleo. Outros valores são rejeitados.
+  * `powerSaturationOfOpticalAmplifier`: potência de saturação $P_{sat}$ (dBm). Usada apenas com ganho saturado.
+  * `noiseFactorModelParameterA1` / `noiseFactorModelParameterA2`: parâmetros $A_1$ (adimensional) e $A_2$ (W) do fator de ruído $F = NF(1 + A_1 - A_1/(1 + P_{in}/A_2))$. Usados apenas com ganho saturado.
+  * `switchInsertionLoss`: perda de inserção (dB) de cada elemento do ROADM; o booster compensa demux + switch + mux ($G_0 = 3 L_{sss}$).
+* **Potência de lançamento** (Seção 2 do mesmo documento):
+  * `fixedPowerSpectralDensity`: `false` = todo circuito é lançado com `power`; `true` = todo circuito mantém a PSD `power / referenceBandwidthForPowerSpectralDensity`, e sua potência passa a ser proporcional à sua largura de banda efetiva.
+  * `referenceBandwidthForPowerSpectralDensity`: largura de banda de referência $B_{ref}$ (Hz). Deve ser > 0 quando a PSD é fixa.
+* **Chaves do SNetS v1 não suportadas:** `physicalLayerModel`, `crosstalkModel` e `typeOfTestQoT` foram removidas (ver Seção 7 de [07_physical_layer_models.md](07_physical_layer_models.md)); um `setup.json` que as contenha é rejeitado pelo parser.
 * **Parâmetros MC-EON / XT:** `propagationConstant`, `bendingRadius`, `couplingCoefficient`, `corePitch` são os coeficientes necessários para o cálculo matemático do Crosstalk estatístico entre núcleos.
 * **Granularidade e Transceptores:** `guardBand` (número de slots vazios para evitar interferência adjacente) e `bvtSpectralWidth` (amplitude espectral ocupada por um slot do Bandwidth Variable Transceiver).
 

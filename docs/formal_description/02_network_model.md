@@ -37,7 +37,7 @@ Conexão física entre dois nós.
 Geralmente amplificadores de fibra dopada com érbio (EDFA).
 *   **Função:** Compensar a atenuação da fibra ao longo do enlace.
 *   **Impacto Físico:** Embora restaurem a potência, os amplificadores inserem ruído de emissão espontânea amplificada (**ASE Noise**), que degrada a relação sinal-ruído óptica (OSNR).
-*   **Modelagem:** O simulador considera o ganho e o fator de ruído (*Noise Figure*) de cada amplificador para o cálculo de QoT.
+*   **Modelagem:** Cada enlace tem um booster (compensa as perdas do ROADM, `switchInsertionLoss`), amplificadores de linha (um por vão) e um pré-amplificador. O ganho pode ser fixo ou saturado pela carga do núcleo (`typeOfAmplifierGain`), com fator de ruído dependente da potência de entrada. Ver [07_physical_layer_models.md](07_physical_layer_models.md), Seção 3.
 
 ### 2.6. Núcleo (Core)
 A unidade de divisão espacial dentro de uma fibra multicore.
