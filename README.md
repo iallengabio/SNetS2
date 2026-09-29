@@ -97,3 +97,4 @@ Refer to the `docs/` directory for mathematical models, algorithms, and design s
 * [Formal Description of Metrics](docs/formal_description/06_output_metrics.md)
 * [Metrics System Implementation Plan](docs/implementation/05_metrics_system.md)
 * [Project Development Roadmap & Status](docs/development_status.md)
+* [Technical Review: documentation, code review and verification plan](docs/review/README.md)
