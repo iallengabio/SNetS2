@@ -37,6 +37,7 @@ Define os elementos estruturais da rede, capacidades de roteamento e a geometria
 * **links:** Fibras bidirecionais (ou unidirecionais dependendo da modelagem interna, a definir) conectando os nós, com o comprimento (`length`) tipicamente em quilômetros.
 * **cores:** A representação geométrica dos núcleos dentro da fibra. Em vez de forçar um modelo espacial estático, a lista de `adjacentCores` permite representar qualquer disposição (linear, anelar, hexagonal, etc.), sendo crucial para o cálculo de Crosstalk (XT).
 * **modulations:** Lista de formatos de modulação disponíveis. Cada item define o nome, o alcance máximo estimado (`maxRange`), a ordem da modulação (`M`), o limiar de SNR (SNR) e a tolerância a Crosstalk (`XT`).
+  * **`maxRange` (km):** alcance transparente usado pela seleção de modulação por distância. Nos experimentos do repositório ele é **derivado do modelo físico**, com o mesmo FEC dos limiares de SNR, por `scripts/compute_reach.sh <setup.json>`. A carga de referência é um enlace com o núcleo cheio de canais iguais (XCI dos vizinhos incluído), e a taxa de referência é o pior caso entre as de `traffic.bitRates`. Resultado: 4QAM 5110, 8QAM 3270, 16QAM 2000, 32QAM 400 e 64QAM 160 km. Procedimento e tabela completa em [07_physical_layer_models.md](07_physical_layer_models.md), §6.2. **Recalcule-o** ao mudar a potência, o FEC, a grade, os amplificadores, as taxas ou os limiares.
 
 ---
 
@@ -60,7 +61,7 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
   "centerFrequency": 1.9385E14,
   "constantOfPlanck": 6.626E-34,
   "noiseFigureOfOpticalAmplifier": 5.0,
-  "powerSaturationOfOpticalAmplifier": 16.0,
+  "powerSaturationOfOpticalAmplifier": 23.0,
   "noiseFactorModelParameterA1": 100.0,
   "noiseFactorModelParameterA2": 4.0,
   "typeOfAmplifierGain": 0,
@@ -80,8 +81,8 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
 * **Parâmetros Baseados em Componentes:** Perdas de fibra, não-linearidades, dispersão e parâmetros dos amplificadores ópticos.
 * **Amplificadores e ROADM** (equações em [07_physical_layer_models.md](07_physical_layer_models.md), Seção 3):
   * `typeOfAmplifierGain`: `0` = ganho fixo ($G = G_0$); `1` = ganho saturado pela potência total do núcleo. Outros valores são rejeitados.
-  * `powerSaturationOfOpticalAmplifier`: potência de saturação $P_{sat}$ (dBm). Usada apenas com ganho saturado.
-  * `noiseFactorModelParameterA1` / `noiseFactorModelParameterA2`: parâmetros $A_1$ (adimensional) e $A_2$ (W) do fator de ruído $F = NF(1 + A_1 - A_1/(1 + P_{in}/A_2))$. Usados apenas com ganho saturado.
+  * `powerSaturationOfOpticalAmplifier`: potência de saturação **de saída** $P_{sat}$ (dBm), em que o ganho cai 3 dB. A carga considerada é a potência total do núcleo (soma dos circuitos que atravessam o amplificador). Usada apenas com ganho saturado. **Valor dos experimentos: 23 dBm** (antes 16 dBm). EDFAs de linha comerciais para a banda C têm potência de saída total de ~20–23 dBm. Na grade de 320 slots, um núcleo cheio de canais de 0 dBm soma de 12 a 22 dBm e, com 16 dBm, 40 canais já estariam no ponto de 3 dB. Justificativa em [07_physical_layer_models.md](07_physical_layer_models.md), §3.3.
+  * `noiseFactorModelParameterA1` / `noiseFactorModelParameterA2`: parâmetros $A_1$ (adimensional) e $A_2$ (W) do fator de ruído $F = NF(1 + A_1 - A_1/(1 + P_{in}/A_2))$. Usados apenas com ganho saturado. A unidade W de $A_2$ segue o SNetS v1 e **não foi confirmada** no artigo de Pereira et al. (2009) (ver §3.3 do documento 07).
   * `switchInsertionLoss`: perda de inserção (dB) de cada elemento do ROADM; o booster compensa demux + switch + mux ($G_0 = 3 L_{sss}$).
 * **Potência de lançamento** (Seção 2 do mesmo documento):
   * `fixedPowerSpectralDensity`: `false` = todo circuito é lançado com `power`; `true` = todo circuito mantém a PSD `power / referenceBandwidthForPowerSpectralDensity`, e sua potência passa a ser proporcional à sua largura de banda de sinal (sem banda de guarda).

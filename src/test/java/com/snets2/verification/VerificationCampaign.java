@@ -168,7 +168,7 @@ public final class VerificationCampaign {
         p.put("spanLength", 80.0); p.put("fiberLoss", 0.2);
         p.put("fiberNonlinearity", 0.0013); p.put("fiberDispersion", 1.6E-5);
         p.put("centerFrequency", 1.9385E14); p.put("constantOfPlanck", 6.626E-34);
-        p.put("noiseFigureOfOpticalAmplifier", 5.0); p.put("powerSaturationOfOpticalAmplifier", 16.0);
+        p.put("noiseFigureOfOpticalAmplifier", 5.0); p.put("powerSaturationOfOpticalAmplifier", 23.0);
         p.put("noiseFactorModelParameterA1", 100.0); p.put("noiseFactorModelParameterA2", 4.0);
         p.put("typeOfAmplifierGain", 0); p.put("amplificationFrequency", 1.9385E14);
         p.put("switchInsertionLoss", 5.0); p.put("fixedPowerSpectralDensity", false);
@@ -179,13 +179,13 @@ public final class VerificationCampaign {
         return p;
     }
 
-    /** Modulation formats of the shipped experiments (pre-FEC thresholds for a 25 % SD-FEC). */
+    /** Modulation formats of the shipped experiments (pre-FEC thresholds for a 25 % SD-FEC; maxRange from scripts/compute_reach.sh). */
     static final List<Map<String, Object>> MODULATIONS = List.of(
-        modulation("4QAM", 5000, 4, 5.92, -16.00),
-        modulation("8QAM", 2500, 8, 9.32, -19.40),
-        modulation("16QAM", 1250, 16, 12.34, -22.42),
-        modulation("32QAM", 625, 32, 15.22, -25.30),
-        modulation("64QAM", 312, 64, 18.02, -28.10));
+        modulation("4QAM", 5110, 4, 5.92, -16.00),
+        modulation("8QAM", 3270, 8, 9.32, -19.40),
+        modulation("16QAM", 2000, 16, 12.34, -22.42),
+        modulation("32QAM", 400, 32, 15.22, -25.30),
+        modulation("64QAM", 160, 64, 18.02, -28.10));
 
     static Map<String, Object> modulation(String name, double maxRange, double m, double snr, double xt) {
         return Map.of("name", name, "maxRange", maxRange, "M", m, "SNR", snr, "XT", xt);
