@@ -36,10 +36,11 @@ public class TeardownEvent extends Event {
             }
         }
 
-        // 2. Perform state mutation to free slots and hardware ports
-        engine.getControlPlane().teardownCircuit(circuitId);
+        // 2. Time-weighted observation of the state valid during (lastObservation, time],
+        //    i.e. BEFORE the teardown mutates it.
+        new ResourceUtilizationObservationEvent(time).execute(engine);
 
-        // 3. Trigger observation following the organizational pattern
-        engine.schedule(new ResourceUtilizationObservationEvent(time));
+        // 3. Perform state mutation to free slots and hardware ports
+        engine.getControlPlane().teardownCircuit(circuitId);
     }
 }

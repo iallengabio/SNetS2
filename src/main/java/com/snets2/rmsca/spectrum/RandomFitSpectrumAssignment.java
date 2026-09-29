@@ -11,8 +11,14 @@ import java.util.Random;
  * Spectrum assignment using the Random Fit (RF) policy.
  * It finds all available contiguous blocks of slots and picks one at random.
  */
-public class RandomFitSpectrumAssignment implements ISpectrumAssignment {
-    private final Random random = new Random();
+public class RandomFitSpectrumAssignment implements ISpectrumAssignment, com.snets2.rmsca.RandomizedAlgorithm {
+    // Fixed default seed keeps runs reproducible even when no seed is injected.
+    private Random random = new Random(0);
+
+    @Override
+    public void setRandom(Random random) {
+        this.random = random;
+    }
 
     @Override
     public SpectrumInterval findSlots(ControlPlane cp, Path path, int coreIndex, int numSlots) {

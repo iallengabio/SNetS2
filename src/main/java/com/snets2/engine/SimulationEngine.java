@@ -99,12 +99,17 @@ public class SimulationEngine {
 
     /**
      * Starts the simulation loop.
-     * Runs until the maximum number of arrivals is reached or the FEL is empty.
+     *
+     * <p>Runs until {@code maxArrivals} arrivals have been processed <em>and</em> every event scheduled
+     * for that same instant (the Setup/Block of the last request and its observations) has been
+     * executed, so that the outcome of the last counted arrival is never lost. Future events
+     * (next arrival, departures) are left in the FEL. At the end, the time-weighted metrics are
+     * closed at the final simulation time.</p>
      */
     public void run() {
-        while (!fel.isEmpty() && arrivalCounter < maxArrivals) {
+        while (!fel.isEmpty()) {
+            if (arrivalCounter >= maxArrivals && fel.peek().getTime() > currentTime) break;
             Event event = fel.poll();
-            if (event == null) break;
             
             // --- STRICT VALIDATION ---
             if (SimulationConstants.strictValidationEnabled) {
@@ -121,6 +126,9 @@ public class SimulationEngine {
             // Process the event
             event.execute(this);
         }
+
+        // Close the observation window of time-weighted metrics at the final simulation time
+        new ResourceUtilizationObservationEvent(currentTime).execute(this);
 
         // Final energy update at simulation end
         if (metricsManager.getConsumedEnergy() != null && isActiveMetric("ConsumedEnergy")) {

@@ -23,6 +23,12 @@ public class ModulationUtilizationMetrics {
                         .merge(bitRate, 1L, Long::sum);
     }
 
+    /** @return Number of measured (post warm-up) circuits established. */
+    public long getTotalCircuits() { return totalObservations; }
+
+    /** @return Number of measured circuits established per modulation format name. */
+    public Map<String, Long> getCountPerModulation() { return java.util.Collections.unmodifiableMap(countPerMod); }
+
     public void fillResults(SimulationResult result, Map<String, Object> scenario, int repId) {
         String sheet = "ModulationUtilization";
         if (totalObservations == 0) return;

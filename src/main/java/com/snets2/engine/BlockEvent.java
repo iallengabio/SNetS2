@@ -17,6 +17,7 @@ public class BlockEvent extends Event {
     private final double bitRate;
     private final BlockingCause cause;
     private final Integer coreId; // Optional: core where blocking happened if applicable
+    private final boolean measured; // false if the originating arrival belonged to the warm-up period
 
     /**
      * Constructs a BlockEvent.
@@ -27,14 +28,17 @@ public class BlockEvent extends Event {
      * @param bitRate     Requested bit rate.
      * @param cause       Root cause of blocking.
      * @param coreId      Index of the core (optional).
+     * @param measured    Whether the originating arrival is counted in the statistics (i.e. not warm-up).
      */
-    public BlockEvent(double time, Node source, Node destination, double bitRate, BlockingCause cause, Integer coreId) {
+    public BlockEvent(double time, Node source, Node destination, double bitRate, BlockingCause cause, Integer coreId,
+                      boolean measured) {
         super(time);
         this.source = source;
         this.destination = destination;
         this.bitRate = bitRate;
         this.cause = cause;
         this.coreId = coreId;
+        this.measured = measured;
     }
 
     @Override
@@ -44,7 +48,7 @@ public class BlockEvent extends Event {
         }
 
         // Record metrics
-        if (!engine.isWarmUp() && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
+        if (measured && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
             engine.getMetricsManager().getBitRateBlocking().recordBlock(
                 source.getId(), destination.getId(), bitRate, cause, coreId
             );
