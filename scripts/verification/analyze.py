@@ -448,20 +448,17 @@ def e6():
             cis.append(ci)
             theories.append(theory)
             biased.append(theory * (1 - t_warm / t_total))
-            out.append([w, fmt(a), fmt(theory, 6), f"{fmt(m, 6)} ± {fmt(ci, 2)}", f"{100 * (m - theory) / theory:+.2f} %",
-                        fmt(theory * (1 - t_warm / t_total), 6), v])
+            out.append([w, fmt(a), fmt(theory, 6), f"{fmt(m, 6)} ± {fmt(ci, 2)}", f"{100 * (m - theory) / theory:+.2f} %", v])
         ax.errorbar(a_vals, sims, yerr=cis, fmt="o", ms=4, color=COLORS[idx], label=f"simulado, warm-up = {w // 1000} k")
         if w == 0:
             ax.plot(a_vals, theories, "k-", lw=1, label="Little: P_est + P_circ·2A(1−B)")
-        else:
-            ax.plot(a_vals, biased, "--", lw=0.8, color=COLORS[idx], label=f"previsão do viés, warm-up = {w // 1000} k")
     ax.set_xlabel("Carga por sentido A (Erlang)")
     ax.set_ylabel("Potência média da rede (W)")
     ax.set_title("E6 – Potência média × lei de Little (enlace único, c = 20)")
     ax.legend()
     save(fig, "e6_energy")
     table("E6b – Potência média da rede × lei de Little",
-          ["warm-up (req.)", "A (Erl)", "teórico (W)", "simulado (W, IC 95 %)", "erro rel.", "previsto c/ viés de warm-up (W)", "veredito"], out)
+          ["warm-up (req.)", "A (Erl)", "teórico (W)", "simulado (W, IC 95 %)", "erro rel.", "veredito"], out)
     return fails
 
 
@@ -645,8 +642,10 @@ def e8():
         ax.set_xlabel("Carga total (Erlang)")
         ax.set_title(title, fontsize=9)
         ax.legend()
+    noqot = [float(r["bp"]) for r in rows if r["variant"] == "No QoT" and float(r["load"]) == max(float(x["load"]) for x in rows)]
+    noqot_top = max(np.mean(noqot), 1e-5)
     axes[0].annotate("Sem QoT, ASE e ASE+NLI coincidem:\nbloqueio nulo até 1000 Erl e só por\nfragmentação em 1200 Erl",
-                     xy=(1200, 0.00375), xytext=(700, 0.0015), fontsize=8, arrowprops={"arrowstyle": "->", "lw": 0.6})
+                     xy=(1200, noqot_top), xytext=(700, 0.0015), fontsize=8, arrowprops={"arrowstyle": "->", "lw": 0.6})
     axes[0].set_ylabel("Probabilidade de bloqueio de banda")
     fig.suptitle("E8 – NSFNET (comprimentos × 0,25), MCF de 7 núcleos, 128 slots, modulação adaptativa")
     save(fig, "e8_qot_network")
