@@ -33,7 +33,7 @@ public final class ConfigValidator {
         List<String> warnings = new ArrayList<>();
 
         if (setup.networkTopology() == null) errors.add("networkTopology is required");
-        else validateTopology(setup.networkTopology(), errors);
+        else validateTopology(setup.networkTopology(), errors, warnings);
 
         if (setup.physicalLayer() == null) errors.add("physicalLayer is required");
         else validatePhysicalLayer(setup.physicalLayer(), errors, warnings);
@@ -50,7 +50,7 @@ public final class ConfigValidator {
         return new Result(warnings);
     }
 
-    private static void validateTopology(NetworkTopologyConfig t, List<String> errors) {
+    private static void validateTopology(NetworkTopologyConfig t, List<String> errors, List<String> warnings) {
         Set<String> nodeIds = new HashSet<>();
         if (t.nodes() == null || t.nodes().size() < 2) {
             errors.add("networkTopology.nodes must contain at least 2 nodes");
@@ -58,6 +58,12 @@ public final class ConfigValidator {
             for (NodeConfig n : t.nodes()) {
                 if (n.id() == null || !nodeIds.add(n.id())) errors.add("duplicate or missing node id: " + n.id());
                 if (n.tx() < 0 || n.rx() < 0 || n.regenerators() < 0) errors.add("node " + n.id() + ": tx/rx/regenerators must be >= 0");
+                // Add/drop degree: term a of the OXC power 85 n + 100 a + 150 W (Vizcaino et al., 2012)
+                if (n.addDropDegree() < 0) errors.add("node " + n.id() + ": addDropDegree must be >= 0");
+                else if (n.addDropDegree() == 0 && (n.tx() > 0 || n.rx() > 0)) {
+                    warnings.add("node " + n.id() + ": addDropDegree = 0 but the node has transceivers; its add/drop "
+                            + "ports are not charged in the static power (ConsumedEnergy)");
+                }
             }
         }
 

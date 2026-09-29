@@ -29,11 +29,25 @@ O fluxo padrão executado pelo Plano de Controle ao receber uma `ArrivalEvent` �
 
 1.  **Cálculo de Caminhos:** O algoritmo de *Routing* gera $k$ caminhos.
 2.  **Loop de Tentativas** em duas passadas. A primeira é transparente. A segunda usa regeneradores e só roda se houver `regeneratorAssignment` e a primeira falhar. Em cada passada, para cada caminho candidato:
-    a. **Seleção de Modulação:** a política configurada fornece a lista ordenada de formatos. Na passada transparente, só entram os que alcançam o destino (`comprimento ≤ maxRange`).
+    a. **Seleção de Modulação:** a política configurada fornece a lista ordenada de formatos. Na passada transparente, só entram os que alcançam o destino (`comprimento ≤ maxRange`), exceto quando a política dispensa o alcance (`qot-adaptive`, ver §3.1).
     b. **Atribuição de Core:** a estratégia fornece a lista ordenada de núcleos.
     c. **Alocação Espectral:** tenta encontrar slots contíguos e contínuos no núcleo/caminho escolhido.
-    d. **Validação de QoT:** SNR (ASE + NLI + XT) e XT do novo circuito contra os limiares da sua modulação; em seguida, SNR e XT de todos os circuitos ativos com a interferência do candidato aplicada.
+    d. **Validação de QoT:** SNR (ASE + NLI + XT) e XT do novo circuito contra os limiares da sua modulação; em seguida, SNR e XT dos circuitos ativos afetados pelo candidato, com a sua interferência aplicada.
 3.  **Resultado:** Se uma combinação válida for encontrada, o circuito é agendado. Caso contrário, a requisição é bloqueada.
+
+A precedência é **caminho → formato → núcleo**: para cada caminho, o formato preferido é tentado em todos os núcleos (cada um com o intervalo proposto pela atribuição espectral) antes do formato seguinte, e o primeiro candidato viável é aceito.
+
+### 3.1. Seleção de modulação por QoT (`qot-adaptive`)
+Seja $\mathcal{M}$ o conjunto de formatos em ordem decrescente de $\log_2 M$. Para um caminho $p$, a política escolhe o primeiro $m \in \mathcal{M}$ para o qual existe um par (núcleo $c$, intervalo $I$) com
+
+$$SNR_{novo} \ge SNR_{th}(m), \quad XT_{novo} \le XT_{th}(m), \quad SNR_k \ge SNR_{th}(m_k), \quad XT_k \le XT_{th}(m_k) \quad \forall\, k \in \mathcal{A}(p, c).$$
+
+Os núcleos $c$ são percorridos na ordem da estratégia de núcleo, e $I$ é o intervalo de $n(m)$ slots proposto pela atribuição espectral em $c$. As grandezas dos circuitos $k$ são avaliadas com o candidato aplicado. As condições de XT só valem com `activeXT` (novo circuito) e `activeXTForOther` (estabelecidos). O `maxRange` não participa da decisão.
+
+* **Circuitos verificados:** $\mathcal{A}(p, c)$ contém os circuitos ativos que usam algum enlace de $p$ no núcleo $c$ (NLI e carga dos amplificadores) ou num núcleo adjacente a $c$ (XT). O candidato não altera o ruído dos demais, então o resultado é igual ao da verificação de todos os ativos, desde que estes já atendam aos limiares (o que a própria verificação garante). O custo por candidato cai de $O(N_{ativos})$ previsões de SNR para $O(|\mathcal{A}(p, c)|)$, mais um teste de enlaces por circuito ativo. O filtro vale para todas as políticas.
+* **Regeneradores:** na passada com regeneradores o formato é único em todo o caminho e os regeneradores são posicionados pelo SNR dos segmentos (AAR sem critério de alcance). Uma solução transparente com formato menos eficiente continua preferida a uma regenerada.
+* **Causa de bloqueio:** vale a última falha específica. Como os formatos são tentados do mais eficiente ao mais robusto, é a causa do formato mais robusto (no último caminho): `QOT_NEW`, `CROSSTALK`, `QOT_OTHERS`, `XT_OTHERS` ou `FRAGMENTATION`.
+* **Sem QoT:** com `activeQoT = false` não há critério físico e a política usa o alcance, como `distance-adaptive`.
 
 ---
 
@@ -43,7 +57,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF).
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core Assignment.
-*   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation.
+*   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation.
 
 ---
 

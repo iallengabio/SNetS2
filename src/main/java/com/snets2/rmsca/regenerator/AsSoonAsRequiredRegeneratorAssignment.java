@@ -15,6 +15,14 @@ public class AsSoonAsRequiredRegeneratorAssignment implements IRegeneratorAssign
 
     @Override
     public List<Node> assignRegenerators(ControlPlane cp, Path path, int coreId, ModulationFormat mod, int startSlot, int endSlot, double bitRate) {
+        return assignRegenerators(cp, path, coreId, mod, startSlot, endSlot, bitRate, true);
+    }
+
+    /** With {@code enforceReach = false} the segments are delimited only by the SNR of the modulation format. */
+    @Override
+    public List<Node> assignRegenerators(ControlPlane cp, Path path, int coreId, ModulationFormat mod, int startSlot,
+                                         int endSlot, double bitRate, boolean enforceReach) {
+        double maxReach = enforceReach ? mod.maxReach() : Double.POSITIVE_INFINITY;
         List<Node> regeneratorNodes = new ArrayList<>();
         List<Link> currentSegmentLinks = new ArrayList<>();
         double currentDistance = 0.0;
@@ -30,7 +38,7 @@ public class AsSoonAsRequiredRegeneratorAssignment implements IRegeneratorAssign
             currentSegmentLinks.add(link);
             currentDistance += link.getLength();
             
-            boolean reachViolated = currentDistance > mod.maxReach();
+            boolean reachViolated = currentDistance > maxReach;
             boolean qotViolated = false;
 
             if (!reachViolated && checkQoT) {
@@ -62,7 +70,7 @@ public class AsSoonAsRequiredRegeneratorAssignment implements IRegeneratorAssign
                 currentDistance = link.getLength();
 
                 // Re-evaluate current link under the new segment to ensure it is valid on its own
-                if (currentDistance > mod.maxReach()) {
+                if (currentDistance > maxReach) {
                     return null; // Blocked
                 }
                 if (checkQoT) {

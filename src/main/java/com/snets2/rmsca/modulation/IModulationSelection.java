@@ -15,7 +15,16 @@ public interface IModulationSelection {
     /**
      * Ordered list of modulation formats the integrated RMSCA is allowed to try for this path, from
      * the most preferred to the least preferred. The RMSCA still enforces the reach constraint
-     * ({@code path length <= maxReach}) unless a regenerator assignment is configured.
+     * ({@code path length <= maxReach}) on transparent candidates when {@link #enforcesReach} is true.
      */
     List<ModulationFormat> candidateFormats(ControlPlane cp, Path path, double bitRate);
+
+    /**
+     * Whether the RMSCA (and the regenerator assignment) must discard formats whose {@code maxReach} does
+     * not cover the path or the transparent segment. Policies driven by the physical model return false:
+     * the format is then accepted or rejected only by the QoT validation of the RMSCA.
+     */
+    default boolean enforcesReach(ControlPlane cp) {
+        return true;
+    }
 }

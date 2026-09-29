@@ -3,8 +3,11 @@ package com.snets2.config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.snets2.model.Node;
+
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -102,6 +105,24 @@ class ConfigValidatorTest {
                 .contains("referenceBandwidthForPowerSpectralDensity"));
         assertEquals(List.of(), ConfigValidator.validate(setup(VALID.replace(base, base
                 + ", \"typeOfAmplifierGain\": 1, \"fixedPowerSpectralDensity\": true, \"referenceBandwidthForPowerSpectralDensity\": 1.25E10"))).warnings());
+    }
+
+    @Test
+    @DisplayName("#14: addDropDegree is optional (default 1), must be >= 0, and 0 with transceivers is a warning")
+    void addDropDegree() throws Exception {
+        String node0 = "{\"id\": \"0\", \"tx\": 10, \"rx\": 10, \"regenerators\": 0}";
+        assertEquals(Node.DEFAULT_ADD_DROP_DEGREE, setup(VALID).networkTopology().nodes().get(0).addDropDegree());
+        String withDegree = VALID.replace(node0, node0.replace("}", ", \"addDropDegree\": 4}"));
+        assertEquals(4, setup(withDegree).networkTopology().nodes().get(0).addDropDegree());
+        // Survives the override round trip of the parameter sweep
+        assertEquals(4, ConfigLoader.applyOverrides(setup(withDegree), Map.of("traffic.load", 5.0))
+                .networkTopology().nodes().get(0).addDropDegree());
+
+        assertTrue(invalidMessage(VALID.replace(node0, node0.replace("}", ", \"addDropDegree\": -1}")))
+                .contains("addDropDegree"));
+        List<String> w = ConfigValidator.validate(setup(VALID.replace(node0, node0.replace("}", ", \"addDropDegree\": 0}")))).warnings();
+        assertEquals(1, w.size(), w.toString());
+        assertTrue(w.get(0).contains("addDropDegree"));
     }
 
     @Test

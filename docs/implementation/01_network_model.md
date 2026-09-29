@@ -22,12 +22,14 @@ Conecta dois nós `Node` na malha física.
 
 ### 1.4. `Amplifier` (com.snets2.model.Amplifier)
 Modela amplificadores ópticos (ex: EDFA) ao longo dos enlaces.
-- **Parâmetros:** `gain` (dB, `fiberLoss × spanLength`), `noiseFigure` (dB, `noiseFigureOfOpticalAmplifier`), consumo de potência e `saturatedOutputPower` (dBm, `powerSaturationOfOpticalAmplifier`), preenchidos pelo `TopologyMapper` a partir da config.
-- **Papel:** A lista de `Amplifier`s do enlace é usada no consumo energético. O ruído **ASE** é calculado pelo `PhysicalLayerModel` a partir da cadeia booster + linha + pré-amplificador descrita em [07_physical_layer_models.md](../formal_description/07_physical_layer_models.md#3-ruído-ase-i_ase).
+- **Parâmetros:** `gain` (dB), `noiseFigure` (dB, `noiseFigureOfOpticalAmplifier`), `powerConsumption` (W, `EnergyConsumptionModel.AMPLIFIER_POWER_W` = 100 W) e `saturatedOutputPower` (dBm, `powerSaturationOfOpticalAmplifier`), preenchidos pelo `TopologyMapper.buildAmplifiers`.
+- **Cadeia do enlace:** `TopologyMapper` cria, em ordem de propagação, um booster (`3 × switchInsertionLoss` dB), $N_l$ = `PhysicalLayerModel.numberOfLineAmplifiers(L, spanLength)` amplificadores de linha (`fiberLoss × spanLength` dB) e um pré-amplificador (`fiberLoss × (L − N_l·spanLength)` dB). Os ganhos vêm de `PhysicalLayerModel.amplifierChainGainsDb`, a mesma função usada por `calculateLinkAse`; assim, o modelo de ASE e o de energia sempre veem os mesmos $N_l + 2$ amplificadores ([07_physical_layer_models.md](../formal_description/07_physical_layer_models.md#3-ruído-ase-i_ase)).
+- **Papel:** A lista de `Amplifier`s do enlace é usada no consumo energético (soma de `powerConsumption`). O ruído **ASE** é calculado pelo `PhysicalLayerModel` a partir da mesma cadeia.
 
 ### 1.5. `Node` (com.snets2.model.Node)
 Representa um ROADM óptico.
 - **Gerenciamento de Recursos:** Controla a contagem finita de Transmissores (`availableTx`), Receptores (`availableRx`) e Regeneradores (`availableRegenerators`).
+- **Grau de add/drop:** `addDropDegree` (padrão `Node.DEFAULT_ADD_DROP_DEGREE` = 1), lido de `NodeConfig.addDropDegree`. É usado apenas pela potência estática do OXC (`EnergyConsumptionModel.oxcPower`) e não limita o número de circuitos.
 - **Prevenção de Overflow/Underflow:** Valida se a liberação de recursos não excede a capacidade total do nó e se o consumo não ultrapassa a disponibilidade atual.
 - **Bloqueio:** Se um nó destino não possui `Rx` livre ou o origem não possui `Tx`, a requisição é bloqueada antes mesmo do cálculo de espectro. De forma análoga, se nós intermediários escolhidos para regeneração não possuírem regeneradores livres, a conexão é bloqueada.
 

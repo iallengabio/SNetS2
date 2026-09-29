@@ -80,8 +80,42 @@ Estatísticas da degradação de sinal e qualidade de transmissão.
 * **`SpectrumSizeStatistics`**: Distribuição do tamanho contíguo de espectro requerido.
 * **`Fragmentation`** (`Relative` e `External`): Índices matemáticos de fragmentação espectral na rede.
 * **`TransmittersReceiversRegeneratorsUtilization`**: Porcentagem de ocupação de hardware físico nos ROADMs.
-* **`ConsumedEnergy`**: Estimativa de gasto energético (Watts) dos componentes ativos.
+* **`ConsumedEnergy`**: Potência média, estática e de pico da rede e energia consumida na janela medida (Seção 3.6).
 * **`GroomingStatistics`**: Estatísticas de empacotamento de tráfego (se ativado).
+
+### 3.6. Aba: `ConsumedEnergy` (modelo de energia)
+O modelo de potência é o de Vizcaíno et al. [1]. Todas as constantes estão em `EnergyConsumptionModel`.
+
+**Potência estática** (independe do tráfego):
+
+$$P_{est} = \sum_{\text{enlaces}} N_{amp}\,P_{amp} + \sum_{\text{nós}} \left(85\,n + 100\,a + 150 + 80\,r\right)\ \text{W}$$
+
+| Símbolo | Significado | Valor / origem |
+| :-- | :-- | :-- |
+| $P_{amp}$ | potência de um amplificador (EDFA) | 100 W (premissa do simulador, ver nota) |
+| $N_{amp}$ | amplificadores do enlace: booster + $N_l$ de linha + pré-amplificador | $N_l + 2$, $N_l = \lceil L/L_{span} - 1\rceil$ (a mesma cadeia do modelo de ASE, [07_physical_layer_models.md](07_physical_layer_models.md), Seção 3.1) |
+| $85\,n$ | OXC: 85 W por grau do nó | $n$ = nº de enlaces direcionados incidentes no nó (entrada + saída) |
+| $100\,a$ | OXC: 100 W por porta de *add/drop* | $a$ = `addDropDegree` do nó (padrão 1). **Não** é o nº de transceptores instalados (`tx`/`rx`), cuja potência é dinâmica |
+| $150$ | OXC: parcela fixa | 150 W [1] |
+| $80\,r$ | regeneradores instalados, ociosos ou não | 80 W por regenerador (premissa do simulador, ver nota) |
+
+**Potência de um circuito** (dinâmica, enquanto o circuito está ativo). Cada transponder segue o modelo linear de [1], com $TR = f_{slot}\log_2 M/10^9$ Gbps por slot:
+
+$$P_{tran} = n_{slots}\cdot 1{,}683\,TR + 91{,}333\ \text{W}, \qquad P_{circ} = 2\,(1 + n_{reg})\,P_{tran}$$
+
+(um transponder na origem e um no destino, e mais dois por regeneração).
+
+> **Nota.** A potência do OXC ($85\,n + 100\,a + 150$) e a do transponder ($1{,}683\,TR + 91{,}333$) seguem [1]. Os valores de 100 W por EDFA e 80 W por regenerador instalado são premissas herdadas do código e ainda não foram conferidas com uma referência; ao usá-los em publicações, cite a fonte adotada.
+
+**Janela medida e médias.** A potência da rede é a função em degraus $P(t) = P_{est} + \sum_{\text{ativos}} P_{circ}$, que só muda nos instantes de *setup* e *teardown*. Sendo $T_w$ o instante da chegada que encerra o *warm-up* (0 sem *warm-up*) e $T$ o tempo final:
+
+$$E = \int_{T_w}^{T} P(t)\,dt, \qquad \bar P = \frac{E}{T - T_w}, \qquad P_{pico} = \max_{t \in [T_w, T]} P(t).$$
+
+A integral é exata: o intervalo entre $T_w$ e o primeiro *setup*/*teardown* seguinte é integrado com a potência vigente em $T_w$. Pela lei de Little, em regime $\bar P = P_{est} + \bar P_{circ}\,\bar N_{ativos}$ (verificado em `EnergyModelTest` e no experimento E6 do relatório de V&V).
+
+**SubMetrics:** `Average Total Power (W)` ($\bar P$), `Static Network Power (W)` ($P_{est}$), `Peak Network Power (W)` ($P_{pico}$), `Total Energy (J)` ($E$).
+
+> [1] J. L. Vizcaíno, Y. Ye, I. Tafur Monroy, "Energy efficiency analysis for flexible-grid OFDM-based optical networks", *Computer Networks*, vol. 56, no. 10, 2012.
 
 ---
 

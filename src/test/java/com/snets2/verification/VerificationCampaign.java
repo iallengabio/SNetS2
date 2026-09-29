@@ -107,6 +107,12 @@ public final class VerificationCampaign {
             return this;
         }
 
+        /** Node with an explicit add/drop degree (term a of the OXC power, energy model). */
+        Scenario node(String id, int tx, int rx, int regenerators, int addDropDegree) {
+            nodes.add(Map.of("id", id, "tx", tx, "rx", rx, "regenerators", regenerators, "addDropDegree", addDropDegree));
+            return this;
+        }
+
         /** Two opposite directed links. */
         Scenario link(String a, String b, double km) {
             links.add(Map.of("source", a, "destination", b, "length", km));
@@ -162,7 +168,7 @@ public final class VerificationCampaign {
         p.put("spanLength", 80.0); p.put("fiberLoss", 0.2);
         p.put("fiberNonlinearity", 0.0013); p.put("fiberDispersion", 1.6E-5);
         p.put("centerFrequency", 1.9385E14); p.put("constantOfPlanck", 6.626E-34);
-        p.put("noiseFigureOfOpticalAmplifier", 5.0); p.put("powerSaturationOfOpticalAmplifier", 16.0);
+        p.put("noiseFigureOfOpticalAmplifier", 5.0); p.put("powerSaturationOfOpticalAmplifier", 23.0);
         p.put("noiseFactorModelParameterA1", 100.0); p.put("noiseFactorModelParameterA2", 4.0);
         p.put("typeOfAmplifierGain", 0); p.put("amplificationFrequency", 1.9385E14);
         p.put("switchInsertionLoss", 5.0); p.put("fixedPowerSpectralDensity", false);
@@ -173,13 +179,13 @@ public final class VerificationCampaign {
         return p;
     }
 
-    /** Modulation formats of the shipped experiments (pre-FEC thresholds for a 25 % SD-FEC). */
+    /** Modulation formats of the shipped experiments (pre-FEC thresholds for a 25 % SD-FEC; maxRange from scripts/compute_reach.sh). */
     static final List<Map<String, Object>> MODULATIONS = List.of(
-        modulation("4QAM", 5000, 4, 5.92, -16.00),
-        modulation("8QAM", 2500, 8, 9.32, -19.40),
-        modulation("16QAM", 1250, 16, 12.34, -22.42),
-        modulation("32QAM", 625, 32, 15.22, -25.30),
-        modulation("64QAM", 312, 64, 18.02, -28.10));
+        modulation("4QAM", 5110, 4, 5.92, -16.00),
+        modulation("8QAM", 3270, 8, 9.32, -19.40),
+        modulation("16QAM", 2000, 16, 12.34, -22.42),
+        modulation("32QAM", 400, 32, 15.22, -25.30),
+        modulation("64QAM", 160, 64, 18.02, -28.10));
 
     static Map<String, Object> modulation(String name, double maxRange, double m, double snr, double xt) {
         return Map.of("name", name, "maxRange", maxRange, "M", m, "SNR", snr, "XT", xt);
@@ -450,9 +456,9 @@ public final class VerificationCampaign {
             int c = 20;
             for (int warmUp : new int[] {0, 20_000, 60_000}) {
                 for (double a : new double[] {5, 10, 15, 20, 25}) {
-                    // 40 transceivers per node: never blocking (at most c = 20 circuits per direction) and a
-                    // static power of the same order as the dynamic one (100 W per installed transceiver)
-                    Scenario s = new Scenario().node("0", 40, 40, 0).node("1", 40, 40, 0).link("0", "1", 100);
+                    // 40 transceivers per node: never blocking (at most c = 20 circuits per direction). The static
+                    // power does not depend on them: 2 OXCs (n = 2, add/drop degree a = 2) + 2 x 3 amplifiers
+                    Scenario s = new Scenario().node("0", 40, 40, 0, 2).node("1", 40, 40, 0, 2).link("0", "1", 100);
                     ScenarioSetup setup = s.idealSlots().metric("ConsumedEnergy")
                             .sim("totalSlots", c).sim("requests", 120_000).sim("warmUpRequests", warmUp).load(2 * a).setup();
                     NetworkTopology topology = TopologyMapper.map(setup.networkTopology(), setup.physicalLayer(), c);
@@ -605,21 +611,27 @@ public final class VerificationCampaign {
     // =====================================================================================
 
     static void qotNetwork(File out) throws Exception {
-        record Variant(String group, String label, Map<String, Object> physical, String core, boolean multicore) {}
+        record Variant(String group, String label, Map<String, Object> physical, String core, String modulation) {}
         Map<String, Object> off = Map.of("activeQoT", false, "activeQoTForOther", false);
         Map<String, Object> ase = Map.of("activeNLI", false, "activeXT", false, "activeXTForOther", false);
         Map<String, Object> aseNli = Map.of("activeXT", false, "activeXTForOther", false);
         Map<String, Object> all = Map.of();
         List<Variant> variants = List.of(
-            new Variant("impairments", "No QoT", off, "firstfitcore", true),
-            new Variant("impairments", "ASE", ase, "firstfitcore", true),
-            new Variant("impairments", "ASE+NLI", aseNli, "firstfitcore", true),
-            new Variant("impairments", "ASE+NLI+XT", all, "firstfitcore", true),
-            new Variant("core", "First-fit core", all, "firstfitcore", true),
-            new Variant("core", "Random-fit core", all, "randomfitcore", true),
-            new Variant("core", "Min-crosstalk core", all, "mincrosstalkcore", true));
-        try (Csv csv = new Csv(out, "e8_qot_network", "group", "variant", "load", "rep", "bp", "bp_fragmentation",
-                "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db")) {
+            new Variant("impairments", "No QoT", off, "firstfitcore", "distance-adaptive"),
+            new Variant("impairments", "ASE", ase, "firstfitcore", "distance-adaptive"),
+            new Variant("impairments", "ASE+NLI", aseNli, "firstfitcore", "distance-adaptive"),
+            new Variant("impairments", "ASE+NLI+XT", all, "firstfitcore", "distance-adaptive"),
+            new Variant("core", "First-fit core", all, "firstfitcore", "distance-adaptive"),
+            new Variant("core", "Random-fit core", all, "randomfitcore", "distance-adaptive"),
+            new Variant("core", "Min-crosstalk core", all, "mincrosstalkcore", "distance-adaptive"),
+            // Issue #23: modulation chosen by maxRange vs by the physical model (ASE + NLI + XT, QoTO/XTO on)
+            new Variant("modulation", "distance-adaptive", all, "firstfitcore", "distance-adaptive"),
+            new Variant("modulation", "qot-adaptive", all, "firstfitcore", "qot-adaptive"));
+        List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
+        List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
+                "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));
+        modNames.forEach(m -> header.add("share_" + m));
+        try (Csv csv = new Csv(out, "e8_qot_network", header.toArray(String[]::new))) {
             for (Variant v : variants) {
                 for (double load : new double[] {400, 600, 800, 1000, 1200}) {
                     Scenario s = nsfnet(0.25);
@@ -627,7 +639,8 @@ public final class VerificationCampaign {
                     s.cores = hexagonal7();
                     s.physical.putAll(v.physical());
                     s.bitRates(100, 1, 200, 1, 400, 1).metric("CrosstalkStatistics")
-                            .sim("totalSlots", 128).sim("modulationSelection", "distance-adaptive")
+                            .metric("SpectrumSizeStatistics").metric("ModulationUtilization")
+                            .sim("totalSlots", 128).sim("modulationSelection", v.modulation())
                             .sim("coreAndSpectrumAssignment", v.core())
                             .sim("requests", 22_000).sim("warmUpRequests", 2_000).load(load);
                     List<Run> runs = replicate(s.setup(), 5);
@@ -635,14 +648,30 @@ public final class VerificationCampaign {
                         BitRateBlockingMetrics b = runs.get(r).blocking();
                         double req = b.getGeneralRequestedBitRate();
                         Run run = runs.get(r);
-                        csv.row(v.group(), '"' + v.label() + '"', load, r, b.getGeneralBlockingProbability(),
+                        List<Object> row = new ArrayList<>(List.of(v.group(), '"' + v.label() + '"', load, r,
+                                b.getGeneralBlockingProbability(),
                                 b.getBitRateBlockingByFragmentation() / req, b.getBitRateBlockingByQoTN() / req,
                                 b.getBitRateBlockingByQoTO() / req, b.getBitRateBlockingByXt() / req, b.getBitRateBlockingByXtOther() / req,
                                 run.value("PhysicalLayerStatistics", "Average OSNR (dB)",
-                                        Map.of("src", "all", "dest", "all", "overlaps", "all")));
+                                        Map.of("src", "all", "dest", "all", "overlaps", "all")),
+                                meanSlotsPerCircuit(run)));
+                        Map<String, Long> perMod = run.engine().getMetricsManager().getModulationUtilization().getCountPerModulation();
+                        long total = run.engine().getMetricsManager().getModulationUtilization().getTotalCircuits();
+                        for (String m : modNames) row.add(total == 0 ? 0.0 : perMod.getOrDefault(m, 0L) / (double) total);
+                        csv.row(row.toArray());
                     }
                 }
             }
         }
+    }
+
+    /** Mean number of slots (guard band included) of the circuits established in the measured period. */
+    static double meanSlotsPerCircuit(Run run) {
+        double mean = 0;
+        for (SimulationResult.MetricRow row : run.result().getData().getOrDefault("SpectrumSizeStatistics", Map.of()).values()) {
+            if (!row.getSubMetric().equals("Percentage per Slot Size") || !"all".equals(row.getDimensions().get("link"))) continue;
+            mean += Integer.parseInt(row.getDimensions().get("slots")) * row.getRepValues().getOrDefault(0, 0.0);
+        }
+        return mean;
     }
 }

@@ -11,7 +11,7 @@ Este módulo é essencialmente reativo: ele não "age" por conta própria, mas r
 
 ### 2.1. Nó (Node)
 Representa um ROADM (Reconfigurable Optical Add-Drop Multiplexer).
-*   **Capacidade de Add/Drop:** Gerencia a inserção e extração de sinais locais.
+*   **Capacidade de Add/Drop:** Gerencia a inserção e extração de sinais locais. O **grau de *add/drop*** $a$ (`addDropDegree`, número de portas de inserção/extração, padrão 1) é independente do número de transceptores e entra apenas na potência estática do OXC, $85\,n + 100\,a + 150$ W (ver [06_output_metrics.md](06_output_metrics.md), Seção 3.6).
 *   **Recursos:** Agrega coleções de Transmissores, Receptores e Regeneradores.
 *   **Estado:** O nó rastreia o consumo atual de cada tipo de recurso.
 
@@ -38,6 +38,7 @@ Geralmente amplificadores de fibra dopada com érbio (EDFA).
 *   **Função:** Compensar a atenuação da fibra ao longo do enlace.
 *   **Impacto Físico:** Embora restaurem a potência, os amplificadores inserem ruído de emissão espontânea amplificada (**ASE Noise**), que degrada a relação sinal-ruído óptica (OSNR).
 *   **Modelagem:** Cada enlace tem um booster (compensa as perdas do ROADM, `switchInsertionLoss`), amplificadores de linha (um por vão) e um pré-amplificador. O ganho pode ser fixo ou saturado pela carga do núcleo (`typeOfAmplifierGain`), com fator de ruído dependente da potência de entrada. Ver [07_physical_layer_models.md](07_physical_layer_models.md), Seção 3.
+*   **Contagem única:** um enlace de comprimento $L$ tem $N_l + 2$ amplificadores, com $N_l = \lceil L/L_{span} - 1\rceil$. A mesma cadeia (quantidade e ganhos) é usada pelo modelo de ASE e pelo modelo de energia (100 W por amplificador).
 
 ### 2.6. Núcleo (Core)
 A unidade de divisão espacial dentro de uma fibra multicore.

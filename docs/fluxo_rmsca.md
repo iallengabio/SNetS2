@@ -11,7 +11,7 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
 1. **Checagem de Hardware de Nós**: Validação de transmissores (Tx) e receptores (Rx) disponíveis.
 2. **Roteamento (IRouting)**: Busca de caminhos candidatos.
 3. **Loop de Caminhos**: Avaliação individual de cada trajeto físico retornado pelo roteamento.
-4. **Loop de Modulação (IModulationSelection)**: Varredura de formatos de modulação disponíveis, ordenados por eficiência espectral decrescente.
+4. **Loop de Modulação (IModulationSelection)**: Varredura de formatos de modulação disponíveis, ordenados por eficiência espectral decrescente. Com `qot-adaptive`, o alcance (`maxRange`) não filtra os formatos: o primeiro formato que passa na validação de QoT é aceito.
 5. **Cálculo de Demanda Espectral**: Determinação do número de slots de espectro requeridos.
 6. **Loop de Núcleos (ICoreAssignment)**: Varredura de núcleos candidatos do cabo de fibra multicore.
 7. **Atribuição Espectral (ISpectrumAssignment)**: Busca de slots contíguos e contínuos livres.
@@ -45,6 +45,7 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
                            │
                            ├──> a. Teste de Alcance Físico (Reach)
                            │       P1: se Distância > Alcance Máximo ──> Pular Modulação
+                           │           (não se aplica a qot-adaptive com activeQoT: nenhuma é pulada)
                            │       P2: todas as modulações são tentadas (com regeneração)
                            │
                            ├──> b. Número de slots: ⌈R(1+FEC)/(N_pol·log2 M·f_slot)⌉ + guarda (SlotCalculator)
@@ -54,13 +55,14 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
                                    ├──> i. Atribuição Espectral (ISpectrumAssignment)
                                    │       Se não encontrar ──> Pular Core (causa provisória: FRAGMENTATION)
                                    │
-                                   ├──> ii. (P2) Alocação de Regeneradores (AAR: por alcance e por SNR)
+                                   ├──> ii. (P2) Alocação de Regeneradores (AAR: por alcance e por SNR; só por SNR com qot-adaptive)
                                    │         Se falhar, ou se não precisar de regenerador (já avaliado em P1) ──> Pular Core
                                    │
                                    ├──> iii. evaluate(): validação física do candidato (se activeQoT)
                                    │         - SNR do novo canal < limiar ──> CROSSTALK (se passaria sem XT) ou QOT_NEW
                                    │         - XT do novo canal > limiar XT da modulação ──> CROSSTALK
-                                   │         - Aplica o ruído temporário do candidato (NLI/XT) e, para cada circuito ativo:
+                                   │         - Aplica o ruído temporário do candidato (NLI/XT) e, para cada circuito ativo
+                                   │           que usa um enlace do candidato no mesmo núcleo ou num núcleo adjacente:
                                    │             SNR < limiar ──> XT_OTHERS (se passaria sem XT) ou QOT_OTHERS
                                    │             XT > limiar XT da sua modulação ──> XT_OTHERS
                                    │           (o ruído temporário é removido num bloco finally)
@@ -73,6 +75,10 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
 Consequências do desenho em duas passadas:
 * Uma modulação menos eficiente que alcança o destino **sem** regeneração é sempre preferida a uma solução regenerada.
 * Todo candidato, inclusive os regenerados, passa pela mesma validação da QoT dos circuitos ativos.
+
+Precedência: caminho → formato → núcleo. Um formato só é rebaixado depois de tentado em todos os núcleos (cada um com o intervalo proposto pela atribuição espectral). Com `qot-adaptive`, o resultado é o formato mais eficiente que respeita o QoT do novo circuito e dos já estabelecidos. Se nenhum for viável, a causa de bloqueio é a do formato mais robusto (a última falha específica).
+
+A verificação dos circuitos ativos (passo iii) só reavalia os que compartilham um enlace com o candidato no mesmo núcleo (NLI e carga dos amplificadores) ou num núcleo adjacente (XT). O candidato não altera o ruído dos demais, então a decisão é a mesma de verificar todos, com custo menor.
 
 ---
 
