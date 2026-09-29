@@ -5,12 +5,14 @@ import com.snets2.metrics.PhysicalLayerModel;
 import com.snets2.metrics.BlockingCause;
 import com.snets2.model.*;
 import com.snets2.rmsca.core.ICoreAssignment;
+import com.snets2.rmsca.modulation.DistanceAdaptiveModulationSelection;
+import com.snets2.rmsca.modulation.IModulationSelection;
+import com.snets2.rmsca.modulation.SlotCalculator;
 import com.snets2.rmsca.routing.IRouting;
 import com.snets2.rmsca.routing.Path;
 import com.snets2.rmsca.spectrum.ISpectrumAssignment;
 import com.snets2.rmsca.spectrum.SpectrumInterval;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -25,10 +27,17 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     private ICoreAssignment coreAssignment;
     private ISpectrumAssignment spectrumAssignment;
     private com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment;
+    private IModulationSelection modulationSelection = new DistanceAdaptiveModulationSelection();
 
     public void setRouting(IRouting routing) { this.routing = routing; }
+    public ICoreAssignment getCoreAssignment() { return coreAssignment; }
+    public ISpectrumAssignment getSpectrumAssignment() { return spectrumAssignment; }
     public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
     public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
+    /** Sets the modulation policy; {@code null} keeps the default (distance-adaptive). */
+    public void setModulationSelection(IModulationSelection modulationSelection) {
+        if (modulationSelection != null) this.modulationSelection = modulationSelection;
+    }
     public void setRegeneratorAssignment(com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment) { this.regeneratorAssignment = regeneratorAssignment; }
 
     @Override
@@ -64,10 +73,8 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
         for (Path path : candidatePaths) {
             // 3. Modulation Loop (Interleaved with Core, Spectrum and QoT)
-            // Sort available modulations by spectral efficiency (M) descending
-            List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
-                .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
-                .toList();
+            // Candidate formats (and their order) come from the configured modulation policy.
+            List<ModulationFormat> availableModulations = modulationSelection.candidateFormats(cp, path, bitRate);
 
             for (ModulationFormat mod : availableModulations) {
                 // a. Distance check (only bypass if no regenerator assignment is configured)
@@ -76,9 +83,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                 foundPathAndMod = true;
 
                 // b. Calculate slots required
-                int bitsPerSymbol = mod.getBitsPerSymbol();
-                int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * cp.getSlotBandwidth()));
-                numSlots += cp.getGuardBand();
+                int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp.getSlotBandwidth(), cp.getGuardBand());
 
                 // c. Iterate through candidate Cores provided by the strategy
                 List<Integer> candidateCores = coreAssignment.selectCores(cp, path);

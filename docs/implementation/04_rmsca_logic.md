@@ -14,8 +14,10 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 
 ### 1.2. Seleção de Modulação (`com.snets2.rmsca.modulation`)
 - **IModulationSelection:** Interface para escolha do formato de modulação.
-- **DistanceAdaptiveModulationSelection:** Analisa o comprimento total do caminho e escolhe a modulação com maior bit rate cujo `maxReach` seja superior à distância. Calcula o número de slots necessários com base no `slotBandwidth`.
-- **FixedModulationSelection:** Sempre seleciona um formato de modulação fixo (BPSK se disponível, caso contrário a primeira modulação listada na topologia) independente do comprimento do caminho (ID: `fixed`).
+- **Contrato:** `candidateFormats(cp, path, bitRate)` devolve a lista ordenada de formatos que o `StandardIntegratedRMSCA` pode tentar. O RMSCA continua aplicando a restrição de alcance (`comprimento ≤ maxReach`), exceto quando há atribuição de regeneradores. `selectModulation` devolve só o primeiro formato viável.
+- **DistanceAdaptiveModulationSelection** (ID: `distance-adaptive`, padrão quando `modulationSelection` é omitido): candidatos em ordem decrescente de eficiência espectral ($M$). Com o filtro de alcance, a primeira tentativa é o formato mais eficiente que alcança o destino; os menos eficientes servem de alternativa quando o espectro ou o QoT falham.
+- **FixedModulationSelection** (ID: `fixed`): um único candidato, BPSK se disponível e, caso contrário, a primeira modulação listada na topologia, independentemente do comprimento do caminho.
+- **SlotCalculator:** fonte única do número de slots, $n = \lceil R / (\log_2 M \cdot f_{slot}) \rceil + G$. É usado pelo RMSCA, pelas políticas de modulação e pela métrica de fragmentação relativa.
 - **ModulationResult:** Encapsula o formato escolhido e a contagem de slots necessária.
 
 ### 1.3. Alocação de Core (`com.snets2.rmsca.core`)
@@ -27,7 +29,8 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 - **ISpectrumAssignment:** Interface para busca de slots contíguos.
 - **FirstFitSpectrumAssignment:** Busca o primeiro bloco contíguo de slots que esteja livre em todos os enlaces do caminho simultaneamente, respeitando as restrições de rede elástica (EON).
 - **DummyFitSpectrumAssignment:** Verifica apenas se o bloco de slots começando no índice 0 está disponível em todos os enlaces. Caso contrário, a requisição é bloqueada.
-- **RandomFitSpectrumAssignment:** Seleciona aleatoriamente um dos blocos contíguos de slots disponíveis no caminho.
+- **RandomFitSpectrumAssignment:** Sorteia uniformemente uma posição inicial entre todas as posições viáveis no caminho.
+- **Reprodutibilidade (`RandomizedAlgorithm`):** `RandomFitSpectrumAssignment` e `RandomFitCoreAssignment` recebem, via `AlgorithmFactory.seedRandomizedAlgorithms`, geradores derivados da semente da replicação. Esses geradores são independentes do gerador de tráfego, então o fluxo de requisições é o mesmo entre algoritmos (números aleatórios comuns).
 - **LastFitSpectrumAssignment:** Similar ao First Fit, mas inicia a busca a partir do fim do espectro (maior índice de slot) e retrocede, reduzindo colisões de alocação (ID: `lastfit` / `lf`).
 - **ExactFitSpectrumAssignment:** Busca o bloco contíguo de slots que melhor se ajusta ao tamanho da requisição, priorizando blocos livres cujo tamanho é o mais próximo possível de `numSlots` para minimizar a fragmentação do espectro (ID: `exactfit` / `ef`).
 - **SpectrumInterval:** Representa o intervalo `[start, end]` dos slots alocados.
@@ -40,7 +43,7 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 Esta classe implementa a interface `IRMSCA` e atua como um coordenador sequencial:
 1.  **Check:** Verifica disponibilidade de Tx/Rx nos nós.
 2.  **Routing:** Invoca `IRouting`.
-3.  **Modulation:** Invoca `IModulationSelection`.
+3.  **Modulation:** obtém de `IModulationSelection.candidateFormats` a lista ordenada de formatos a tentar (padrão: `distance-adaptive`).
 4.  **Core:** Invoca `ICoreAssignment`.
 5.  **Spectrum:** Invoca `ISpectrumAssignment`.
 6.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).

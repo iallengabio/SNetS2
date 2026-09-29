@@ -7,6 +7,12 @@ import com.snets2.SimulationConstants;
  * 
  * <p>Following the project's organizational principle, metrics are never called 
  * directly by system classes; they are always invoked via Observation events.</p>
+ *
+ * <p><b>Contract (time-weighted averages):</b> an observation at time {@code t} weights the
+ * <em>current</em> network state by the interval {@code (lastObservation, t]}. The state must
+ * therefore be observed <em>before</em> any mutation at {@code t}: {@link SetupEvent} and
+ * {@link TeardownEvent} execute this event inline right before changing the state, and
+ * {@link SimulationEngine#run()} executes it once more at the end to close the window.</p>
  */
 public class ResourceUtilizationObservationEvent extends Event {
 

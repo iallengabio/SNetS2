@@ -50,6 +50,20 @@ public class AlgorithmFactory {
         regeneratorRegistry.put("aar", com.snets2.rmsca.regenerator.AsSoonAsRequiredRegeneratorAssignment.class);
     }
 
+    /**
+     * Injects reproducible random generators, derived from the replication seed, into the
+     * randomized sub-algorithms of a {@link StandardIntegratedRMSCA}. Each algorithm receives its own
+     * stream, independent from the traffic generator.
+     */
+    public static void seedRandomizedAlgorithms(StandardIntegratedRMSCA rmsca, long seed) {
+        if (rmsca.getCoreAssignment() instanceof RandomizedAlgorithm r) {
+            r.setRandom(new java.util.Random(seed * 0x9E3779B97F4A7C15L + 1));
+        }
+        if (rmsca.getSpectrumAssignment() instanceof RandomizedAlgorithm r) {
+            r.setRandom(new java.util.Random(seed * 0x9E3779B97F4A7C15L + 2));
+        }
+    }
+
     public static IRMSCA createIntegrated(String id) {
         return createInstance(id, integratedRegistry, "Integrated Algorithm");
     }
@@ -59,6 +73,7 @@ public class AlgorithmFactory {
     }
 
     public static IModulationSelection createModulation(String id) {
+        if (id == null || id.isEmpty()) return null; // RMSCA keeps its default (distance-adaptive)
         return createInstance(id, modulationRegistry, "Modulation Selection");
     }
 

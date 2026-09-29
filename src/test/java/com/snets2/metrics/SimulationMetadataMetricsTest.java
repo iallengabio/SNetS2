@@ -80,17 +80,19 @@ class SimulationMetadataMetricsTest {
         assertTrue(sheetRows.containsKey(avgActiveKey));
         assertEquals(40.0 / 30.0, sheetRows.get(avgActiveKey).getRepValues().get(0), 1E-9);
 
-        // Verify active requests over time at 10% (t=3.0) -> index before t=3 is t=0 which had 0
+        // Observations follow the engine contract: each call weights the state valid since the previous call.
+        // History: [0,10) -> 1, [10,20) -> 2, [20,30] -> 1
+        // Verify active requests over time at 10% (t=3.0) -> 1 active during [0,10)
         String active10PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "10%").toString();
         assertTrue(sheetRows.containsKey(active10PercentKey));
-        assertEquals(0.0, sheetRows.get(active10PercentKey).getRepValues().get(0));
+        assertEquals(1.0, sheetRows.get(active10PercentKey).getRepValues().get(0));
 
-        // Verify at 50% (t=15.0) -> index before t=15 is t=10 which had 1
+        // Verify at 50% (t=15.0) -> 2 active during [10,20)
         String active50PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "50%").toString();
         assertTrue(sheetRows.containsKey(active50PercentKey));
-        assertEquals(1.0, sheetRows.get(active50PercentKey).getRepValues().get(0));
+        assertEquals(2.0, sheetRows.get(active50PercentKey).getRepValues().get(0));
 
-        // Verify at 100% (t=30.0) -> t=30.0 has 1
+        // Verify at 100% (t=30.0) -> 1 active during [20,30]
         String active100PercentKey = scenario.toString() + "_Active Requests Over Time_" + getExpectedDimensions("Active Requests Over Time", "N/A", "100%").toString();
         assertTrue(sheetRows.containsKey(active100PercentKey));
         assertEquals(1.0, sheetRows.get(active100PercentKey).getRepValues().get(0));
