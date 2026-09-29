@@ -75,47 +75,47 @@ Com a mesma semente, First-Fit e Last-Fit produziram valores **idênticos em tod
 | Comparação | Variante | Carga (Erl) | BP (IC 95 %) |
 | :--: | :--: | :--: | :--: |
 | Alocação de espectro | FF | 150 | 0 ± 0 |
-| Alocação de espectro | FF | 200 | 1.610e-04 ± 9.9e-05 |
-| Alocação de espectro | FF | 250 | 0.003094 ± 7.4e-04 |
-| Alocação de espectro | FF | 300 | 0.01976 ± 0.0015 |
-| Alocação de espectro | FF | 350 | 0.04752 ± 0.0013 |
-| Alocação de espectro | FF | 400 | 0.08182 ± 0.0028 |
+| Alocação de espectro | FF | 200 | 2.480e-05 ± 2.9e-05 |
+| Alocação de espectro | FF | 250 | 4.129e-04 ± 7.8e-05 |
+| Alocação de espectro | FF | 300 | 0.005238 ± 9.6e-04 |
+| Alocação de espectro | FF | 350 | 0.02257 ± 0.001 |
+| Alocação de espectro | FF | 400 | 0.04833 ± 0.0017 |
 | Alocação de espectro | LF | 150 | 0 ± 0 |
-| Alocação de espectro | LF | 200 | 1.610e-04 ± 9.9e-05 |
-| Alocação de espectro | LF | 250 | 0.003094 ± 7.4e-04 |
-| Alocação de espectro | LF | 300 | 0.01976 ± 0.0015 |
-| Alocação de espectro | LF | 350 | 0.04752 ± 0.0013 |
-| Alocação de espectro | LF | 400 | 0.08182 ± 0.0028 |
+| Alocação de espectro | LF | 200 | 2.480e-05 ± 2.9e-05 |
+| Alocação de espectro | LF | 250 | 4.129e-04 ± 7.8e-05 |
+| Alocação de espectro | LF | 300 | 0.005238 ± 9.6e-04 |
+| Alocação de espectro | LF | 350 | 0.02257 ± 0.001 |
+| Alocação de espectro | LF | 400 | 0.04833 ± 0.0017 |
 | Alocação de espectro | EF | 150 | 0 ± 0 |
-| Alocação de espectro | EF | 200 | 1.473e-04 ± 1.1e-04 |
-| Alocação de espectro | EF | 250 | 0.004053 ± 4.9e-04 |
-| Alocação de espectro | EF | 300 | 0.02067 ± 9.2e-04 |
-| Alocação de espectro | EF | 350 | 0.04708 ± 0.0017 |
-| Alocação de espectro | EF | 400 | 0.07771 ± 0.0031 |
-| Alocação de espectro | RF | 150 | 9.883e-04 ± 1.7e-04 |
-| Alocação de espectro | RF | 200 | 0.008918 ± 6.5e-04 |
-| Alocação de espectro | RF | 250 | 0.02918 ± 9.1e-04 |
-| Alocação de espectro | RF | 300 | 0.0571 ± 0.0029 |
-| Alocação de espectro | RF | 350 | 0.09044 ± 7.2e-04 |
-| Alocação de espectro | RF | 400 | 0.1241 ± 0.0025 |
+| Alocação de espectro | EF | 200 | 3.424e-06 ± 9.5e-06 |
+| Alocação de espectro | EF | 250 | 5.045e-04 ± 1.4e-04 |
+| Alocação de espectro | EF | 300 | 0.006587 ± 7.6e-04 |
+| Alocação de espectro | EF | 350 | 0.02359 ± 0.0015 |
+| Alocação de espectro | EF | 400 | 0.04675 ± 0.0033 |
+| Alocação de espectro | RF | 150 | 2.244e-04 ± 9.2e-05 |
+| Alocação de espectro | RF | 200 | 0.003413 ± 1.5e-04 |
+| Alocação de espectro | RF | 250 | 0.0144 ± 9.0e-04 |
+| Alocação de espectro | RF | 300 | 0.03441 ± 0.0014 |
+| Alocação de espectro | RF | 350 | 0.06113 ± 0.0018 |
+| Alocação de espectro | RF | 400 | 0.08873 ± 0.0015 |
 | Roteamento | SP (Dijkstra) | 150 | 0 ± 0 |
-| Roteamento | SP (Dijkstra) | 200 | 1.610e-04 ± 9.9e-05 |
-| Roteamento | SP (Dijkstra) | 250 | 0.003094 ± 7.4e-04 |
-| Roteamento | SP (Dijkstra) | 300 | 0.01976 ± 0.0015 |
-| Roteamento | SP (Dijkstra) | 350 | 0.04752 ± 0.0013 |
-| Roteamento | SP (Dijkstra) | 400 | 0.08182 ± 0.0028 |
+| Roteamento | SP (Dijkstra) | 200 | 2.480e-05 ± 2.9e-05 |
+| Roteamento | SP (Dijkstra) | 250 | 4.129e-04 ± 7.8e-05 |
+| Roteamento | SP (Dijkstra) | 300 | 0.005238 ± 9.6e-04 |
+| Roteamento | SP (Dijkstra) | 350 | 0.02257 ± 0.001 |
+| Roteamento | SP (Dijkstra) | 400 | 0.04833 ± 0.0017 |
 | Roteamento | KSP (k=3) | 150 | 0 ± 0 |
-| Roteamento | KSP (k=3) | 200 | 2.738e-05 ± 2.4e-05 |
-| Roteamento | KSP (k=3) | 250 | 5.138e-04 ± 1.7e-04 |
-| Roteamento | KSP (k=3) | 300 | 0.004004 ± 5.4e-04 |
-| Roteamento | KSP (k=3) | 350 | 0.01336 ± 7.2e-04 |
-| Roteamento | KSP (k=3) | 400 | 0.02864 ± 0.0016 |
+| Roteamento | KSP (k=3) | 200 | 0 ± 0 |
+| Roteamento | KSP (k=3) | 250 | 5.999e-05 ± 4.3e-05 |
+| Roteamento | KSP (k=3) | 300 | 8.863e-04 ± 1.9e-04 |
+| Roteamento | KSP (k=3) | 350 | 0.004947 ± 4.6e-04 |
+| Roteamento | KSP (k=3) | 400 | 0.0137 ± 6.2e-04 |
 | Seleção de modulação | Distance-adaptive | 150 | 0 ± 0 |
-| Seleção de modulação | Distance-adaptive | 200 | 1.610e-04 ± 9.9e-05 |
-| Seleção de modulação | Distance-adaptive | 250 | 0.003094 ± 7.4e-04 |
-| Seleção de modulação | Distance-adaptive | 300 | 0.01976 ± 0.0015 |
-| Seleção de modulação | Distance-adaptive | 350 | 0.04752 ± 0.0013 |
-| Seleção de modulação | Distance-adaptive | 400 | 0.08182 ± 0.0028 |
+| Seleção de modulação | Distance-adaptive | 200 | 2.480e-05 ± 2.9e-05 |
+| Seleção de modulação | Distance-adaptive | 250 | 4.129e-04 ± 7.8e-05 |
+| Seleção de modulação | Distance-adaptive | 300 | 0.005238 ± 9.6e-04 |
+| Seleção de modulação | Distance-adaptive | 350 | 0.02257 ± 0.001 |
+| Seleção de modulação | Distance-adaptive | 400 | 0.04833 ± 0.0017 |
 | Seleção de modulação | Fixed (4QAM) | 150 | 7.197e-05 ± 4.9e-05 |
 | Seleção de modulação | Fixed (4QAM) | 200 | 0.003276 ± 6.6e-04 |
 | Seleção de modulação | Fixed (4QAM) | 250 | 0.0239 ± 0.0012 |
@@ -145,23 +145,23 @@ Com a mesma semente, First-Fit e Last-Fit produziram valores **idênticos em tod
 
 ### E6b – Potência média da rede × lei de Little
 
-| warm-up (req.) | A (Erl) | teórico (W) | simulado (W, IC 95 %) | erro rel. | previsto c/ viés de warm-up (W) | veredito |
-| :--: | :--: | :--: | :--: | :--: | :--: | :--: |
-| 0 | 5 | 19508.2 | 19504.5 ± 6 | -0.02 % | 19508.2 | PASS |
-| 0 | 10 | 22166.3 | 22158.2 ± 11 | -0.04 % | 22166.3 | PASS |
-| 0 | 15 | 24479.5 | 24469 ± 12 | -0.04 % | 24479.5 | PASS |
-| 0 | 20 | 25816.8 | 25809.2 ± 11 | -0.03 % | 25816.8 | PASS |
-| 0 | 25 | 26446.8 | 26440 ± 4.9 | -0.03 % | 26446.8 | PASS |
-| 20000 | 5 | 19508.2 | 16247.2 ± 16 | -16.72 % | 16258.7 | FAIL |
-| 20000 | 10 | 22166.3 | 18459.3 ± 17 | -16.72 % | 18474 | FAIL |
-| 20000 | 15 | 24479.5 | 20386.6 ± 22 | -16.72 % | 20404 | FAIL |
-| 20000 | 20 | 25816.8 | 21503.3 ± 22 | -16.71 % | 21515.8 | FAIL |
-| 20000 | 25 | 26446.8 | 22025.5 ± 18 | -16.72 % | 22043.5 | FAIL |
-| 60000 | 5 | 19508.2 | 9760.23 ± 22 | -49.97 % | 9759.64 | FAIL |
-| 60000 | 10 | 22166.3 | 11088.1 ± 25 | -49.98 % | 11089.4 | FAIL |
-| 60000 | 15 | 24479.5 | 12246.5 ± 29 | -49.97 % | 12252.8 | FAIL |
-| 60000 | 20 | 25816.8 | 12910.6 ± 32 | -49.99 % | 12913.6 | FAIL |
-| 60000 | 25 | 26446.8 | 13214.4 ± 34 | -50.03 % | 13236.8 | FAIL |
+| warm-up (req.) | A (Erl) | teórico (W) | simulado (W, IC 95 %) | erro rel. | veredito |
+| :--: | :--: | :--: | :--: | :--: | :--: |
+| 0 | 5 | 4308.16 | 4304.54 ± 6 | -0.08 % | PASS |
+| 0 | 10 | 6966.35 | 6958.21 ± 11 | -0.12 % | PASS |
+| 0 | 15 | 9279.53 | 9268.99 ± 12 | -0.11 % | PASS |
+| 0 | 20 | 10616.8 | 10609.2 ± 11 | -0.07 % | PASS |
+| 0 | 25 | 11246.8 | 11240 ± 4.9 | -0.06 % | PASS |
+| 20000 | 5 | 4308.16 | 4306.69 ± 4.7 | -0.03 % | PASS |
+| 20000 | 10 | 6966.35 | 6963.12 ± 8.5 | -0.05 % | PASS |
+| 20000 | 15 | 9279.53 | 9272.52 ± 8.6 | -0.08 % | PASS |
+| 20000 | 20 | 10616.8 | 10612.6 ± 8.9 | -0.04 % | PASS |
+| 20000 | 25 | 11246.8 | 11242.5 ± 4.8 | -0.04 % | PASS |
+| 60000 | 5 | 4308.16 | 4304.19 ± 8.4 | -0.09 % | PASS |
+| 60000 | 10 | 6966.35 | 6958.56 ± 17 | -0.11 % | PASS |
+| 60000 | 15 | 9279.53 | 9262.72 ± 16 | -0.18 % | PASS |
+| 60000 | 20 | 10616.8 | 10608.9 ± 14 | -0.07 % | PASS |
+| 60000 | 25 | 11246.8 | 11236 ± 4.5 | -0.10 % | PASS |
 
 ### E7b – Potência ótima: argmax do simulador × fórmula (P_ASE / 2η)^(1/3)
 
@@ -177,11 +177,11 @@ Com a mesma semente, First-Fit e Last-Fit produziram valores **idênticos em tod
 
 | Modulação | slots (c/ guarda) | limiar SNR (dB) | maxRange (km) | alcance por QoT (km) | razão |
 | :--: | :--: | :--: | :--: | :--: | :--: |
-| 4QAM | 4 | 5.92 | 5000 | >= 2e+04 | 4.0× |
-| 8QAM | 3 | 9.32 | 2500 | 1.367e+04 | 5.5× |
-| 16QAM | 3 | 12.34 | 1250 | 6790 | 5.4× |
-| 32QAM | 2 | 15.22 | 625 | 4400 | 7.0× |
-| 64QAM | 2 | 18.02 | 312 | 2290 | 7.3× |
+| 4QAM | 4 | 5.92 | 5110 | >= 2e+04 | 3.9× |
+| 8QAM | 3 | 9.32 | 3270 | 1.367e+04 | 4.2× |
+| 16QAM | 3 | 12.34 | 2000 | 6790 | 3.4× |
+| 32QAM | 2 | 15.22 | 400 | 4400 | 11.0× |
+| 64QAM | 2 | 18.02 | 160 | 2290 | 14.3× |
 
 ### E7 – Verificações determinísticas da camada física
 
@@ -198,39 +198,74 @@ Com a mesma semente, First-Fit e Last-Fit produziram valores **idênticos em tod
 
 | grupo | variante | carga | BP (IC 95 %) | fragm. | QoT novo | QoT outros | XT novo | XT outros | SNR médio (dB) |
 | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
-| impairments | No QoT | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 17.85 |
-| impairments | No QoT | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 17.28 |
-| impairments | No QoT | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 16.87 |
-| impairments | No QoT | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 16.57 |
-| impairments | No QoT | 1200 | 0.00375 ± 0.0021 | 0.00375 | 0 | 0 | 0 | 0 | 16.31 |
-| impairments | ASE | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.73 |
-| impairments | ASE | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.73 |
-| impairments | ASE | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.73 |
-| impairments | ASE | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.73 |
-| impairments | ASE | 1200 | 0.00375 ± 0.0021 | 0.00375 | 0 | 0 | 0 | 0 | 21.74 |
-| impairments | ASE+NLI | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.55 |
-| impairments | ASE+NLI | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.41 |
-| impairments | ASE+NLI | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.31 |
-| impairments | ASE+NLI | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.25 |
-| impairments | ASE+NLI | 1200 | 0.00375 ± 0.0021 | 0.00375 | 0 | 0 | 0 | 0 | 18.21 |
-| impairments | ASE+NLI+XT | 400 | 0.02759 ± 0.0015 | 0 | 0 | 0 | 0.0129 | 0.0147 | 18.4 |
-| impairments | ASE+NLI+XT | 600 | 0.04974 ± 0.0032 | 0 | 0 | 0 | 0.0289 | 0.0208 | 18.28 |
-| impairments | ASE+NLI+XT | 800 | 0.08894 ± 0.0061 | 0 | 0 | 0 | 0.0544 | 0.0345 | 18.18 |
-| impairments | ASE+NLI+XT | 1000 | 0.1438 ± 0.0065 | 1.72e-05 | 0 | 0 | 0.0928 | 0.051 | 18.16 |
-| impairments | ASE+NLI+XT | 1200 | 0.1944 ± 0.007 | 0 | 0 | 0 | 0.12 | 0.0748 | 18.12 |
-| core | First-fit core | 400 | 0.02759 ± 0.0015 | 0 | 0 | 0 | 0.0129 | 0.0147 | 18.4 |
-| core | First-fit core | 600 | 0.04974 ± 0.0032 | 0 | 0 | 0 | 0.0289 | 0.0208 | 18.28 |
-| core | First-fit core | 800 | 0.08894 ± 0.0061 | 0 | 0 | 0 | 0.0544 | 0.0345 | 18.18 |
-| core | First-fit core | 1000 | 0.1438 ± 0.0065 | 1.72e-05 | 0 | 0 | 0.0928 | 0.051 | 18.16 |
-| core | First-fit core | 1200 | 0.1944 ± 0.007 | 0 | 0 | 0 | 0.12 | 0.0748 | 18.12 |
-| core | Random-fit core | 400 | 0.003019 ± 3.5e-04 | 0 | 0 | 0 | 3.76e-04 | 0.00264 | 18.66 |
-| core | Random-fit core | 600 | 0.01483 ± 0.0016 | 0 | 0 | 0 | 0.00647 | 0.00837 | 18.4 |
-| core | Random-fit core | 800 | 0.05357 ± 0.0021 | 0 | 0 | 0 | 0.0297 | 0.0239 | 18.24 |
-| core | Random-fit core | 1000 | 0.1073 ± 0.007 | 0 | 0 | 0 | 0.0656 | 0.0416 | 18.19 |
-| core | Random-fit core | 1200 | 0.1592 ± 0.0058 | 0 | 0 | 0 | 0.108 | 0.0515 | 18.16 |
-| core | Min-crosstalk core | 400 | 3.897e-04 ± 3.4e-04 | 0 | 0 | 0 | 3.43e-04 | 4.70e-05 | 18.56 |
-| core | Min-crosstalk core | 600 | 0.03181 ± 0.0038 | 0 | 0 | 0 | 0.0312 | 6.55e-04 | 18.44 |
-| core | Min-crosstalk core | 800 | 0.08403 ± 0.007 | 0 | 0 | 0 | 0.0827 | 0.00136 | 18.32 |
-| core | Min-crosstalk core | 1000 | 0.1398 ± 0.0033 | 0 | 0 | 0 | 0.136 | 0.00352 | 18.28 |
-| core | Min-crosstalk core | 1200 | 0.1927 ± 0.0067 | 0 | 0 | 0 | 0.186 | 0.00663 | 18.26 |
+| impairments | No QoT | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.08 |
+| impairments | No QoT | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 17.51 |
+| impairments | No QoT | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 17.1 |
+| impairments | No QoT | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 16.78 |
+| impairments | No QoT | 1200 | 4.439e-04 ± 5.9e-04 | 4.44e-04 | 0 | 0 | 0 | 0 | 16.52 |
+| impairments | ASE | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.8 |
+| impairments | ASE | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.8 |
+| impairments | ASE | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.8 |
+| impairments | ASE | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 21.8 |
+| impairments | ASE | 1200 | 4.439e-04 ± 5.9e-04 | 4.44e-04 | 0 | 0 | 0 | 0 | 21.8 |
+| impairments | ASE+NLI | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.74 |
+| impairments | ASE+NLI | 600 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.62 |
+| impairments | ASE+NLI | 800 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.55 |
+| impairments | ASE+NLI | 1000 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.48 |
+| impairments | ASE+NLI | 1200 | 4.439e-04 ± 5.9e-04 | 4.44e-04 | 0 | 0 | 0 | 0 | 18.45 |
+| impairments | ASE+NLI+XT | 400 | 0.02717 ± 0.0038 | 0 | 0 | 0 | 0.0104 | 0.0168 | 18.54 |
+| impairments | ASE+NLI+XT | 600 | 0.04917 ± 0.0093 | 0 | 0 | 0 | 0.0231 | 0.026 | 18.38 |
+| impairments | ASE+NLI+XT | 800 | 0.09313 ± 0.0052 | 0 | 0 | 0 | 0.0501 | 0.043 | 18.28 |
+| impairments | ASE+NLI+XT | 1000 | 0.1408 ± 0.0071 | 0 | 0 | 0 | 0.0807 | 0.0601 | 18.24 |
+| impairments | ASE+NLI+XT | 1200 | 0.1963 ± 0.0057 | 0 | 0 | 0 | 0.117 | 0.0792 | 18.24 |
+| core | First-fit core | 400 | 0.02717 ± 0.0038 | 0 | 0 | 0 | 0.0104 | 0.0168 | 18.54 |
+| core | First-fit core | 600 | 0.04917 ± 0.0093 | 0 | 0 | 0 | 0.0231 | 0.026 | 18.38 |
+| core | First-fit core | 800 | 0.09313 ± 0.0052 | 0 | 0 | 0 | 0.0501 | 0.043 | 18.28 |
+| core | First-fit core | 1000 | 0.1408 ± 0.0071 | 0 | 0 | 0 | 0.0807 | 0.0601 | 18.24 |
+| core | First-fit core | 1200 | 0.1963 ± 0.0057 | 0 | 0 | 0 | 0.117 | 0.0792 | 18.24 |
+| core | Random-fit core | 400 | 0.005642 ± 5.4e-04 | 0 | 0 | 0 | 7.79e-04 | 0.00486 | 18.81 |
+| core | Random-fit core | 600 | 0.01536 ± 0.0016 | 0 | 0 | 0 | 0.00533 | 0.01 | 18.56 |
+| core | Random-fit core | 800 | 0.05534 ± 0.0046 | 0 | 0 | 0 | 0.0256 | 0.0297 | 18.37 |
+| core | Random-fit core | 1000 | 0.104 ± 0.003 | 0 | 0 | 0 | 0.0601 | 0.0439 | 18.3 |
+| core | Random-fit core | 1200 | 0.1606 ± 0.011 | 0 | 0 | 0 | 0.103 | 0.0571 | 18.29 |
+| core | Min-crosstalk core | 400 | 4.742e-04 ± 3.4e-04 | 0 | 0 | 0 | 3.46e-04 | 1.28e-04 | 18.75 |
+| core | Min-crosstalk core | 600 | 0.02224 ± 0.004 | 0 | 0 | 0 | 0.0216 | 6.16e-04 | 18.63 |
+| core | Min-crosstalk core | 800 | 0.07141 ± 0.0052 | 0 | 0 | 0 | 0.0684 | 0.00301 | 18.49 |
+| core | Min-crosstalk core | 1000 | 0.1255 ± 0.0082 | 0 | 0 | 0 | 0.12 | 0.00546 | 18.41 |
+| core | Min-crosstalk core | 1200 | 0.18 ± 0.0058 | 0 | 0 | 0 | 0.17 | 0.00958 | 18.4 |
+| core | Peripheral-first core | 400 | 1.717e-05 ± 4.8e-05 | 0 | 0 | 0 | 1.72e-05 | 0 | 18.74 |
+| core | Peripheral-first core | 600 | 0.02026 ± 0.0019 | 0 | 0 | 0 | 0.0198 | 4.25e-04 | 18.56 |
+| core | Peripheral-first core | 800 | 0.06474 ± 0.0041 | 0 | 0 | 0 | 0.0637 | 0.00106 | 18.4 |
+| core | Peripheral-first core | 1000 | 0.1153 ± 0.0038 | 0 | 0 | 0 | 0.114 | 0.00131 | 18.29 |
+| core | Peripheral-first core | 1200 | 0.1612 ± 0.0056 | 0 | 0 | 0 | 0.159 | 0.00176 | 18.25 |
+| core | XT-aware core | 400 | 1.717e-05 ± 4.8e-05 | 0 | 0 | 0 | 1.72e-05 | 0 | 18.74 |
+| core | XT-aware core | 600 | 0.01788 ± 7.4e-04 | 0 | 0 | 0 | 0.0175 | 3.81e-04 | 18.65 |
+| core | XT-aware core | 800 | 0.05714 ± 0.0025 | 0 | 0 | 0 | 0.0563 | 8.07e-04 | 18.51 |
+| core | XT-aware core | 1000 | 0.1062 ± 0.0037 | 0 | 0 | 0 | 0.105 | 0.00119 | 18.37 |
+| core | XT-aware core | 1200 | 0.1608 ± 0.0035 | 0 | 0 | 0 | 0.159 | 0.00145 | 18.36 |
+| core | Peripheral-first core + staggered FF | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.74 |
+| core | Peripheral-first core + staggered FF | 600 | 0.01228 ± 0.0024 | 0 | 0 | 0 | 0.012 | 3.00e-04 | 18.56 |
+| core | Peripheral-first core + staggered FF | 800 | 0.05799 ± 0.0058 | 0 | 0 | 0 | 0.0551 | 0.00284 | 18.39 |
+| core | Peripheral-first core + staggered FF | 1000 | 0.1073 ± 0.0072 | 0 | 0 | 0 | 0.101 | 0.00611 | 18.33 |
+| core | Peripheral-first core + staggered FF | 1200 | 0.1561 ± 0.0063 | 0 | 0 | 0 | 0.148 | 0.00832 | 18.3 |
+| core | XT-aware core + staggered FF | 400 | 0 ± 0 | 0 | 0 | 0 | 0 | 0 | 18.74 |
+| core | XT-aware core + staggered FF | 600 | 0.0111 ± 0.0011 | 0 | 0 | 0 | 0.0108 | 2.61e-04 | 18.6 |
+| core | XT-aware core + staggered FF | 800 | 0.05198 ± 0.0034 | 0 | 0 | 0 | 0.0492 | 0.0028 | 18.5 |
+| core | XT-aware core + staggered FF | 1000 | 0.1001 ± 0.003 | 0 | 0 | 0 | 0.0956 | 0.00455 | 18.46 |
+| core | XT-aware core + staggered FF | 1200 | 0.1506 ± 0.0082 | 0 | 0 | 0 | 0.144 | 0.00668 | 18.43 |
+
+### E8b – Seleção de modulação: distance-adaptive × qot-adaptive (5 réplicas × 20 k requisições medidas)
+
+| variante | carga | BP (IC 95 %) | fragm. | QoT novo | QoT outros | XT novo | XT outros | slots/circuito (IC 95 %) | % 4QAM | % 8QAM | % 16QAM | % 32QAM | % 64QAM |
+| :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
+| distance-adaptive | 400 | 0.02717 ± 0.0038 | 0 | 0 | 0 | 0.0104 | 0.0168 | 4.41 ± 0.02 | 5.2 | 6.9 | 71.7 | 11.8 | 4.4 |
+| distance-adaptive | 600 | 0.04917 ± 0.0093 | 0 | 0 | 0 | 0.0231 | 0.026 | 4.50 ± 0.02 | 7.2 | 8.5 | 68.1 | 11.8 | 4.5 |
+| distance-adaptive | 800 | 0.09313 ± 0.0052 | 0 | 0 | 0 | 0.0501 | 0.043 | 4.57 ± 0.04 | 9.5 | 10.3 | 63.7 | 12.0 | 4.6 |
+| distance-adaptive | 1000 | 0.1408 ± 0.0071 | 0 | 0 | 0 | 0.0807 | 0.0601 | 4.58 ± 0.01 | 10.8 | 10.8 | 61.5 | 12.2 | 4.7 |
+| distance-adaptive | 1200 | 0.1963 ± 0.0057 | 0 | 0 | 0 | 0.117 | 0.0792 | 4.60 ± 0.04 | 12.1 | 12.1 | 58.6 | 12.4 | 4.8 |
+| qot-adaptive | 400 | 0.03009 ± 0.0039 | 0 | 0 | 8.93e-04 | 0.00685 | 0.0223 | 3.85 ± 0.03 | 6.3 | 5.3 | 17.3 | 25.2 | 46.0 |
+| qot-adaptive | 600 | 0.05359 ± 0.0057 | 0 | 0 | 0.00147 | 0.0169 | 0.0353 | 3.99 ± 0.02 | 8.1 | 6.9 | 18.7 | 24.5 | 41.8 |
+| qot-adaptive | 800 | 0.1033 ± 0.0037 | 0 | 0 | 9.03e-04 | 0.0533 | 0.0491 | 4.05 ± 0.06 | 9.5 | 7.4 | 19.5 | 23.9 | 39.8 |
+| qot-adaptive | 1000 | 0.1589 ± 0.0042 | 0 | 0 | 0.00118 | 0.0883 | 0.0694 | 4.15 ± 0.12 | 11.0 | 8.9 | 20.1 | 22.2 | 37.8 |
+| qot-adaptive | 1200 | 0.2128 ± 0.0043 | 0 | 0 | 0.0021 | 0.114 | 0.0963 | 4.18 ± 0.10 | 12.1 | 9.2 | 20.3 | 20.9 | 37.6 |
 
