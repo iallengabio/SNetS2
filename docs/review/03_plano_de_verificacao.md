@@ -5,6 +5,7 @@
 > Princípio: *verificação* = “construímos o modelo certo?” (código × especificação); *validação* = “o modelo certo é o do mundo real/literatura?” (resultado × referência).
 
 > **Resultados:** a execução dos níveis L2, L3, L4, L6-a, L8-b, L9, L10, L11 e L12-b está no [relatório de verificação e validação](04_relatorio_verificacao_validacao.md).
+> **Regressão:** versões rápidas dos experimentos com oráculo exato rodam no `mvn test` (`src/test/java/com/snets2/verification/`): `ErlangBSingleLinkTest` (E1), `LossNetworkOraclesTest` (E2 transmissores, E3 Kaufman–Roberts e First-Fit ≡ Last-Fit, E4 cadeia de Markov exata), `EnergyModelTest` (E6b, Little com e sem *warm-up*), `PhysicalLayerOraclesTest` e `PhysicalLayerMagnitudeTest` (E7: ASE da cadeia, ótimo do GN, NLI) e `RmscaPhysicalConstraintsTest` (XT). A campanha completa (`scripts/verification/run_campaign.sh`) fica fora do `mvn test`.
 
 ## 0. Estado inicial e primeira evidência (já executada)
 
