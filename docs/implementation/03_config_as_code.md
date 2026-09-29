@@ -35,7 +35,7 @@ Essa arquitetura garante que, ao adicionar qualquer novo campo ao JSON de config
 ### 2.2. `ConfigValidator` (com.snets2.config.ConfigValidator)
 Validação *fail-fast* de cada `ScenarioSetup` gerado pelo *sweep*, antes de qualquer replicação ser submetida.
 - **Erros** são agregados numa única `IllegalArgumentException`, que aborta o experimento. A lista está em `formal_description/05` §7.
-- **Avisos** são impressos uma vez em `stderr`: chaves reservadas com valor diferente do padrão e nomes desconhecidos em `activeMetrics`.
+- **Avisos** são impressos uma vez em `stderr`: chaves reservadas com valor diferente do padrão, nomes desconhecidos em `activeMetrics` e `addDropDegree = 0` em nó com transceptores.
 - Eliminou o padrão silencioso de `load = 1,0` e o laço infinito com topologias de um único nó.
 
 ---
@@ -44,7 +44,8 @@ Validação *fail-fast* de cada `ScenarioSetup` gerado pelo *sweep*, antes de qu
 
 ### 2.1. `TopologyMapper` (com.snets2.config.TopologyMapper)
 Realiza a ponte entre os POJOs do Jackson e os objetos de simulação.
-- **Nós:** Instancia objetos `Node` com suas capacidades de Tx/Rx.
+- **Nós:** Instancia objetos `Node` com suas capacidades de Tx/Rx/regeneradores e o grau de *add/drop* (`NodeConfig.addDropDegree`; ausente no JSON = `Node.DEFAULT_ADD_DROP_DEGREE` = 1).
+- **Amplificadores:** `buildAmplifiers` cria a cadeia booster + $N_l$ de linha + pré-amplificador de cada enlace com os ganhos de `PhysicalLayerModel.amplifierChainGainsDb` (a mesma regra do ASE).
 - **Enlaces e Cores:** Para cada link, instancia a geometria de núcleos definida no bloco `cores` do JSON.
 - **Modulações:** Converte a lista técnica de modulações para instâncias de `ModulationFormat`.
 

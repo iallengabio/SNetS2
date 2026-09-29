@@ -107,6 +107,12 @@ public final class VerificationCampaign {
             return this;
         }
 
+        /** Node with an explicit add/drop degree (term a of the OXC power, energy model). */
+        Scenario node(String id, int tx, int rx, int regenerators, int addDropDegree) {
+            nodes.add(Map.of("id", id, "tx", tx, "rx", rx, "regenerators", regenerators, "addDropDegree", addDropDegree));
+            return this;
+        }
+
         /** Two opposite directed links. */
         Scenario link(String a, String b, double km) {
             links.add(Map.of("source", a, "destination", b, "length", km));
@@ -450,9 +456,9 @@ public final class VerificationCampaign {
             int c = 20;
             for (int warmUp : new int[] {0, 20_000, 60_000}) {
                 for (double a : new double[] {5, 10, 15, 20, 25}) {
-                    // 40 transceivers per node: never blocking (at most c = 20 circuits per direction) and a
-                    // static power of the same order as the dynamic one (100 W per installed transceiver)
-                    Scenario s = new Scenario().node("0", 40, 40, 0).node("1", 40, 40, 0).link("0", "1", 100);
+                    // 40 transceivers per node: never blocking (at most c = 20 circuits per direction). The static
+                    // power does not depend on them: 2 OXCs (n = 2, add/drop degree a = 2) + 2 x 3 amplifiers
+                    Scenario s = new Scenario().node("0", 40, 40, 0, 2).node("1", 40, 40, 0, 2).link("0", "1", 100);
                     ScenarioSetup setup = s.idealSlots().metric("ConsumedEnergy")
                             .sim("totalSlots", c).sim("requests", 120_000).sim("warmUpRequests", warmUp).load(2 * a).setup();
                     NetworkTopology topology = TopologyMapper.map(setup.networkTopology(), setup.physicalLayer(), c);

@@ -18,7 +18,7 @@
 | CR-07 | ✅ Corrigido: duas passadas (transparente → com regeneradores) | `StandardIntegratedRMSCA`; `RmscaPhysicalConstraintsTest` |
 | CR-09 | ✅ Corrigido: `ConfigValidator` com erros (*fail-fast*) e avisos para chaves ignoradas | `ExperimentalPlanner`; `ConfigValidatorTest` |
 | CR-10 | ✅ Corrigido: nº de slots com `polarizationModes` e `rateOfFEC`; PSD calculada na largura de sinal (sem banda de guarda) | `SlotCalculator`, `PhysicalLayerModel.signalBandwidth`; `SlotCalculatorTest` (L0-6) |
-| CR-11 | 🔴 Confirmado quantitativamente, ainda não corrigido: −16,7 % (*warm-up* 20 k) e −50 % (60 k) na potência média; também o termo de *add/drop* do OXC é cobrado por transceptor instalado | [Relatório de V&V](04_relatorio_verificacao_validacao.md), E6 |
+| CR-11 | ✅ Corrigido (issues #13, #14, #15): energia e pico integrados só na janela medida $[T_w, T]$ e média dividida por $T - T_w$; termo $a$ do OXC = `addDropDegree` do nó (padrão 1), não mais `tx + rx`; amplificadores da energia = cadeia booster + $N_l$ + pré do ASE; constantes documentadas | `ConsumedEnergyMetrics`, `SimulationEngine.incrementArrivalCounter`, `EnergyConsumptionModel`, `TopologyMapper`, `PhysicalLayerModel.amplifierChainGainsDb`; `EnergyModelTest`; E6b passa com *warm-up* 0, 20 k e 60 k |
 | CR-12 | 🟡 Parcial: `try/finally` e iteração sem cópia; a verificação continua O(N_ativos) por candidato | — |
 | Demais | ⏳ Pendentes (CR-13 a CR-21) | — |
 
