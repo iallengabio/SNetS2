@@ -82,7 +82,19 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
 * **Parâmetros Baseados em Componentes:** Perdas de fibra, não-linearidades, dispersão e parâmetros dos amplificadores ópticos.
 * **Parâmetros MC-EON / XT:** `propagationConstant`, `bendingRadius`, `couplingCoefficient`, `corePitch` são os coeficientes necessários para o cálculo matemático do Crosstalk estatístico entre núcleos.
 * **Granularidade e Transceptores:** `guardBand` (número de slots vazios para evitar interferência adjacente) e `bvtSpectralWidth` (largura de um slot, em Hz).
-* **Número de slots por requisição:** $n = \lceil R\,(1+\text{rateOfFEC}) / (\text{polarizationModes}\cdot\log_2 M\cdot f_{slot}) \rceil + \text{guardBand}$. `rateOfFEC` é a **fração de overhead** do FEC (0,25 = 25 %). Se `polarizationModes` não for informado (0), assume-se 1 polarização.
+* **Número de slots por requisição:** $n = \lceil R\,(1+\text{rateOfFEC}) / (\text{polarizationModes}\cdot\log_2 M\cdot f_{slot}) \rceil + \text{guardBand}$. Se `polarizationModes` não for informado (0), assume-se 1 polarização.
+* **`rateOfFEC` — como preencher:** é o **overhead** do FEC, como **fração** da taxa útil. A taxa de linha é $R_{linha} = R\,(1 + \text{rateOfFEC})$.
+
+  | FEC | `rateOfFEC` |
+  | :-- | :-- |
+  | HD-FEC 7 % (ITU-T G.975.1) | `0.07` |
+  | SD-FEC 15 % | `0.15` |
+  | SD-FEC 20 % | `0.20` |
+  | SD-FEC 25 % | `0.25` |
+  | sem FEC (padrão, se omitido) | `0` |
+
+  * **Não** é a taxa de código $r$ (fração de bits úteis). Se o seu dado estiver como taxa de código, converta: $\text{rateOfFEC} = 1/r - 1$ (ex.: $r = 0{,}8 \Rightarrow 0{,}25$). Por isso `rateOfFEC: 0.8` significaria 80 % de overhead, e não um código de taxa 0,8.
+  * **Coerência com os limiares:** o overhead aumenta o número de slots, enquanto o ganho do FEC aparece nos **limiares de SNR** (`SNR`) das modulações, que são limiares **pré-FEC**. Os dois devem descrever o **mesmo** código. Um SD-FEC de 20–25 % tolera BER pré-FEC da ordem de $2\cdot10^{-2}$, portanto limiares de SNR vários dB menores que os de um HD-FEC de 7 % (BER pré-FEC da ordem de $10^{-3}$–$4\cdot10^{-3}$). Usar o overhead de um SD-FEC com limiares de HD-FEC penaliza a configuração duas vezes: em espectro e em alcance.
 * **Chaves reservadas** (aceitas e ignoradas, com aviso quando diferentes do padrão): `physicalLayerModel`, `crosstalkModel`, `typeOfTestQoT`, `powerSaturationOfOpticalAmplifier`, `noiseFactorModelParameterA1/A2`, `typeOfAmplifierGain`, `switchInsertionLoss`, `fixedPowerSpectralDensity`, `referenceBandwidthForPowerSpectralDensity`.
 
 ---
