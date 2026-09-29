@@ -101,7 +101,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                     int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp);
 
                     // 4. Core loop, in the order given by the core assignment strategy
-                    for (Integer coreId : coreAssignment.selectCores(cp, path)) {
+                    for (Integer coreId : coreAssignment.selectCores(cp, path, numSlots, spectrumAssignment)) {
                         lastAttemptedCore = coreId;
 
                         // 5. Spectrum assignment

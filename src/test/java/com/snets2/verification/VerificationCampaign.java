@@ -611,7 +611,12 @@ public final class VerificationCampaign {
     // =====================================================================================
 
     static void qotNetwork(File out) throws Exception {
-        record Variant(String group, String label, Map<String, Object> physical, String core, String modulation) {}
+        record Variant(String group, String label, Map<String, Object> physical, String core, String modulation,
+                       String spectrum) {
+            Variant(String group, String label, Map<String, Object> physical, String core, String modulation) {
+                this(group, label, physical, core, modulation, "firstfit");
+            }
+        }
         Map<String, Object> off = Map.of("activeQoT", false, "activeQoTForOther", false);
         Map<String, Object> ase = Map.of("activeNLI", false, "activeXT", false, "activeXTForOther", false);
         Map<String, Object> aseNli = Map.of("activeXT", false, "activeXTForOther", false);
@@ -624,6 +629,12 @@ public final class VerificationCampaign {
             new Variant("core", "First-fit core", all, "firstfitcore", "distance-adaptive"),
             new Variant("core", "Random-fit core", all, "randomfitcore", "distance-adaptive"),
             new Variant("core", "Min-crosstalk core", all, "mincrosstalkcore", "distance-adaptive"),
+            // Issue #18: peripheral-first order, slot-aware XT order and core-staggered spectrum
+            new Variant("core", "Peripheral-first core", all, "peripheralfirstcore", "distance-adaptive"),
+            new Variant("core", "XT-aware core", all, "xtawarecore", "distance-adaptive"),
+            new Variant("core", "Peripheral-first core + staggered FF", all, "peripheralfirstcore", "distance-adaptive",
+                    "corestaggeredfit"),
+            new Variant("core", "XT-aware core + staggered FF", all, "xtawarecore", "distance-adaptive", "corestaggeredfit"),
             // Issue #23: modulation chosen by maxRange vs by the physical model (ASE + NLI + XT, QoTO/XTO on)
             new Variant("modulation", "distance-adaptive", all, "firstfitcore", "distance-adaptive"),
             new Variant("modulation", "qot-adaptive", all, "firstfitcore", "qot-adaptive"));
@@ -641,7 +652,7 @@ public final class VerificationCampaign {
                     s.bitRates(100, 1, 200, 1, 400, 1).metric("CrosstalkStatistics")
                             .metric("SpectrumSizeStatistics").metric("ModulationUtilization")
                             .sim("totalSlots", 128).sim("modulationSelection", v.modulation())
-                            .sim("coreAndSpectrumAssignment", v.core())
+                            .sim("coreAndSpectrumAssignment", v.core()).sim("spectrumAssignment", v.spectrum())
                             .sim("requests", 22_000).sim("warmUpRequests", 2_000).load(load);
                     List<Run> runs = replicate(s.setup(), 5);
                     for (int r = 0; r < runs.size(); r++) {

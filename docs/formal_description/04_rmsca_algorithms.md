@@ -16,7 +16,7 @@ Os algoritmos de RMSCA podem ser implementados de duas formas:
 Para garantir a interoperabilidade, cada tipo de algoritmo deve implementar uma interface específica:
 
 *   **`IRouting`**: Recebe origem/destino e retorna uma lista de caminhos candidatos (`Path`).
-*   **`ICoreAssignment`**: Recebe um caminho e retorna o índice do núcleo (`Core`) a ser utilizado.
+*   **`ICoreAssignment`**: Recebe um caminho e retorna a lista ordenada de núcleos (`Core`) candidatos. Uma sobrecarga recebe também o número de slots da demanda e a política espectral, para estratégias que olham os slots que cada núcleo receberia (§3.2); por padrão ela ignora esses dados.
 *   **`IModulationSelection`**: Recebe um caminho e requisitos de banda, retornando o formato de modulação e o número de slots necessários.
 *   **`ISpectrumAssignment`**: Recebe o caminho, o núcleo e a quantidade de slots, retornando os índices de início/fim dos slots (`SpectrumInterval`).
 *   **`IRMSCA`**: Interface única que recebe a requisição completa e retorna um objeto `AllocationResult` (indicando o sucesso da alocação ou contendo os detalhes do bloqueio).
@@ -49,14 +49,40 @@ Os núcleos $c$ são percorridos na ordem da estratégia de núcleo, e $I$ é o 
 * **Causa de bloqueio:** vale a última falha específica. Como os formatos são tentados do mais eficiente ao mais robusto, é a causa do formato mais robusto (no último caminho): `QOT_NEW`, `CROSSTALK`, `QOT_OTHERS`, `XT_OTHERS` ou `FRAGMENTATION`.
 * **Sem QoT:** com `activeQoT = false` não há critério físico e a política usa o alcance, como `distance-adaptive`.
 
+### 3.2. Atribuição de núcleo e crosstalk
+
+Seja $\mathcal{C}(p)$ o conjunto de núcleos presentes em todos os enlaces de $p$ e $\mathrm{adj}(c)$ os vizinhos de $c$ na fibra (lista `adjacentCores` do primeiro enlace). As estratégias disponíveis são:
+
+* **First-Fit core** (`firstfitcore`): ordem crescente de id. Na MCF hexagonal de 7 núcleos começa pelo núcleo 0, o central, com 6 vizinhos.
+* **Random-Fit core** (`randomfitcore`): permutação aleatória (gerador da replicação).
+* **Min-crosstalk core** (`mincrosstalkcore`/`mincrosstalk`): ordem crescente de $\sum_{l \in p} \sum_{a \in \mathrm{adj}(c)} |O_l(a)|$, a ocupação total dos vizinhos, **sem olhar os slots candidatos**. Comportamento inalterado.
+* **Peripheral-first core** (`peripheralfirstcore`): ordem fixa construída de forma gulosa. A cada passo escolhe o núcleo restante com menos vizinhos entre os já ordenados, depois com menos vizinhos no total, depois com menor id. Na MCF hexagonal de 7 núcleos a ordem é $1, 3, 5, 2, 4, 6, 0$: os três núcleos externos não adjacentes entre si, os outros três externos e o central por último.
+* **XT-aware core** (`xtawarecore`): ordem pelo crosstalk no intervalo que o núcleo **realmente receberia**. Para cada $c \in \mathcal{C}(p)$, seja $I_c = [s_c, e_c]$ o intervalo de $n$ slots proposto pela política espectral configurada em $c$ (First-Fit quando a política é aleatória, para não consumir o seu gerador). O custo é
+
+$$\mathrm{custo}(c) = \sum_{l \in p} L_l \sum_{a \in \mathrm{adj}(c)} |O_l(a) \cap I_c|,$$
+
+  com $L_l$ o comprimento do enlace e $O_l(a)$ os slots ocupados no núcleo $a$ do enlace $l$. Com o modelo $XT = \sum h L$ sobre os vizinhos sobrepostos e PSD de lançamento igual por slot, esse custo é proporcional tanto ao XT que o novo circuito sofreria quanto ao XT que ele injetaria nos circuitos ativos dos núcleos adjacentes. Os núcleos são ordenados por custo crescente; empates seguem a ordem peripheral-first, e núcleos sem intervalo livre vão para o fim. A ordem é determinística. A ocupação vem dos bitsets de espectro, que são mantidos mesmo quando os caches de NLI/XT estão desligados. Sem o tamanho da demanda (chamada de `selectCores(cp, path)`), devolve a ordem peripheral-first.
+
+#### Espectro escalonado por núcleo (`corestaggeredfit`)
+
+Política espectral com um ponto de partida por núcleo, para manter núcleos adjacentes em partes disjuntas da banda enquanto possível. Os núcleos são coloridos de forma gulosa (na ordem peripheral-first, cada núcleo recebe a menor cor não usada por um vizinho já colorido), de modo que núcleos adjacentes nunca têm a mesma cor. Com $k$ cores e $N$ slots:
+
+* cor 0: First-Fit a partir do slot 0;
+* cor 1: Last-Fit a partir do slot $N-1$;
+* cor $q \ge 2$: First-Fit a partir do slot $\lfloor N (q-1)/(k-1) \rfloor$, voltando ao slot 0 no fim da banda.
+
+Na MCF hexagonal de 7 núcleos, os núcleos 1, 3, 5 enchem de baixo para cima, 2, 4, 6 de cima para baixo e o central começa no meio da banda. Sem adjacência (núcleo único) equivale ao First-Fit. A política pode ser combinada com qualquer estratégia de núcleo.
+
+**Resultado no E8** (NSFNET × 0,25, MCF de 7 núcleos, 128 slots, ASE + NLI + XT, 5 réplicas): `xtawarecore` + `corestaggeredfit` tem bloqueio menor ou igual ao do Random-Fit core em todas as cargas (0 × 0,0056 em 400 Erl; 0,0111 × 0,0154 em 600; 0,052 × 0,055 em 800; 0,100 × 0,104 em 1000; 0,151 × 0,161 em 1200; nas duas últimas os intervalos de confiança se sobrepõem). Com First-Fit de espectro, `xtawarecore` e `peripheralfirstcore` zeram o bloqueio em 400 Erl e ficam melhores que First-Fit core e Min-crosstalk core em todas as cargas, mas ligeiramente acima do Random-Fit core entre 600 e 1000 Erl (empate em 1200 Erl): o espectro First-Fit alinha os mesmos slots baixos em todos os núcleos, e o bloqueio passa a ser dominado pelo XT do novo circuito. O escalonamento espectral por núcleo é o que remove essa sobreposição.
+
 ---
 
 ## 4. Exemplos de Heurísticas Clássicas
 O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
-*   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF).
-*   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core Assignment.
+*   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
+*   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation.
 
 ---

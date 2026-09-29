@@ -141,8 +141,8 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
   * `integratedRMSCA`: `standard`.
   * `routing`: `djk`, `ksp`/`newksp` (k = 3).
   * `modulationSelection`: `distance-adaptive` (padrão), `qot-adaptive` ou `fixed`. `distance-adaptive` escolhe o formato mais eficiente cujo `maxRange` cobre o caminho. `qot-adaptive` escolhe o formato mais eficiente que atende aos limiares de SNR e XT do novo circuito e dos circuitos já estabelecidos, pelo modelo físico, sem usar o `maxRange`. Com `activeQoT = false`, `qot-adaptive` volta ao critério de alcance e se comporta como `distance-adaptive`.
-  * `coreAndSpectrumAssignment`: `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`.
-  * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`.
+  * `coreAndSpectrumAssignment`: `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2).
+  * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`, `corestaggeredfit` (ponto de partida por núcleo).
   * `regeneratorAssignment`: `aar` (opcional).
 
   As chaves `kRouting`, `grooming`, `reallocation`, `powerAssignment` e `networkType` são aceitas, mas **ignoradas**; o simulador emite um aviso.
