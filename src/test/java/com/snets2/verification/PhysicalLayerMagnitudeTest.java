@@ -22,8 +22,8 @@ class PhysicalLayerMagnitudeTest {
 
     private static PhysicalLayerConfig config(double powerDbm, boolean nli) {
         return new PhysicalLayerConfig(
-            0, 0, true, true, true, nli, false, false,
-            0.25, 0, powerDbm, 80.0, 0.2, 0.0013, 1.6E-5, 1.9385E14,
+            true, true, true, nli, false, false,
+            0.25, powerDbm, 80.0, 0.2, 0.0013, 1.6E-5, 1.9385E14,
             6.626E-34, 5.0, 16.0, 100.0, 4.0, 0, 1.9385E14, 5.0,
             false, 1.25E10, 1.0E7, 0.01, 0.012, 4.5E-5, 2.0, 0, SLOT);
     }

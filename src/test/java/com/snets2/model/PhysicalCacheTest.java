@@ -31,8 +31,8 @@ class PhysicalCacheTest {
         NetworkTopology topology = new NetworkTopology(List.of(nodeA, nodeB), List.of(linkAB), List.of(qpsk));
         
         config = new PhysicalLayerConfig(
-            0, 0, true, true, true, true, true, true, 
-            0.07, 0, 0.0, 80.0, 0.2, 1.3E-3, 1.6E-5, 1.93E14, 
+            true, true, true, true, true, true, 
+            0.07, 0.0, 80.0, 0.2, 1.3E-3, 1.6E-5, 1.93E14, 
             6.626E-34, 5.0, 16.0, 100.0, 4.0, 0, 1.93E14, 5.0, 
             false, 1.25E10, 1.0E7, 0.01, 0.012, 4.5E-5, 2.0, 1, 12.5E9
         );
@@ -57,12 +57,16 @@ class PhysicalCacheTest {
         assertEquals(0.0, core0.getAverageNliNoise(10, 20));
         // XT on Core 1 (adjacent) should be > 0
         assertTrue(core1.getAverageXtNoise(10, 20) > 0);
-        
+        // Core 0 load (used by the saturated-gain model) holds the circuit launch power (0 dBm = 1 mW)
+        assertEquals(1E-3, core0.getTotalLaunchPower(), 1E-15);
+        assertEquals(0.0, core1.getTotalLaunchPower());
+
         // 3. Teardown
         cp.teardownCircuit("c1");
-        
+
         // Caches must return to 0 (with small epsilon for double precision)
         assertEquals(0.0, core0.getAverageNliNoise(25, 30), 1E-20);
         assertEquals(0.0, core1.getAverageXtNoise(10, 20), 1E-20);
+        assertEquals(0.0, core0.getTotalLaunchPower(), 1E-20);
     }
 }

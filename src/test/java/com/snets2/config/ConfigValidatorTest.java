@@ -77,9 +77,9 @@ class ConfigValidatorTest {
                 .replace("\"routing\": \"djk\",", "\"routing\": \"djk\", \"kRouting\": \"newksp\", \"activeMetrics\": {\"GroomingStatistics\": true},")
                 .replace("\"spanLength\": 80.0", "\"spanLength\": 80.0, \"switchInsertionLoss\": 5.0");
         List<String> w = ConfigValidator.validate(setup(json)).warnings();
-        assertEquals(3, w.size(), w.toString());
+        assertEquals(2, w.size(), w.toString());
         assertTrue(w.stream().anyMatch(s -> s.contains("kRouting")));
-        assertTrue(w.stream().anyMatch(s -> s.contains("switchInsertionLoss")));
+        assertTrue(w.stream().noneMatch(s -> s.contains("switchInsertionLoss")), "switchInsertionLoss is used (booster gain)");
         assertTrue(w.stream().anyMatch(s -> s.contains("GroomingStatistics")));
     }
 
@@ -89,6 +89,27 @@ class ConfigValidatorTest {
         for (String dir : List.of("experiment01", "experiment_only_blocking", "experiment_all_metrics")) {
             ExperimentSetup s = ConfigLoader.load(new File("experiments/" + dir + "/setup.json"));
             assertDoesNotThrow(() -> ConfigValidator.validate(s.getBaseScenario()), dir);
+        }
+    }
+
+    @Test
+    @DisplayName("Amplifier gain type and fixed-PSD reference bandwidth are validated")
+    void amplifierAndPsdKeys() throws Exception {
+        String base = "\"activeQoT\": false, \"guardBand\": 1";
+        assertTrue(invalidMessage(VALID.replace(base, base + ", \"typeOfAmplifierGain\": 2"))
+                .contains("typeOfAmplifierGain"));
+        assertTrue(invalidMessage(VALID.replace(base, base + ", \"fixedPowerSpectralDensity\": true"))
+                .contains("referenceBandwidthForPowerSpectralDensity"));
+        assertEquals(List.of(), ConfigValidator.validate(setup(VALID.replace(base, base
+                + ", \"typeOfAmplifierGain\": 1, \"fixedPowerSpectralDensity\": true, \"referenceBandwidthForPowerSpectralDensity\": 1.25E10"))).warnings());
+    }
+
+    @Test
+    @DisplayName("Keys removed from SNetS v1 are rejected by the parser")
+    void removedV1Keys() {
+        for (String key : List.of("physicalLayerModel", "crosstalkModel", "typeOfTestQoT")) {
+            String json = VALID.replace("\"activeQoT\": false", "\"activeQoT\": false, \"" + key + "\": 0");
+            assertThrows(Exception.class, () -> ConfigLoader.load(json), key);
         }
     }
 }

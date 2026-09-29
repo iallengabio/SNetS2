@@ -49,7 +49,10 @@ public class SetupEvent extends Event {
 
         double powerDbm = -1.0; // Default
         if (engine.getControlPlane().getPhysicalLayerConfig() != null) {
-            powerDbm = engine.getControlPlane().getPhysicalLayerConfig().power();
+            // Launch power actually used by the circuit (differs from 'power' when the PSD is fixed)
+            powerDbm = com.snets2.metrics.PhysicalLayerModel.wattsToDbm(
+                com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
+                    engine.getControlPlane().getPhysicalLayerConfig(), circuit));
         }
 
         if (measured) {

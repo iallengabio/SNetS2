@@ -44,9 +44,10 @@ public class TopologyMapper {
             double spanLength = physConfig.spanLength();
             int numAmplifiers = (int) Math.floor(lc.length() / spanLength);
             for (int i = 0; i < numAmplifiers; i++) {
-                // Default gains and NF from config could be added later
                 amplifiers.add(new Amplifier("amp_" + lc.source() + "_" + lc.destination() + "_" + i, 
-                                             16.0, 5.0, 100.0, 16.0));
+                                             physConfig.fiberLoss() * spanLength,
+                                             physConfig.noiseFigureOfOpticalAmplifier(), 100.0,
+                                             physConfig.powerSaturationOfOpticalAmplifier()));
             }
 
             links.add(new Link(lc.source(), lc.destination(), lc.length(), coresForLink, amplifiers));

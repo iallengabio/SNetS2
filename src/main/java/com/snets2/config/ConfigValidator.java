@@ -130,17 +130,18 @@ public final class ConfigValidator {
             }
         }
 
-        // Accepted by the schema but not used by the simulator
-        ignoredIfSet(warnings, "physicalLayer.physicalLayerModel", p.physicalLayerModel() != 0);
-        ignoredIfSet(warnings, "physicalLayer.crosstalkModel", p.crosstalkModel() != 0);
-        ignoredIfSet(warnings, "physicalLayer.typeOfTestQoT", p.typeOfTestQoT() != 0);
-        ignoredIfSet(warnings, "physicalLayer.powerSaturationOfOpticalAmplifier", p.powerSaturationOfOpticalAmplifier() != 0);
-        ignoredIfSet(warnings, "physicalLayer.noiseFactorModelParameterA1", p.noiseFactorModelParameterA1() != 0);
-        ignoredIfSet(warnings, "physicalLayer.noiseFactorModelParameterA2", p.noiseFactorModelParameterA2() != 0);
-        ignoredIfSet(warnings, "physicalLayer.typeOfAmplifierGain", p.typeOfAmplifierGain() != 0);
-        ignoredIfSet(warnings, "physicalLayer.switchInsertionLoss", p.switchInsertionLoss() != 0);
-        ignoredIfSet(warnings, "physicalLayer.fixedPowerSpectralDensity", p.fixedPowerSpectralDensity());
-        ignoredIfSet(warnings, "physicalLayer.referenceBandwidthForPowerSpectralDensity", p.referenceBandwidthForPowerSpectralDensity() != 0);
+        // Amplifiers and launch power (docs/formal_description/07_physical_layer_models.md, Sections 2 and 3)
+        int gainType = p.typeOfAmplifierGain();
+        if (gainType != PhysicalLayerConfig.AMP_GAIN_FIXED && gainType != PhysicalLayerConfig.AMP_GAIN_SATURATED) {
+            errors.add("physicalLayer.typeOfAmplifierGain must be 0 (fixed) or 1 (saturated), got " + gainType);
+        }
+        if (p.switchInsertionLoss() < 0) errors.add("physicalLayer.switchInsertionLoss must be >= 0 dB");
+        if (p.noiseFactorModelParameterA1() < 0 || p.noiseFactorModelParameterA2() < 0) {
+            errors.add("physicalLayer.noiseFactorModelParameterA1 and A2 must be >= 0");
+        }
+        if (p.fixedPowerSpectralDensity() && !(p.referenceBandwidthForPowerSpectralDensity() > 0)) {
+            errors.add("physicalLayer.referenceBandwidthForPowerSpectralDensity must be > 0 Hz when fixedPowerSpectralDensity");
+        }
     }
 
     private static void validateSimulation(SimulationConfig s, List<String> errors, List<String> warnings) {

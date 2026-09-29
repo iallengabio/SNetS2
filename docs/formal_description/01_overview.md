@@ -3,6 +3,8 @@
 ## 1. Introdução
 O **Slice Network Simulator 2 (SNetS2)** é um simulador de eventos discretos (DES) especializado em redes ópticas elásticas multicore (MC-EON). Ele visa superar as limitações de sua primeira versão em termos de extensibilidade e performance, permitindo a simulação de cenários de SDM (Spatial Division Multiplexing) em larga escala.
 
+A primeira versão (SNetS v1) tem como versão mais recente o artefato do SBRC 2026, [alexandrefontinele/SNetS-SDM-SBRC26](https://github.com/alexandrefontinele/SNetS-SDM-SBRC26). O SNetS2 herda dela as chaves de configuração da camada física (`physicalLayer`) e os modelos de amplificadores, potência de lançamento e crosstalk, adaptados ao cache incremental de ruído; as diferenças estão documentadas em [07_physical_layer_models.md](07_physical_layer_models.md).
+
 ## 2. Objetivos
 - **Escalabilidade:** Simular redes com centenas de nós e milhares de requisições por segundo.
 - **Fidelidade Física:** Implementar modelos precisos de degradação de sinal, especialmente Crosstalk Inter-core.

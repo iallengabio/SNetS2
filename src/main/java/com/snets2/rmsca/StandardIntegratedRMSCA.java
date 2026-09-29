@@ -166,7 +166,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
         // c. SNR and crosstalk of the active circuits with the candidate's interference applied
         if (!physConfig.activeQoTForOther()) return null;
-        applyTemporaryNoise(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens);
+        applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, true);
         try {
             for (Circuit active : cp.getActiveCircuitsView()) {
                 Path activePath = new Path(active.getPath());
@@ -190,75 +190,23 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                 }
             }
         } finally {
-            removeTemporaryNoise(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens);
+            applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, false);
         }
         return null;
     }
 
-    private void applyTemporaryNoise(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens) {
-        PhysicalLayerConfig physicalLayerConfig = cp.getPhysicalLayerConfig();
-        if (physicalLayerConfig == null) return;
-        
-        Circuit tempCircuit = new Circuit("temp", cp.getNode(path.links().get(0).getSourceId()), 
-                                          cp.getNode(path.links().get(path.links().size()-1).getDestinationId()), 
-                                          path.links(), getCoreIndicesList(path.links().size(), coreId), 
-                                          startSlot, endSlot, mod, bitRate, regens);
-                                          
-        for (int i = 0; i < tempCircuit.getPath().size(); i++) {
-            Link link = tempCircuit.getPath().get(i);
-            int coreIndex = tempCircuit.getCoreIndices().get(i);
-            Core core = link.getCore(coreIndex);
-            
-            // NLI
-            double[] nliMask = PhysicalLayerModel.generateNliMask(link, physicalLayerConfig, tempCircuit, core.getSpectrum().getNumSlots());
-            for (int s = 0; s < nliMask.length; s++) {
-                core.addNliNoise(s, nliMask[s]);
-            }
-            
-            // XT
-            double xtContribution = PhysicalLayerModel.calculateXtContribution(link, physicalLayerConfig, tempCircuit);
-            for (int adjId : core.getAdjacentCores()) {
-                Core adjCore = link.getCore(adjId);
-                if (adjCore != null) {
-                    for (int s = tempCircuit.getStartSlot(); s <= tempCircuit.getEndSlot(); s++) {
-                        adjCore.addXtNoise(s, xtContribution);
-                    }
-                }
-            }
-        }
-    }
+    /**
+     * Temporarily applies (or removes) the physical footprint of the candidate circuit (NLI, crosstalk and
+     * amplifier load) so the QoT of the already established circuits can be re-evaluated (QoTO).
+     */
+    private void applyTemporaryCircuit(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens, boolean add) {
+        if (cp.getPhysicalLayerConfig() == null) return;
 
-    private void removeTemporaryNoise(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens) {
-        PhysicalLayerConfig physicalLayerConfig = cp.getPhysicalLayerConfig();
-        if (physicalLayerConfig == null) return;
-        
         Circuit tempCircuit = new Circuit("temp", cp.getNode(path.links().get(0).getSourceId()), 
                                           cp.getNode(path.links().get(path.links().size()-1).getDestinationId()), 
                                           path.links(), getCoreIndicesList(path.links().size(), coreId), 
                                           startSlot, endSlot, mod, bitRate, regens);
-                                          
-        for (int i = 0; i < tempCircuit.getPath().size(); i++) {
-            Link link = tempCircuit.getPath().get(i);
-            int coreIndex = tempCircuit.getCoreIndices().get(i);
-            Core core = link.getCore(coreIndex);
-            
-            // NLI
-            double[] nliMask = PhysicalLayerModel.generateNliMask(link, physicalLayerConfig, tempCircuit, core.getSpectrum().getNumSlots());
-            for (int s = 0; s < nliMask.length; s++) {
-                core.removeNliNoise(s, nliMask[s]);
-            }
-            
-            // XT
-            double xtContribution = PhysicalLayerModel.calculateXtContribution(link, physicalLayerConfig, tempCircuit);
-            for (int adjId : core.getAdjacentCores()) {
-                Core adjCore = link.getCore(adjId);
-                if (adjCore != null) {
-                    for (int s = tempCircuit.getStartSlot(); s <= tempCircuit.getEndSlot(); s++) {
-                        adjCore.removeXtNoise(s, xtContribution);
-                    }
-                }
-            }
-        }
+        cp.applyPhysicalContribution(tempCircuit, add);
     }
 
     private List<Integer> getCoreIndicesList(int size, int coreId) {

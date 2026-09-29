@@ -47,7 +47,8 @@ public class ControlPlane {
     private void initializeStaticNoise() {
         if (physicalLayerConfig == null) return;
         for (Link link : topology.links()) {
-            double ase = com.snets2.metrics.PhysicalLayerModel.calculateLinkAse(link, physicalLayerConfig, slotBandwidth);
+            // Static (fixed-gain) ASE; with saturated gain it is recomputed at prediction time from the core load.
+            double ase = com.snets2.metrics.PhysicalLayerModel.calculateLinkAse(link, physicalLayerConfig, 0.0);
             link.setStaticAseNoise(ase);
         }
     }
@@ -88,29 +89,8 @@ public class ControlPlane {
             int coreId = circuit.getCoreIndices().get(i);
             Core core = link.getCore(coreId);
             core.getSpectrum().allocate(circuit.getStartSlot(), circuit.getEndSlot());
-            
-            // Physical Layer Update
-            if (physicalLayerConfig != null) {
-                // NLI: Same core, potentially all slots (with decay)
-                double[] nliMask = com.snets2.metrics.PhysicalLayerModel.generateNliMask(
-                    link, physicalLayerConfig, circuit, core.getSpectrum().getNumSlots());
-                for (int s = 0; s < nliMask.length; s++) {
-                    core.addNliNoise(s, nliMask[s]);
-                }
-                
-                // XT: Adjacent cores, same slots
-                double xtContribution = com.snets2.metrics.PhysicalLayerModel.calculateXtContribution(
-                    link, physicalLayerConfig, circuit);
-                for (int adjId : core.getAdjacentCores()) {
-                    Core adjCore = link.getCore(adjId);
-                    if (adjCore != null) {
-                        for (int s = circuit.getStartSlot(); s <= circuit.getEndSlot(); s++) {
-                            adjCore.addXtNoise(s, xtContribution);
-                        }
-                    }
-                }
-            }
         }
+        applyPhysicalContribution(circuit, true);
 
         // 2. Consume Tx/Rx on source/destination
         circuit.getSource().consumeTx();
@@ -183,29 +163,8 @@ public class ControlPlane {
             int coreId = circuit.getCoreIndices().get(i);
             Core core = link.getCore(coreId);
             core.getSpectrum().release(circuit.getStartSlot(), circuit.getEndSlot());
-            
-            // Physical Layer Update
-            if (physicalLayerConfig != null) {
-                // NLI: Same core
-                double[] nliMask = com.snets2.metrics.PhysicalLayerModel.generateNliMask(
-                    link, physicalLayerConfig, circuit, core.getSpectrum().getNumSlots());
-                for (int s = 0; s < nliMask.length; s++) {
-                    core.removeNliNoise(s, nliMask[s]);
-                }
-                
-                // XT: Adjacent cores
-                double xtContribution = com.snets2.metrics.PhysicalLayerModel.calculateXtContribution(
-                    link, physicalLayerConfig, circuit);
-                for (int adjId : core.getAdjacentCores()) {
-                    Core adjCore = link.getCore(adjId);
-                    if (adjCore != null) {
-                        for (int s = circuit.getStartSlot(); s <= circuit.getEndSlot(); s++) {
-                            adjCore.removeXtNoise(s, xtContribution);
-                        }
-                    }
-                }
-            }
         }
+        applyPhysicalContribution(circuit, false);
 
         // 2. Release Tx/Rx
         circuit.getSource().releaseTx();
@@ -217,4 +176,49 @@ public class ControlPlane {
         }
     }
 
+    /**
+     * Adds (or removes) the physical footprint of a circuit on every link of its path: its NLI in the
+     * same core, its crosstalk in the adjacent cores and its launch power in the core load (used by the
+     * saturated-gain amplifier model).
+     *
+     * <p>Called on setup/teardown and by RMSCA algorithms that temporarily apply a candidate circuit to
+     * check the QoT of the circuits already established (QoTO).</p>
+     *
+     * @param circuit The circuit.
+     * @param add     true to add the contribution, false to remove it.
+     */
+    public void applyPhysicalContribution(Circuit circuit, boolean add) {
+        if (physicalLayerConfig == null) return;
+
+        double launchPower = com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
+            physicalLayerConfig, circuit);
+
+        for (int i = 0; i < circuit.getPath().size(); i++) {
+            Link link = circuit.getPath().get(i);
+            Core core = link.getCore(circuit.getCoreIndices().get(i));
+
+            if (add) core.addLaunchPower(launchPower);
+            else core.removeLaunchPower(launchPower);
+
+            // NLI: Same core, potentially all slots (with decay)
+            double[] nliMask = com.snets2.metrics.PhysicalLayerModel.generateNliMask(
+                link, physicalLayerConfig, circuit, core.getSpectrum().getNumSlots());
+            for (int s = 0; s < nliMask.length; s++) {
+                if (add) core.addNliNoise(s, nliMask[s]);
+                else core.removeNliNoise(s, nliMask[s]);
+            }
+
+            // XT: Adjacent cores, same slots
+            double xtContribution = com.snets2.metrics.PhysicalLayerModel.calculateXtContribution(
+                link, physicalLayerConfig, circuit);
+            for (int adjId : core.getAdjacentCores()) {
+                Core adjCore = link.getCore(adjId);
+                if (adjCore == null) continue;
+                for (int s = circuit.getStartSlot(); s <= circuit.getEndSlot(); s++) {
+                    if (add) adjCore.addXtNoise(s, xtContribution);
+                    else adjCore.removeXtNoise(s, xtContribution);
+                }
+            }
+        }
+    }
 }

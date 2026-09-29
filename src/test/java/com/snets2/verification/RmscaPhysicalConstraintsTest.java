@@ -35,8 +35,8 @@ class RmscaPhysicalConstraintsTest {
     private static PhysicalLayerConfig config(boolean qot, boolean xt) {
         // NLI off to isolate ASE + XT; guard band 0
         return new PhysicalLayerConfig(
-            0, 0, qot, qot, true, false, xt, xt,
-            0.0, 0, 0.0, 80.0, 0.2, 0.0013, 1.6E-5, 1.9385E14,
+            qot, qot, true, false, xt, xt,
+            0.0, 0.0, 80.0, 0.2, 0.0013, 1.6E-5, 1.9385E14,
             6.626E-34, 5.0, 16.0, 100.0, 4.0, 0, 1.9385E14, 5.0,
             false, 1.25E10, 1.0E7, 0.01, 0.012, 4.5E-5, 1.0, 0, SLOT);
     }
