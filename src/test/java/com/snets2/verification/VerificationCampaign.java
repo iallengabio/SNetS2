@@ -605,19 +605,27 @@ public final class VerificationCampaign {
     // =====================================================================================
 
     static void qotNetwork(File out) throws Exception {
-        record Variant(String group, String label, Map<String, Object> physical, String core, boolean multicore) {}
+        record Variant(String group, String label, Map<String, Object> physical, String core, String spectrum) {
+            Variant(String group, String label, Map<String, Object> physical, String core) {
+                this(group, label, physical, core, "firstfit");
+            }
+        }
         Map<String, Object> off = Map.of("activeQoT", false, "activeQoTForOther", false);
         Map<String, Object> ase = Map.of("activeNLI", false, "activeXT", false, "activeXTForOther", false);
         Map<String, Object> aseNli = Map.of("activeXT", false, "activeXTForOther", false);
         Map<String, Object> all = Map.of();
         List<Variant> variants = List.of(
-            new Variant("impairments", "No QoT", off, "firstfitcore", true),
-            new Variant("impairments", "ASE", ase, "firstfitcore", true),
-            new Variant("impairments", "ASE+NLI", aseNli, "firstfitcore", true),
-            new Variant("impairments", "ASE+NLI+XT", all, "firstfitcore", true),
-            new Variant("core", "First-fit core", all, "firstfitcore", true),
-            new Variant("core", "Random-fit core", all, "randomfitcore", true),
-            new Variant("core", "Min-crosstalk core", all, "mincrosstalkcore", true));
+            new Variant("impairments", "No QoT", off, "firstfitcore"),
+            new Variant("impairments", "ASE", ase, "firstfitcore"),
+            new Variant("impairments", "ASE+NLI", aseNli, "firstfitcore"),
+            new Variant("impairments", "ASE+NLI+XT", all, "firstfitcore"),
+            new Variant("core", "First-fit core", all, "firstfitcore"),
+            new Variant("core", "Random-fit core", all, "randomfitcore"),
+            new Variant("core", "Min-crosstalk core", all, "mincrosstalkcore"),
+            new Variant("core", "Peripheral-first core", all, "peripheralfirstcore"),
+            new Variant("core", "XT-aware core", all, "xtawarecore"),
+            new Variant("core", "Peripheral-first core + staggered FF", all, "peripheralfirstcore", "corestaggeredfit"),
+            new Variant("core", "XT-aware core + staggered FF", all, "xtawarecore", "corestaggeredfit"));
         try (Csv csv = new Csv(out, "e8_qot_network", "group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db")) {
             for (Variant v : variants) {
@@ -628,7 +636,7 @@ public final class VerificationCampaign {
                     s.physical.putAll(v.physical());
                     s.bitRates(100, 1, 200, 1, 400, 1).metric("CrosstalkStatistics")
                             .sim("totalSlots", 128).sim("modulationSelection", "distance-adaptive")
-                            .sim("coreAndSpectrumAssignment", v.core())
+                            .sim("coreAndSpectrumAssignment", v.core()).sim("spectrumAssignment", v.spectrum())
                             .sim("requests", 22_000).sim("warmUpRequests", 2_000).load(load);
                     List<Run> runs = replicate(s.setup(), 5);
                     for (int r = 0; r < runs.size(); r++) {

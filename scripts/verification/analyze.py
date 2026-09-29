@@ -37,7 +37,7 @@ plt.rcParams.update({
     "axes.spines.top": False, "axes.spines.right": False, "font.size": 10, "legend.fontsize": 8,
     "legend.frameon": False, "axes.titlesize": 9,
 })
-COLORS = ["#2a6fdb", "#e0672b", "#2e9e5b", "#b03a9e", "#8a6d1d", "#1b9aaa", "#666666"]
+COLORS = ["#2a6fdb", "#e0672b", "#2e9e5b", "#b03a9e", "#8a6d1d", "#1b9aaa", "#666666", "#c62828", "#000000"]
 
 TABLES = []  # (title, markdown) pairs written to tables.md
 

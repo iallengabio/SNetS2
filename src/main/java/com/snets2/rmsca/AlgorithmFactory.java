@@ -36,6 +36,8 @@ public class AlgorithmFactory {
         coreRegistry.put("randomfitcore", RandomFitCoreAssignment.class);
         coreRegistry.put("mincrosstalkcore", MinCrosstalkCoreAssignment.class);
         coreRegistry.put("mincrosstalk", MinCrosstalkCoreAssignment.class);
+        coreRegistry.put("peripheralfirstcore", PeripheralFirstCoreAssignment.class);
+        coreRegistry.put("xtawarecore", XtAwareCoreAssignment.class);
         
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);
@@ -45,6 +47,7 @@ public class AlgorithmFactory {
         spectrumRegistry.put("lf", LastFitSpectrumAssignment.class);
         spectrumRegistry.put("exactfit", ExactFitSpectrumAssignment.class);
         spectrumRegistry.put("ef", ExactFitSpectrumAssignment.class);
+        spectrumRegistry.put("corestaggeredfit", CoreStaggeredFitSpectrumAssignment.class);
         
         // Regenerator
         regeneratorRegistry.put("aar", com.snets2.rmsca.regenerator.AsSoonAsRequiredRegeneratorAssignment.class);
