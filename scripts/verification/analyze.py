@@ -652,6 +652,51 @@ def e8():
     save(fig, "e8_qot_network")
     table("E8 – Rede com camada física: bloqueio total e por causa (5 réplicas × 20 k requisições medidas)",
           ["grupo", "variante", "carga", "BP (IC 95 %)", "fragm.", "QoT novo", "QoT outros", "XT novo", "XT outros", "SNR médio (dB)"], out)
+    e8_modulation(rows)
+
+
+def e8_modulation(rows):
+    """Issue #23: modulation chosen by maxRange (distance-adaptive) vs by the physical model (qot-adaptive)."""
+    sub = [r for r in rows if r["group"] == "modulation"]
+    if not sub or "mean_slots" not in sub[0]:
+        return
+    shares = [k for k in sub[0] if k.startswith("share_")]
+    variants = list(dict.fromkeys(r["variant"] for r in sub))
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.2))
+    out = []
+    for idx, v in enumerate(variants):
+        vr = [r for r in sub if r["variant"] == v]
+        loads = sorted({r["load"] for r in vr}, key=float)
+        bp = [stats([float(r["bp"]) for r in vr if r["load"] == l]) for l in loads]
+        slots = [stats([float(r["mean_slots"]) for r in vr if r["load"] == l]) for l in loads]
+        nz = [(float(l), m) for l, m in zip(loads, bp) if m[0] > 0]
+        axes[0].errorbar([x for x, _ in nz], [m[0] for _, m in nz], yerr=[m[2] for _, m in nz],
+                         fmt="o-", ms=3, lw=1, color=COLORS[idx], label=v)
+        axes[1].errorbar([float(l) for l in loads], [m[0] for m in slots], yerr=[m[2] for m in slots],
+                         fmt="o-", ms=3, lw=1, color=COLORS[idx], label=v)
+        mix = [np.mean([float(r[s]) for r in vr]) for s in shares]
+        axes[2].bar(np.arange(len(shares)) + (idx - 0.5) * 0.4, mix, 0.4, color=COLORS[idx], label=v)
+        for l, b, s in zip(loads, bp, slots):
+            lr = [r for r in vr if r["load"] == l]
+            causes = [np.mean([float(r[c]) for r in lr]) for c in
+                      ("bp_fragmentation", "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others")]
+            out.append([v, fmt(float(l)), f"{fmt(b[0])} ± {fmt(b[2], 2)}"] + [fmt(c, 3) for c in causes]
+                       + [f"{s[0]:.2f} ± {s[2]:.2f}"]
+                       + [f"{100 * np.mean([float(r[c]) for r in lr]):.1f}" for c in shares])
+    axes[0].set_yscale("log")
+    axes[0].set_ylabel("Probabilidade de bloqueio de banda")
+    axes[1].set_ylabel("Slots por circuito aceito (média)")
+    for ax in axes[:2]:
+        ax.set_xlabel("Carga total (Erlang)")
+        ax.legend()
+    axes[2].set_xticks(np.arange(len(shares)), [s[len("share_"):] for s in shares])
+    axes[2].set_ylabel("Fração dos circuitos aceitos (todas as cargas)")
+    axes[2].legend()
+    fig.suptitle("E8b – Seleção de modulação por alcance × por QoT (NSFNET × 0,25, MCF 7 núcleos, ASE + NLI + XT)")
+    save(fig, "e8b_modulation_selection")
+    table("E8b – Seleção de modulação: distance-adaptive × qot-adaptive (5 réplicas × 20 k requisições medidas)",
+          ["variante", "carga", "BP (IC 95 %)", "fragm.", "QoT novo", "QoT outros", "XT novo", "XT outros",
+           "slots/circuito (IC 95 %)"] + [f"% {s[len('share_'):]}" for s in shares], out)
 
 
 def main():

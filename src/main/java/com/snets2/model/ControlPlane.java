@@ -19,6 +19,12 @@ public class ControlPlane {
     private final int guardBand;
     private final com.snets2.config.PhysicalLayerConfig physicalLayerConfig;
 
+    // Which physical caches are kept up to date on setup/teardown (see updatePhysicalCacheFlags).
+    private boolean physicalStatisticsRequired = true;
+    private boolean updateNliCache;
+    private boolean updateXtCache;
+    private boolean updateCoreLoad;
+
     /**
      * Initializes the Control Plane.
      *
@@ -42,7 +48,54 @@ public class ControlPlane {
         this.physicalLayerConfig = physConfig;
         
         initializeStaticNoise();
+        updatePhysicalCacheFlags();
     }
+
+    /**
+     * Declares whether some consumer other than the QoT check reads the physical caches, namely the
+     * {@code CrosstalkStatistics} metric (SNR, XT and power of each established circuit). Defaults to
+     * {@code true}, which keeps every cache up to date; the {@code SimulationEngine} sets it from the
+     * active metrics of the run.
+     *
+     * <p>Must be called before any circuit is established: a circuit has to be torn down with the same
+     * caches it was established with.</p>
+     *
+     * @param required true if the per-circuit physical layer statistics are recorded.
+     * @throws IllegalStateException if there are active circuits.
+     */
+    public void setPhysicalStatisticsRequired(boolean required) {
+        if (!activeCircuits.isEmpty()) {
+            throw new IllegalStateException("Physical cache flags cannot change with active circuits");
+        }
+        this.physicalStatisticsRequired = required;
+        updatePhysicalCacheFlags();
+    }
+
+    /**
+     * A cache is only maintained when someone can read it: the QoT check ({@code activeQoT}) or the
+     * {@code CrosstalkStatistics} metric. Among them, the NLI cache is only non-zero with {@code activeNLI},
+     * the XT cache with {@code activeXT}, and the core load is only used by the saturated-gain amplifier model.
+     */
+    private void updatePhysicalCacheFlags() {
+        if (physicalLayerConfig == null) {
+            updateNliCache = updateXtCache = updateCoreLoad = false;
+            return;
+        }
+        boolean read = physicalLayerConfig.activeQoT() || physicalStatisticsRequired;
+        updateNliCache = read && physicalLayerConfig.activeNLI();
+        updateXtCache = read && physicalLayerConfig.activeXT();
+        updateCoreLoad = read && physicalLayerConfig.typeOfAmplifierGain()
+                == com.snets2.config.PhysicalLayerConfig.AMP_GAIN_SATURATED;
+    }
+
+    /** @return true if the per-slot NLI cache is maintained. */
+    public boolean isNliCacheActive() { return updateNliCache; }
+
+    /** @return true if the per-slot XT cache is maintained. */
+    public boolean isXtCacheActive() { return updateXtCache; }
+
+    /** @return true if the launch power load of the cores is maintained. */
+    public boolean isCoreLoadActive() { return updateCoreLoad; }
 
     private void initializeStaticNoise() {
         if (physicalLayerConfig == null) return;
@@ -179,7 +232,9 @@ public class ControlPlane {
     /**
      * Adds (or removes) the physical footprint of a circuit on every link of its path: its NLI in the
      * same core, its crosstalk in the adjacent cores and its launch power in the core load (used by the
-     * saturated-gain amplifier model).
+     * saturated-gain amplifier model). Each part is skipped when nobody can read it (see
+     * {@link #setPhysicalStatisticsRequired(boolean)}); the flags are fixed during a run, so additions
+     * and removals stay symmetric.
      *
      * <p>Called on setup/teardown and by RMSCA algorithms that temporarily apply a candidate circuit to
      * check the QoT of the circuits already established (QoTO).</p>
@@ -188,35 +243,41 @@ public class ControlPlane {
      * @param add     true to add the contribution, false to remove it.
      */
     public void applyPhysicalContribution(Circuit circuit, boolean add) {
-        if (physicalLayerConfig == null) return;
+        if (!updateNliCache && !updateXtCache && !updateCoreLoad) return;
 
-        double launchPower = com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
-            physicalLayerConfig, circuit);
+        double launchPower = updateCoreLoad
+            ? com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(physicalLayerConfig, circuit) : 0.0;
 
         for (int i = 0; i < circuit.getPath().size(); i++) {
             Link link = circuit.getPath().get(i);
             Core core = link.getCore(circuit.getCoreIndices().get(i));
 
-            if (add) core.addLaunchPower(launchPower);
-            else core.removeLaunchPower(launchPower);
+            if (updateCoreLoad) {
+                if (add) core.addLaunchPower(launchPower);
+                else core.removeLaunchPower(launchPower);
+            }
 
             // NLI: Same core, potentially all slots (with decay)
-            double[] nliMask = com.snets2.metrics.PhysicalLayerModel.generateNliMask(
-                link, physicalLayerConfig, circuit, core.getSpectrum().getNumSlots());
-            for (int s = 0; s < nliMask.length; s++) {
-                if (add) core.addNliNoise(s, nliMask[s]);
-                else core.removeNliNoise(s, nliMask[s]);
+            if (updateNliCache) {
+                double[] nliMask = com.snets2.metrics.PhysicalLayerModel.generateNliMask(
+                    link, physicalLayerConfig, circuit, core.getSpectrum().getNumSlots());
+                for (int s = 0; s < nliMask.length; s++) {
+                    if (add) core.addNliNoise(s, nliMask[s]);
+                    else core.removeNliNoise(s, nliMask[s]);
+                }
             }
 
             // XT: Adjacent cores, same slots
-            double xtContribution = com.snets2.metrics.PhysicalLayerModel.calculateXtContribution(
-                link, physicalLayerConfig, circuit);
-            for (int adjId : core.getAdjacentCores()) {
-                Core adjCore = link.getCore(adjId);
-                if (adjCore == null) continue;
-                for (int s = circuit.getStartSlot(); s <= circuit.getEndSlot(); s++) {
-                    if (add) adjCore.addXtNoise(s, xtContribution);
-                    else adjCore.removeXtNoise(s, xtContribution);
+            if (updateXtCache) {
+                double xtContribution = com.snets2.metrics.PhysicalLayerModel.calculateXtContribution(
+                    link, physicalLayerConfig, circuit);
+                for (int adjId : core.getAdjacentCores()) {
+                    Core adjCore = link.getCore(adjId);
+                    if (adjCore == null) continue;
+                    for (int s = circuit.getStartSlot(); s <= circuit.getEndSlot(); s++) {
+                        if (add) adjCore.addXtNoise(s, xtContribution);
+                        else adjCore.removeXtNoise(s, xtContribution);
+                    }
                 }
             }
         }

@@ -49,3 +49,6 @@ docs/codebase_drift_report.md
 # Temporary progress checkpoints
 *progress.json*
 
+
+# Claude Code agent worktrees
+.claude/worktrees/

@@ -34,6 +34,21 @@ Toda a atualização física é feita por `ControlPlane.applyPhysicalContributio
 ### Ao Remover um Circuito (`TeardownEvent`)
 1. O simulador realiza as mesmas chamadas e subtrai os valores dos arrays de cache, garantindo que o sistema retorne ao estado limpo (consistência validada via testes unitários).
 
+### Caches Mantidos Apenas Quando Lidos
+Os caches só são consultados pela verificação de QoT (`activeQoT`: `StandardIntegratedRMSCA` e `AsSoonAsRequiredRegeneratorAssignment`) e pela métrica `CrosstalkStatistics` (SNR, XT e potência registrados pelo `SetupEvent`). Quando nenhum dos dois está ativo, atualizá-los é custo puro (a máscara de NLI é $O(	ext{slots})$ por enlace). Por isso o `ControlPlane` decide, uma vez por rodada, quais partes de `applyPhysicalContribution` executar (issue #19):
+
+| Cache | Atualizado se |
+| :--- | :--- |
+| NLI (`nliNoiseCache`) | (`activeQoT` ou `CrosstalkStatistics`) e `activeNLI` |
+| XT (`xtNoiseCache`) | (`activeQoT` ou `CrosstalkStatistics`) e `activeXT` |
+| Carga (`totalLaunchPower`) | (`activeQoT` ou `CrosstalkStatistics`) e ganho saturado (`typeOfAmplifierGain = 1`) |
+
+- O `SimulationEngine` informa, no construtor, se a métrica `CrosstalkStatistics` está ativa (`ControlPlane.setPhysicalStatisticsRequired`). O valor padrão é `true` (todos os caches mantidos), o que preserva o comportamento de quem cria um `ControlPlane` sem motor, como os testes unitários.
+- As flags são fixas durante a rodada (o setter recusa a mudança com circuitos ativos), de modo que um circuito é removido com os mesmos caches com que foi estabelecido.
+- Com `activeNLI`/`activeXT` desligados as contribuições já eram nulas, e sem leitores os caches não influenciam nenhuma decisão; os resultados são, portanto, idênticos aos de antes, para a mesma semente (`PhysicalCacheSkipTest`).
+- O `SetupEvent` só calcula o SNR/XT do circuito quando `CrosstalkStatistics` está ativa e a requisição é medida.
+- Com `activeQoT` ligado nada é pulado além dos submodelos desligados, de modo que o filtro de QoTO `StandardIntegratedRMSCA.isAffectedByCandidate` (circuitos que compartilham um enlace com o candidato no mesmo núcleo — NLI e carga do amplificador — ou num núcleo adjacente — XT) continua espelhando a pegada escrita por `applyPhysicalContribution`. O `QoTAwareModulationSelection` não lê os caches.
+
 ## 4. Predição Ultra-Rápida ($O(S)$)
 Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um intervalo de slots `[s1, s2]`:
 1. Ele chama `PhysicalLayerModel.predictSNR`.
@@ -48,3 +63,12 @@ Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um int
 | Teardown de Conexão | $O(1)$ | $O(\text{Grade Espectral})$ |
 
 Esta arquitetura permite que o SNetS2 escale para milhares de requisições simultâneas mantendo um tempo de execução previsível e baixo.
+
+## 6. Ferramenta de alcance (`ReachCalculator`)
+`com.snets2.verification.ReachCalculator` (escopo de teste; wrapper `scripts/compute_reach.sh`) calcula o `maxRange` de cada modulação de um `setup.json` com o próprio motor acima. Não há modelo paralelo:
+1. Monta um `ControlPlane` com um único enlace de comprimento $L$ e um núcleo de `totalSlots` slots.
+2. Estabelece (`establishCircuit`) canais iguais ao de teste em todas as posições contíguas da grade, exceto a central, o que preenche os caches de XCI e a carga do núcleo.
+3. Avalia o canal central com `PhysicalLayerModel.predictSNR`.
+4. Faz a bisseção sobre $L$ (múltiplos de 10 km) até o limiar `SNR` da modulação, para cada taxa de `traffic.bitRates`, e toma o menor alcance.
+
+A carga de referência, a escolha da taxa e a tabela resultante estão em `docs/formal_description/07_physical_layer_models.md`, §6.2. `ReachCalculatorTest` verifica a monotonicidade do alcance com $M$, a bisseção (limiar atendido em $L$ e violado em $L + 10$ km) e que nenhum `experiments/*/setup.json` tem `maxRange` acima do alcance calculado.

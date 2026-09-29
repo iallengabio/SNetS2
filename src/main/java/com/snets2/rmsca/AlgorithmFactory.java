@@ -30,6 +30,7 @@ public class AlgorithmFactory {
         // Modulation
         modulationRegistry.put("fixed", FixedModulationSelection.class);
         modulationRegistry.put("distance-adaptive", DistanceAdaptiveModulationSelection.class);
+        modulationRegistry.put("qot-adaptive", QoTAwareModulationSelection.class);
         
         // Core
         coreRegistry.put("firstfitcore", FirstFitCoreAssignment.class);

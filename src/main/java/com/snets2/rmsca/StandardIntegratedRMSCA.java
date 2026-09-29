@@ -13,7 +13,10 @@ import com.snets2.rmsca.routing.Path;
 import com.snets2.rmsca.spectrum.ISpectrumAssignment;
 import com.snets2.rmsca.spectrum.SpectrumInterval;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A standard sequential implementation of RMSCA with physical layer awareness.
@@ -25,7 +28,14 @@ import java.util.List;
  * <p><b>Pass 1 (transparent)</b> only tries formats whose {@code maxReach} covers the path, without
  * regenerators. <b>Pass 2</b> runs only if pass 1 failed and a regenerator assignment is configured:
  * it retries every format with regenerators placed by the assignment. Hence a transparent solution
- * with a less efficient format is always preferred to a regenerated one.</p>
+ * with a less efficient format is always preferred to a regenerated one. When the modulation policy does
+ * not enforce the reach ({@link IModulationSelection#enforcesReach}, e.g. {@code qot-adaptive}), no format is
+ * discarded by {@code maxReach} in either pass and the regenerators are placed by the QoT of the segments only;
+ * the format is the same on all the segments of the path.</p>
+ *
+ * <p>Precedence: path, then format, then core. For a given path, the most preferred format is tried on every
+ * core (in the order of the core assignment, with the interval proposed by the spectrum assignment in each core)
+ * before the next format; the first candidate that passes the validation is accepted.</p>
  *
  * <p>Every candidate is validated by the same {@link #evaluate} step: SNR of the new circuit, its
  * crosstalk against the modulation threshold, and the SNR/crosstalk of the circuits already active.</p>
@@ -76,6 +86,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         boolean foundFreeSlots = false;
         Integer lastAttemptedCore = null;
 
+        boolean enforceReach = modulationSelection.enforcesReach(cp);
         int passes = regeneratorAssignment == null ? 1 : 2;
         for (int pass = 0; pass < passes; pass++) {
             boolean withRegenerators = pass == 1;
@@ -83,7 +94,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
             for (Path path : candidatePaths) {
                 // 3. Modulation loop: candidate formats and their order come from the configured policy
                 for (ModulationFormat mod : modulationSelection.candidateFormats(cp, path, bitRate)) {
-                    boolean reachViolated = path.getLength() > mod.maxReach();
+                    boolean reachViolated = enforceReach && path.getLength() > mod.maxReach();
                     if (reachViolated && !withRegenerators) continue;
 
                     foundPathAndMod = true;
@@ -102,7 +113,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                         List<Node> regens = List.of();
                         if (withRegenerators) {
                             regens = regeneratorAssignment.assignRegenerators(
-                                    cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
+                                    cp, path, coreId, mod, slots.start(), slots.end(), bitRate, enforceReach);
                             // null: no feasible placement; empty: transparent, already evaluated in pass 1
                             if (regens == null || regens.isEmpty()) continue;
                         }
@@ -168,7 +179,10 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         if (!physConfig.activeQoTForOther()) return null;
         applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, true);
         try {
+            Set<Link> candidateLinks = Collections.newSetFromMap(new IdentityHashMap<>());
+            candidateLinks.addAll(path.links());
             for (Circuit active : cp.getActiveCircuitsView()) {
+                if (!isAffectedByCandidate(active, candidateLinks, coreId)) continue;
                 Path activePath = new Path(active.getPath());
                 int activeCore = active.getCoreIndices().get(0);
                 ModulationFormat activeMod = active.getModulation();
@@ -193,6 +207,26 @@ public class StandardIntegratedRMSCA implements IRMSCA {
             applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, false);
         }
         return null;
+    }
+
+    /**
+     * Whether an active circuit can be affected by a candidate on {@code candidateLinks}/{@code coreId}: it shares at
+     * least one link with the candidate, in the same core (NLI and amplifier load) or in a core adjacent to it
+     * (crosstalk). This mirrors the footprint written by {@link ControlPlane#applyPhysicalContribution}; the noise of
+     * any other circuit is left untouched by the candidate, so skipping it does not change the QoTO decision as long as
+     * the established circuits already satisfy their thresholds (which this very check maintains).
+     */
+    private static boolean isAffectedByCandidate(Circuit active, Set<Link> candidateLinks, int coreId) {
+        List<Link> links = active.getPath();
+        for (int i = 0; i < links.size(); i++) {
+            Link link = links.get(i);
+            if (!candidateLinks.contains(link)) continue;
+            int activeCore = active.getCoreIndices().get(i);
+            if (activeCore == coreId) return true;
+            Core candidateCore = link.getCore(coreId);
+            if (candidateCore != null && candidateCore.getAdjacentCores().contains(activeCore)) return true;
+        }
+        return false;
     }
 
     /**
