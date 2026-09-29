@@ -198,6 +198,71 @@ public class ExperimentalPlanner {
         int totalReps = baseSetup.experimentalPlanning().getReplications();
         SimulationResult repResult = new SimulationResult(totalReps);
 
+        SimulationEngine engine = runReplication(setup, repId, repResult, scenarioMap);
+
+        // 9. Accumulate into the central aggregatedResult and prepare the progress record
+        List<MetricEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, Map<String, SimulationResult.MetricRow>> sheetEntry : repResult.getData().entrySet()) {
+            String sheet = sheetEntry.getKey();
+            for (SimulationResult.MetricRow row : sheetEntry.getValue().values()) {
+                Double val = row.getRepValues().get(repId);
+                if (val != null) {
+                    aggregatedResult.addValue(sheet, row.getSubMetric(), row.getDimensions(), scenarioMap, repId, val);
+                    
+                    MetricEntry entry = new MetricEntry();
+                    entry.setSheet(sheet);
+                    entry.setSubMetric(row.getSubMetric());
+                    entry.setDimensions(row.getDimensions());
+                    entry.setValue(val);
+                    entries.add(entry);
+                }
+            }
+        }
+
+        // 10. Write progress record to the progress log file in a thread-safe manner
+        ProgressRecord record = new ProgressRecord();
+        record.setScenario(scenarioMap);
+        record.setRepId(repId);
+        record.setMetrics(entries);
+
+        String jsonLine = mapper.writeValueAsString(record);
+
+        synchronized (progressFile) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(progressFile, true))) {
+                writer.write(jsonLine);
+                writer.newLine();
+            }
+        }
+
+        int current = completedCounter.incrementAndGet();
+        double percent = (double) current * 100.0 / totalTasks;
+        System.out.println(String.format("Progress: %.2f%% (%d/%d replications)", percent, current, totalTasks));
+        if (progressListener != null) {
+            progressListener.onProgress(percent, current, totalTasks);
+        }
+
+        if (SimulationConstants.debugEnabled) {
+            double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();
+            String logMsg = String.format("[Thread %s] Scenario %s | Rep %d completed. BP: %.4e",
+                Thread.currentThread().getName(), scenarioMap, repId, bp);
+            System.out.println(logMsg);
+        }
+    }
+
+    /**
+     * Runs one replication of a scenario and collects all its metrics into {@code result}.
+     *
+     * <p>This is the single execution path of a replication: it is used by {@link #run()} and by the
+     * verification campaign ({@code docs/review/04_relatorio_verificacao_validacao.md}).</p>
+     *
+     * @param setup       The concrete scenario.
+     * @param repId       Replication index, also used as the random seed.
+     * @param result      Receives the metric values of this replication.
+     * @param scenarioMap Scenario identification stored with each value.
+     * @return The engine after the run, for inspection.
+     */
+    public static SimulationEngine runReplication(ScenarioSetup setup, int repId, SimulationResult result,
+                                                  Map<String, Object> scenarioMap) {
         // 1. Map Topology
         NetworkTopology topology = TopologyMapper.map(
             setup.networkTopology(), 
@@ -256,75 +321,28 @@ public class ExperimentalPlanner {
         // 7. Run
         engine.run();
 
-        // 8. Collect results locally
+        // 8. Collect results
         int totalCores = 1;
         if (engine.getTopology() != null && !engine.getTopology().links().isEmpty()) {
             totalCores = engine.getTopology().links().get(0).getCores().size();
         }
-        engine.getMetricsManager().getBitRateBlocking().fillResults(repResult, scenarioMap, repId, totalCores);
-        engine.getMetricsManager().getResourceUtilization().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getPhysicalLayer().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getExternalFragmentation().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getRelativeFragmentation().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getModulationUtilization().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getSpectrumSize().fillResults(repResult, scenarioMap, repId);
-        engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().fillResults(repResult, scenarioMap, repId);
+        engine.getMetricsManager().getBitRateBlocking().fillResults(result, scenarioMap, repId, totalCores);
+        engine.getMetricsManager().getResourceUtilization().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getPhysicalLayer().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getExternalFragmentation().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getRelativeFragmentation().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getModulationUtilization().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getSpectrumSize().fillResults(result, scenarioMap, repId);
+        engine.getMetricsManager().getTransmittersReceiversRegeneratorsUtilization().fillResults(result, scenarioMap, repId);
         
         if (engine.isActiveMetric("SimulationMetadata")) {
-            engine.getMetricsManager().getSimulationMetadata().fillResults(repResult, scenarioMap, repId, engine.getCurrentTime());
+            engine.getMetricsManager().getSimulationMetadata().fillResults(result, scenarioMap, repId, engine.getCurrentTime());
         }
         
         if (engine.getMetricsManager().getConsumedEnergy() != null) {
-            engine.getMetricsManager().getConsumedEnergy().fillResults(repResult, scenarioMap, repId, engine.getCurrentTime());
+            engine.getMetricsManager().getConsumedEnergy().fillResults(result, scenarioMap, repId, engine.getCurrentTime());
         }
-
-        // 9. Accumulate into the central aggregatedResult and prepare the progress record
-        List<MetricEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Map<String, SimulationResult.MetricRow>> sheetEntry : repResult.getData().entrySet()) {
-            String sheet = sheetEntry.getKey();
-            for (SimulationResult.MetricRow row : sheetEntry.getValue().values()) {
-                Double val = row.getRepValues().get(repId);
-                if (val != null) {
-                    aggregatedResult.addValue(sheet, row.getSubMetric(), row.getDimensions(), scenarioMap, repId, val);
-                    
-                    MetricEntry entry = new MetricEntry();
-                    entry.setSheet(sheet);
-                    entry.setSubMetric(row.getSubMetric());
-                    entry.setDimensions(row.getDimensions());
-                    entry.setValue(val);
-                    entries.add(entry);
-                }
-            }
-        }
-
-        // 10. Write progress record to the progress log file in a thread-safe manner
-        ProgressRecord record = new ProgressRecord();
-        record.setScenario(scenarioMap);
-        record.setRepId(repId);
-        record.setMetrics(entries);
-
-        String jsonLine = mapper.writeValueAsString(record);
-
-        synchronized (progressFile) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(progressFile, true))) {
-                writer.write(jsonLine);
-                writer.newLine();
-            }
-        }
-
-        int current = completedCounter.incrementAndGet();
-        double percent = (double) current * 100.0 / totalTasks;
-        System.out.println(String.format("Progress: %.2f%% (%d/%d replications)", percent, current, totalTasks));
-        if (progressListener != null) {
-            progressListener.onProgress(percent, current, totalTasks);
-        }
-
-        if (SimulationConstants.debugEnabled) {
-            double bp = engine.getMetricsManager().getBitRateBlocking().getGeneralBlockingProbability();
-            String logMsg = String.format("[Thread %s] Scenario %s | Rep %d completed. BP: %.4e",
-                Thread.currentThread().getName(), scenarioMap, repId, bp);
-            System.out.println(logMsg);
-        }
+        return engine;
     }
 
     /**

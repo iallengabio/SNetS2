@@ -109,3 +109,4 @@ Refer to the `docs/` directory for mathematical models, algorithms, and design s
 * [Metrics System Implementation Plan](docs/implementation/05_metrics_system.md)
 * [Project Development Roadmap & Status](docs/development_status.md)
 * [Technical Review: documentation, code review and verification plan](docs/review/README.md)
+* [Verification & Validation report (Erlang B, Markov chain, RMSA algorithms, energy and physical layer)](docs/review/04_relatorio_verificacao_validacao.md)

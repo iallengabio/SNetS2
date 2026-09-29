@@ -1,18 +1,11 @@
 package com.snets2.verification;
 
+import com.snets2.ExperimentalPlanner;
 import com.snets2.config.ScenarioSetup;
-import com.snets2.config.TopologyMapper;
-import com.snets2.engine.ArrivalEvent;
-import com.snets2.engine.ResourceUtilizationObservationEvent;
 import com.snets2.engine.SimulationEngine;
-import com.snets2.model.ControlPlane;
-import com.snets2.model.NetworkTopology;
-import com.snets2.model.Node;
-import com.snets2.rmsca.AlgorithmFactory;
-import com.snets2.rmsca.IRMSCA;
-import com.snets2.rmsca.StandardIntegratedRMSCA;
+import com.snets2.output.SimulationResult;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * Shared scaffolding for the verification tests (docs/review/03_plano_de_verificacao.md).
@@ -95,33 +88,8 @@ final class VerificationSupport {
         }
     }
 
-    /** Builds and runs one replication exactly as {@code ExperimentalPlanner} does. */
+    /** Builds and runs one replication through {@link ExperimentalPlanner#runReplication}. */
     static SimulationEngine runReplication(ScenarioSetup setup, long seed) {
-        NetworkTopology topology = TopologyMapper.map(setup.networkTopology(), setup.physicalLayer(),
-                setup.simulation().totalSlots());
-        IRMSCA rmsca = AlgorithmFactory.createIntegrated(setup.simulation().integratedRMSCA());
-        StandardIntegratedRMSCA standard = (StandardIntegratedRMSCA) rmsca;
-        standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
-        standard.setModulationSelection(AlgorithmFactory.createModulation(setup.simulation().modulationSelection()));
-        standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
-        standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
-        AlgorithmFactory.seedRandomizedAlgorithms(standard, seed);
-
-        ControlPlane cp = new ControlPlane(topology, rmsca, setup.physicalLayer().bvtSpectralWidth(),
-                setup.physicalLayer().guardBand(), setup.physicalLayer());
-        SimulationEngine engine = new SimulationEngine(topology, cp, setup.simulation().requests(),
-                setup.simulation().warmUpRequests(), setup.simulation().activeMetrics(),
-                setup.traffic().load(), setup.traffic().bitRates(), seed);
-
-        List<Node> nodes = topology.nodes();
-        Node src = nodes.get(engine.getRandom().nextInt(nodes.size()));
-        Node dst;
-        do {
-            dst = nodes.get(engine.getRandom().nextInt(nodes.size()));
-        } while (src == dst);
-        engine.schedule(new ArrivalEvent(0.0, src, dst, engine.nextBitRate()));
-        engine.schedule(new ResourceUtilizationObservationEvent(0.0));
-        engine.run();
-        return engine;
+        return ExperimentalPlanner.runReplication(setup, (int) seed, new SimulationResult(1), Map.of());
     }
 }

@@ -19,6 +19,7 @@ O SNetS2 separa a **captura** de dados (Eventos) do **armazenamento** (Classes d
   - *BP by QoT Others*: Degradação inaceitável induzida pelo circuito entrante em circuitos já ativos na rede.
   - *BP by Crosstalk*: Crosstalk inter-núcleo excessivo para o circuito entrante.
   - *BP by Crosstalk Others*: Degradação inaceitável por crosstalk inter-núcleo induzida em conexões ativas na rede.
+  - `getBlockingProbabilityPerBitRate()` expõe o bloqueio de cada taxa de bits requisitada (igual ao bloqueio de requisições daquela classe). É usado pela verificação contra Kaufman–Roberts (`docs/review/04_relatorio_verificacao_validacao.md`, E3) e ainda não é exportado para o Excel.
 - **`ResourceUtilizationMetrics`**: Implementa a técnica de **Média Ponderada pelo Tempo**. Armazena acumuladores de ocupação multiplicados pelo tempo de permanência naquele estado ($\Delta t$).
 - **`PhysicalLayerMetrics`**: Coleta estatísticas de qualidade de sinal (OSNR, XT, Potência) no momento do estabelecimento dos circuitos. Realiza breakdowns por par de nós e por contagem de sobreposições (*overlaps*).
 - **`SimulationMetadataMetrics`**: Coleta metadados gerais da simulação, como o tempo total simulado, a duração média das requisições (geral e por bit rate), a quantidade média de conexões ativas na rede (usando média ponderada pelo tempo) e o número de conexões ativas amostradas em 10 intervalos ao longo do tempo.
