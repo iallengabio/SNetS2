@@ -81,6 +81,29 @@ public class PhysicalLayerModel {
     }
 
     /**
+     * Nominal gains G_0 (dB) of the amplifier chain of a link, in propagation order: booster (3 x
+     * {@code switchInsertionLoss}), N_l line amplifiers (alpha L_span) and pre-amplifier (alpha (L - N_l L_span)),
+     * with N_l = {@link #numberOfLineAmplifiers}. This is the single rule for the amplifiers of a link: it is used by
+     * {@link #calculateLinkAse} and by {@code TopologyMapper} to build {@code Link.getAmplifiers()}, which the
+     * energy model counts, so that the ASE and the energy models always see the same N_l + 2 amplifiers.
+     *
+     * @param linkLength Link length L (km).
+     * @return Array of N_l + 2 gains in dB.
+     */
+    public static double[] amplifierChainGainsDb(double linkLength, PhysicalLayerConfig config) {
+        int nLine = numberOfLineAmplifiers(linkLength, config.spanLength());
+        double lastSegment = linkLength - nLine * config.spanLength();
+
+        double[] gains = new double[nLine + 2];
+        gains[0] = 3.0 * config.switchInsertionLoss();
+        for (int k = 1; k <= nLine; k++) {
+            gains[k] = config.fiberLoss() * config.spanLength();
+        }
+        gains[nLine + 1] = config.fiberLoss() * lastSegment;
+        return gains;
+    }
+
+    /**
      * ASE noise density (W/Hz, both polarizations) of the amplifier chain of one link, referred to the
      * nominal signal PSD so that it can be summed with the other noise terms in SNR = I / (I_ASE + I_NLI + I_XT).
      *
@@ -107,18 +130,9 @@ public class PhysicalLayerModel {
     public static double calculateLinkAse(Link link, PhysicalLayerConfig config, double totalLaunchPower) {
         if (!config.activeASE()) return 0.0;
 
-        int nLine = numberOfLineAmplifiers(link.getLength(), config.spanLength());
-        double lastSegment = link.getLength() - nLine * config.spanLength();
-
-        double boosterGainDb = 3.0 * config.switchInsertionLoss();
-        double lineGainDb = config.fiberLoss() * config.spanLength();
-        double preGainDb = config.fiberLoss() * lastSegment;
-
-        int stages = nLine + 2;
         double ase = 0.0;
         double rho = 1.0;
-        for (int k = 0; k < stages; k++) {
-            double g0Db = (k == 0) ? boosterGainDb : (k == stages - 1) ? preGainDb : lineGainDb;
+        for (double g0Db : amplifierChainGainsDb(link.getLength(), config)) {
             double g0 = dbToLinear(g0Db);
             double pIn = rho * totalLaunchPower / g0;
             double gain = amplifierGain(config, g0, pIn);

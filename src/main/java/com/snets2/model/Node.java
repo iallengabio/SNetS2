@@ -10,10 +10,14 @@ import com.snets2.SimulationConstants;
  * These resources are finite and their exhaustion leads to blocking.</p>
  */
 public class Node {
+    /** Add/drop degree assumed when none is configured: a single add/drop port per ROADM. */
+    public static final int DEFAULT_ADD_DROP_DEGREE = 1;
+
     private final String id;
     private final int totalTx;
     private final int totalRx;
     private final int totalRegenerators;
+    private final int addDropDegree;
     
     private int availableTx;
     private int availableRx;
@@ -28,7 +32,22 @@ public class Node {
      * @param regenerators Total number of regenerators available for signal restoration.
      */
     public Node(String id, int tx, int rx, int regenerators) {
+        this(id, tx, rx, regenerators, DEFAULT_ADD_DROP_DEGREE);
+    }
+
+    /**
+     * Constructs a Node with specified resource capacities and add/drop degree.
+     *
+     * @param id            Unique identifier for the node.
+     * @param tx            Total number of Bandwidth Variable Transceivers (BVTs) for transmission.
+     * @param rx            Total number of BVTs for reception.
+     * @param regenerators  Total number of regenerators available for signal restoration.
+     * @param addDropDegree Number of add/drop ports of the ROADM. Only used by the static power model
+     *                      ({@code EnergyConsumptionModel}); it does not limit the number of circuits.
+     */
+    public Node(String id, int tx, int rx, int regenerators, int addDropDegree) {
         this.id = id;
+        this.addDropDegree = addDropDegree;
         this.totalTx = tx;
         this.totalRx = rx;
         this.totalRegenerators = regenerators;
@@ -146,4 +165,6 @@ public class Node {
     public int getTotalTx() { return totalTx; }
     public int getTotalRx() { return totalRx; }
     public int getTotalRegenerators() { return totalRegenerators; }
+    /** @return Add/drop degree of the ROADM (number of add/drop ports). */
+    public int getAddDropDegree() { return addDropDegree; }
 }

@@ -5,19 +5,22 @@
         "id": "0",
         "tx": 100000,
         "rx": 100000,
-        "regenerators": 10
+        "regenerators": 10,
+        "addDropDegree": 1
       },
       {
         "id": "1",
         "tx": 100000,
         "rx": 100000,
-        "regenerators": 10
+        "regenerators": 10,
+        "addDropDegree": 1
       },
       {
         "id": "2",
         "tx": 100000,
         "rx": 100000,
-        "regenerators": 10
+        "regenerators": 10,
+        "addDropDegree": 1
       }
     ],
     "links": [
