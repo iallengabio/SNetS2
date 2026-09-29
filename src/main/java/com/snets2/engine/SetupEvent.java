@@ -39,7 +39,7 @@ public class SetupEvent extends Event {
             circuit.getModulation(), circuit.getBitRate());
         
         double xtDb = com.snets2.metrics.PhysicalLayerModel.predictXT(
-            new com.snets2.rmsca.routing.Path(circuit.getPath()), 
+            engine.getControlPlane(), new com.snets2.rmsca.routing.Path(circuit.getPath()), 
             circuit.getRegeneratorNodes(),
             circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot());
             

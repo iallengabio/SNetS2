@@ -190,15 +190,20 @@ public class PhysicalLayerModel {
     }
 
     /**
-     * Calculates the current average XT (dB) for a proposed allocation.
+     * Inter-core crosstalk ratio (linear, dimensionless) of a proposed allocation on one transparent
+     * segment: {@code XT = sum_links avg(I_XT) / I_ch}, i.e. the crosstalk power coupled into the victim
+     * divided by its signal power. For one fully-overlapping neighbour of the same bandwidth on a link of
+     * length {@code L} this equals {@code h L}.
      */
-    public static double predictXT(Path path, int coreId, int startSlot, int endSlot) {
+    public static double predictXtRatio(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot) {
+        PhysicalLayerConfig config = cp.getPhysicalLayerConfig();
+        double pLinear = config != null ? launchPowerWatts(config) : 1E-4;
+        double iCh = pLinear / signalBandwidth(startSlot, endSlot, cp.getGuardBand(), cp.getSlotBandwidth());
         double totalXtDensity = 0;
         for (Link link : path.links()) {
-            Core core = link.getCore(coreId);
-            totalXtDensity += core.getAverageXtNoise(startSlot, endSlot);
+            totalXtDensity += link.getCore(coreId).getAverageXtNoise(startSlot, endSlot);
         }
-        return 10 * Math.log10(Math.max(1E-30, totalXtDensity));
+        return totalXtDensity / iCh;
     }
 
     /**
@@ -261,16 +266,24 @@ public class PhysicalLayerModel {
         return minSnr;
     }
 
-    public static double predictXT(Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
-        List<Path> segments = getPathSegments(path, regenerators);
-        double maxXtDb = -Double.MAX_VALUE;
-        for (Path segment : segments) {
-            double xtDb = predictXT(segment, coreId, startSlot, endSlot);
-            if (xtDb > maxXtDb) {
-                maxXtDb = xtDb;
-            }
+    /**
+     * Worst (largest) crosstalk ratio over the transparent segments delimited by regenerators, linear.
+     */
+    public static double predictXtRatio(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
+        double worst = 0;
+        for (Path segment : getPathSegments(path, regenerators)) {
+            worst = Math.max(worst, predictXtRatio(cp, segment, coreId, startSlot, endSlot));
         }
-        return maxXtDb;
+        return worst;
+    }
+
+    /**
+     * Worst crosstalk over the transparent segments, in dB ({@code 10 log10(XT ratio)}); comparable with the
+     * {@code XT} threshold of the modulation formats. Allocations without any overlapping neighbour are
+     * reported at the floor of -300 dB.
+     */
+    public static double predictXT(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
+        return 10 * Math.log10(Math.max(1E-30, predictXtRatio(cp, path, regenerators, coreId, startSlot, endSlot)));
     }
 
     private static List<Path> getPathSegments(Path path, List<Node> regenerators) {
