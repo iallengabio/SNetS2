@@ -48,3 +48,12 @@ Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um int
 | Teardown de Conexão | $O(1)$ | $O(\text{Grade Espectral})$ |
 
 Esta arquitetura permite que o SNetS2 escale para milhares de requisições simultâneas mantendo um tempo de execução previsível e baixo.
+
+## 6. Ferramenta de alcance (`ReachCalculator`)
+`com.snets2.verification.ReachCalculator` (escopo de teste; wrapper `scripts/compute_reach.sh`) calcula o `maxRange` de cada modulação de um `setup.json` com o próprio motor acima. Não há modelo paralelo:
+1. Monta um `ControlPlane` com um único enlace de comprimento $L$ e um núcleo de `totalSlots` slots.
+2. Estabelece (`establishCircuit`) canais iguais ao de teste em todas as posições contíguas da grade, exceto a central, o que preenche os caches de XCI e a carga do núcleo.
+3. Avalia o canal central com `PhysicalLayerModel.predictSNR`.
+4. Faz a bisseção sobre $L$ (múltiplos de 10 km) até o limiar `SNR` da modulação, para cada taxa de `traffic.bitRates`, e toma o menor alcance.
+
+A carga de referência, a escolha da taxa e a tabela resultante estão em `docs/formal_description/07_physical_layer_models.md`, §6.2. `ReachCalculatorTest` verifica a monotonicidade do alcance com $M$, a bisseção (limiar atendido em $L$ e violado em $L + 10$ km) e que nenhum `experiments/*/setup.json` tem `maxRange` acima do alcance calculado.
