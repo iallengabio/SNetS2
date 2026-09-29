@@ -4,6 +4,8 @@
 > Companheiros: [`01_revisao_documentacao.md`](01_revisao_documentacao.md), [`02_code_review.md`](02_code_review.md) (IDs `CR-xx`).
 > Princípio: *verificação* = “construímos o modelo certo?” (código × especificação); *validação* = “o modelo certo é o do mundo real/literatura?” (resultado × referência).
 
+> **Resultados:** a execução dos níveis L2, L3, L4, L6-a, L8-b, L9, L10, L11 e L12-b está no [relatório de verificação e validação](04_relatorio_verificacao_validacao.md).
+
 ## 0. Estado inicial e primeira evidência (já executada)
 
 | Experimento | Resultado | Conclusão |

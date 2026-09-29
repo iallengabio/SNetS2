@@ -1,10 +1,11 @@
 # Revisão técnica do SNetS2
 
-Revisão feita sobre o commit `e64a13d`. Três documentos:
+Revisão feita sobre o commit `e64a13d`, com o relatório de V&V executado após o PR #11. Quatro documentos:
 
 1. **[Revisão da documentação](01_revisao_documentacao.md)**: confere a precisão técnica e a aderência à literatura de `README`, `docs/formal_description` e `docs/implementation`, com uma correção proposta para cada item.
 2. **[Code review](02_code_review.md)**: compara a implementação com o modelo previsto. São 21 achados, classificados por severidade, e os principais foram confirmados por micro-experimentos.
 3. **[Plano de verificação](03_plano_de_verificacao.md)**: 13 níveis de experimentos, dos invariantes e do Erlang-B até a camada física SDM e a comparação com a literatura. Cada experimento tem oráculo, critério estatístico e dependência das correções.
+4. **[Relatório de verificação e validação](04_relatorio_verificacao_validacao.md)**: campanha de 8 experimentos (Erlang B, transmissores, Kaufman–Roberts, cadeia de Markov exata, algoritmos RMSA na NSFNET, energia, camada física e rede SDM com QoT), com gráficos, tabelas e vereditos. Reprodução: `scripts/verification/run_campaign.sh`.
 
 Teste executável que acompanha a revisão: `src/test/java/com/snets2/verification/ErlangBSingleLinkTest.java`.
 

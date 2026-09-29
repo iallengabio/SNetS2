@@ -90,6 +90,16 @@ public class BitRateBlockingMetrics {
     }
 
     public double getGeneralRequestedBitRate() { return generalRequestedBitRate; }
+
+    /**
+     * Bit-rate blocking probability of each requested bit rate (Gbps). Since every request of a class has
+     * the same bit rate, this is also the request blocking probability of that class.
+     */
+    public Map<Double, Double> getBlockingProbabilityPerBitRate() {
+        Map<Double, Double> bp = new java.util.TreeMap<>();
+        requestedBitRatePerBW.forEach((bw, req) -> bp.put(bw, bitRateBlockedPerBW.getOrDefault(bw, 0.0) / req));
+        return bp;
+    }
     public double getBitRateBlockingByFragmentation() { return bitRateBlockingByFragmentation; }
     public double getBitRateBlockingByLackTransmitters() { return bitRateBlockingByLackTransmitters; }
     public double getBitRateBlockingByLackReceivers() { return bitRateBlockingByLackReceivers; }

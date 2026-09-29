@@ -54,6 +54,8 @@ public synchronized void addValue(String sheet, String subMetric, Map<String, St
 }
 ```
 
+A execução de uma replicação (mapeamento da topologia, cadeia de algoritmos, `ControlPlane`, `SimulationEngine`, primeira chegada, execução e coleta das métricas) fica no método estático público `ExperimentalPlanner.runReplication(setup, repId, result, scenarioMap)`. Ele é o único caminho de execução de uma replicação: é usado pela pool de threads e também pelos testes e pela campanha de verificação (`VerificationCampaign`), o que garante que a verificação exercite exatamente o código de produção.
+
 Para isolar o cálculo das métricas de cada replicação individual e evitar interferência entre threads durante a execução, cada tarefa concorrente utiliza uma instância local de `SimulationResult` (`repResult`). Somente no término da replicação os valores computados são transferidos e agregados atomicamente ao `SimulationResult` compartilhado.
 
 ### Acompanhamento do Progresso em Tempo Real
