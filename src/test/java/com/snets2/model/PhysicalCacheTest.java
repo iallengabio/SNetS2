@@ -30,10 +30,11 @@ class PhysicalCacheTest {
         qpsk = new ModulationFormat("QPSK", 2000.0, 4.0, 12.0, -25.0, 32.0, 0.1);
         NetworkTopology topology = new NetworkTopology(List.of(nodeA, nodeB), List.of(linkAB), List.of(qpsk));
         
+        // Saturated gain: the core load is only maintained when the amplifier model uses it
         config = new PhysicalLayerConfig(
             true, true, true, true, true, true, 
             0.07, 0.0, 80.0, 0.2, 1.3E-3, 1.6E-5, 1.93E14, 
-            6.626E-34, 5.0, 16.0, 100.0, 4.0, 0, 1.93E14, 5.0, 
+            6.626E-34, 5.0, 16.0, 100.0, 4.0, PhysicalLayerConfig.AMP_GAIN_SATURATED, 1.93E14, 5.0, 
             false, 1.25E10, 1.0E7, 0.01, 0.012, 4.5E-5, 2.0, 1, 12.5E9
         );
 

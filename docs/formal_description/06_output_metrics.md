@@ -38,7 +38,7 @@ As abas geradas dependerão do bloco `"activeMetrics"` no JSON de configuração
 
 ### 3.1. Aba: `BlockingProbability` (e `BitRateBlockingProbability`)
 Avalia a probabilidade de rejeição de chamadas (ou rejeição ponderada por banda).
-* **Dimensões Adicionais:** `src` (nó de origem), `dest` (nó de destino).
+* **Dimensões Adicionais:** `src` (nó de origem), `dest` (nó de destino), `core` (núcleo) e `bitrate` (taxa de bits requisitada, em Gbps). Todas as linhas da aba têm as quatro dimensões; as que não se aplicam valem `all`.
 * **SubMetrics Incluídas:**
   * General blocking probability
   * Blocking probability by lack of transmitters / receivers
@@ -47,6 +47,7 @@ Avalia a probabilidade de rejeição de chamadas (ou rejeição ponderada por ba
   * Blocking probability by Crosstalk
   * Blocking probability per core `[ID]`
   * Blocking probability per pair `[src]-[dest]`
+  * Blocking probability per bit rate `[bitrate]` (`BP per bit rate`): $BP_r = \frac{\text{taxa bloqueada das requisições de taxa } r}{\text{taxa requisitada das requisições de taxa } r}$, que coincide com a probabilidade de bloqueio de requisições da classe $r$
 
 ### 3.2. Aba: `SpectrumUtilization`
 Avalia o quão cheio está o espectro da rede durante o estado estacionário da simulação.

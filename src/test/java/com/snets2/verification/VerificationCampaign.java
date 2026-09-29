@@ -385,7 +385,7 @@ public final class VerificationCampaign {
                     Run run = runs.get(r);
                     Function<String, Double> pair = p -> {
                         String[] n = p.split("-");
-                        return run.value("BlockingProbability", "BP per pair", Map.of("src", n[0], "dest", n[1], "core", "all"));
+                        return run.value("BlockingProbability", "BP per pair", Map.of("src", n[0], "dest", n[1], "core", "all", "bitrate", "all"));
                     };
                     // both directions are statistically identical: average them
                     double bp01 = (pair.apply("0-1") + pair.apply("2-1")) / 2;

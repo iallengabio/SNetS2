@@ -29,37 +29,9 @@ public class SetupEvent extends Event {
         // 1. Commit state mutation in the Control Plane
         Circuit circuit = result.toCircuit(circuitId);
         
-        // --- PRE-ESTABLISHMENT STATS (to capture state before mutation) ---
-        // Note: predictSNR/predictXT work on the current cache state.
-        // We record the quality of the circuit as it is being established.
-        double snrLinear = com.snets2.metrics.PhysicalLayerModel.predictSNR(
-            engine.getControlPlane(), new com.snets2.rmsca.routing.Path(circuit.getPath()), 
-            circuit.getRegeneratorNodes(),
-            circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot(), 
-            circuit.getModulation(), circuit.getBitRate());
-        
-        double xtDb = com.snets2.metrics.PhysicalLayerModel.predictXT(
-            engine.getControlPlane(), new com.snets2.rmsca.routing.Path(circuit.getPath()), 
-            circuit.getRegeneratorNodes(),
-            circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot());
-            
-        int overlaps = com.snets2.metrics.PhysicalLayerModel.calculateTotalOverlaps(
-            new com.snets2.rmsca.routing.Path(circuit.getPath()), 
-            circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot());
-
-        double powerDbm = -1.0; // Default
-        if (engine.getControlPlane().getPhysicalLayerConfig() != null) {
-            // Launch power actually used by the circuit (differs from 'power' when the PSD is fixed)
-            powerDbm = com.snets2.metrics.PhysicalLayerModel.wattsToDbm(
-                com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
-                    engine.getControlPlane().getPhysicalLayerConfig(), circuit));
-        }
-
         if (measured) {
             if (engine.isActiveMetric("CrosstalkStatistics")) {
-                engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
-                    circuit.getSource().getId(), circuit.getDestination().getId(), 
-                    10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
+                recordPhysicalStatistics(engine, circuit);
             }
 
             if (engine.isActiveMetric("ExternalFragmentation")) {
@@ -94,5 +66,38 @@ public class SetupEvent extends Event {
         if (measured && engine.isActiveMetric("SimulationMetadata")) {
             engine.getMetricsManager().getSimulationMetadata().recordRequestDuration(holdTime, circuit.getBitRate());
         }
+    }
+
+    /**
+     * Records the quality of the circuit as it is being established (SNR, XT, launch power, overlaps).
+     * Must run before the mutation: predictSNR/predictXT work on the current cache state, which the
+     * ControlPlane keeps up to date whenever CrosstalkStatistics is active.
+     */
+    private static void recordPhysicalStatistics(SimulationEngine engine, Circuit circuit) {
+        com.snets2.rmsca.routing.Path path = new com.snets2.rmsca.routing.Path(circuit.getPath());
+        int coreId = circuit.getCoreIndices().get(0);
+        double snrLinear = com.snets2.metrics.PhysicalLayerModel.predictSNR(
+            engine.getControlPlane(), path, circuit.getRegeneratorNodes(),
+            coreId, circuit.getStartSlot(), circuit.getEndSlot(),
+            circuit.getModulation(), circuit.getBitRate());
+
+        double xtDb = com.snets2.metrics.PhysicalLayerModel.predictXT(
+            engine.getControlPlane(), path, circuit.getRegeneratorNodes(),
+            coreId, circuit.getStartSlot(), circuit.getEndSlot());
+
+        int overlaps = com.snets2.metrics.PhysicalLayerModel.calculateTotalOverlaps(
+            path, coreId, circuit.getStartSlot(), circuit.getEndSlot());
+
+        double powerDbm = -1.0; // Default
+        if (engine.getControlPlane().getPhysicalLayerConfig() != null) {
+            // Launch power actually used by the circuit (differs from 'power' when the PSD is fixed)
+            powerDbm = com.snets2.metrics.PhysicalLayerModel.wattsToDbm(
+                com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
+                    engine.getControlPlane().getPhysicalLayerConfig(), circuit));
+        }
+
+        engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
+            circuit.getSource().getId(), circuit.getDestination().getId(),
+            10 * Math.log10(snrLinear), xtDb, powerDbm, overlaps);
     }
 }
