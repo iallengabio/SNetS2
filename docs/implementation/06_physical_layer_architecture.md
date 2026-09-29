@@ -34,6 +34,20 @@ Toda a atualização física é feita por `ControlPlane.applyPhysicalContributio
 ### Ao Remover um Circuito (`TeardownEvent`)
 1. O simulador realiza as mesmas chamadas e subtrai os valores dos arrays de cache, garantindo que o sistema retorne ao estado limpo (consistência validada via testes unitários).
 
+### Caches Mantidos Apenas Quando Lidos
+Os caches só são consultados pela verificação de QoT (`activeQoT`: `StandardIntegratedRMSCA` e `AsSoonAsRequiredRegeneratorAssignment`) e pela métrica `CrosstalkStatistics` (SNR, XT e potência registrados pelo `SetupEvent`). Quando nenhum dos dois está ativo, atualizá-los é custo puro (a máscara de NLI é $O(	ext{slots})$ por enlace). Por isso o `ControlPlane` decide, uma vez por rodada, quais partes de `applyPhysicalContribution` executar (issue #19):
+
+| Cache | Atualizado se |
+| :--- | :--- |
+| NLI (`nliNoiseCache`) | (`activeQoT` ou `CrosstalkStatistics`) e `activeNLI` |
+| XT (`xtNoiseCache`) | (`activeQoT` ou `CrosstalkStatistics`) e `activeXT` |
+| Carga (`totalLaunchPower`) | (`activeQoT` ou `CrosstalkStatistics`) e ganho saturado (`typeOfAmplifierGain = 1`) |
+
+- O `SimulationEngine` informa, no construtor, se a métrica `CrosstalkStatistics` está ativa (`ControlPlane.setPhysicalStatisticsRequired`). O valor padrão é `true` (todos os caches mantidos), o que preserva o comportamento de quem cria um `ControlPlane` sem motor, como os testes unitários.
+- As flags são fixas durante a rodada (o setter recusa a mudança com circuitos ativos), de modo que um circuito é removido com os mesmos caches com que foi estabelecido.
+- Com `activeNLI`/`activeXT` desligados as contribuições já eram nulas, e sem leitores os caches não influenciam nenhuma decisão; os resultados são, portanto, idênticos aos de antes, para a mesma semente (`PhysicalCacheSkipTest`).
+- O `SetupEvent` só calcula o SNR/XT do circuito quando `CrosstalkStatistics` está ativa e a requisição é medida.
+
 ## 4. Predição Ultra-Rápida ($O(S)$)
 Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um intervalo de slots `[s1, s2]`:
 1. Ele chama `PhysicalLayerModel.predictSNR`.

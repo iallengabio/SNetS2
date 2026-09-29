@@ -72,6 +72,12 @@ public class SimulationEngine {
         }
         this.metricsManager.initializeRelativeFragmentation(controlPlane, brValues);
 
+        // The physical caches (NLI, XT, core load) only need to be maintained when something reads them:
+        // the QoT check or the per-circuit CrosstalkStatistics (issue #19).
+        if (controlPlane != null) {
+            controlPlane.setPhysicalStatisticsRequired(isActiveMetric("CrosstalkStatistics"));
+        }
+
         this.mu = 1.0;
         this.lambda = load * mu;
         this.bitRates = bitRates != null ? bitRates : new ArrayList<>();
