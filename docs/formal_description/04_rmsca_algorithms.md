@@ -49,6 +49,19 @@ Os núcleos $c$ são percorridos na ordem da estratégia de núcleo, e $I$ é o 
 * **Causa de bloqueio:** vale a última falha específica. Como os formatos são tentados do mais eficiente ao mais robusto, é a causa do formato mais robusto (no último caminho): `QOT_NEW`, `CROSSTALK`, `QOT_OTHERS`, `XT_OTHERS` ou `FRAGMENTATION`.
 * **Sem QoT:** com `activeQoT = false` não há critério físico e a política usa o alcance, como `distance-adaptive`.
 
+#### Margem de QoT (`qot-margin`)
+Porte de `ModulationSelectionByQoTAndSigma` do SNetS v1 (parâmetro σ do algoritmo KSP-RQoTO de Fontinele et al., 2017 [1]). Com as margens $\sigma$ (SNR) e $\sigma_{XT}$ (XT), em dB, a política escolhe, para cada caminho $p$, o primeiro candidato $(m, c, I)$ viável segundo as condições de `qot-adaptive` que também satisfaz
+
+$$SNR_{novo} \ge SNR_{th}(m) + \sigma, \qquad XT_{novo} \le XT_{th}(m) - \sigma_{XT} \quad (\text{em dB}).$$
+
+Se nenhum candidato do caminho mantém as margens, vale o primeiro candidato viável do caminho, que é a escolha de `qot-adaptive`. As margens são uma preferência e nunca bloqueiam. Aplicam-se só ao novo circuito, e os estabelecidos continuam sujeitos apenas aos próprios limiares. Com $\sigma = \sigma_{XT} = 0$ a política é idêntica a `qot-adaptive`, e sem QoT volta ao alcance.
+
+* **Parâmetros** (`simulation.algorithmParameters`): `sigma` e `sigmaXt`, em dB, ambos $\ge 0$ e com padrão 0.
+* **Diferenças em relação ao v1.** A margem de XT é uma extensão para SDM e não existe no v1. No v1, a escolha de rota do KSP-RQoTO (menor slot inicial com melhor pior-margem dos estabelecidos) é um algoritmo integrado e não foi portada. Aqui vale a precedência de caminhos do RMSCA padrão.
+* **Monotonicidade.** Enquanto algum formato mantém $\sigma$, aumentar $\sigma$ nunca escolhe um formato mais eficiente. Quando nenhum mantém, a escolha volta à de `qot-adaptive`.
+
+[1] A. Fontinele, I. Santos, J. N. Neto, D. R. Campelo, A. Soares, "An efficient IA-RMLSA algorithm for transparent elastic optical networks", *Computer Networks* 118 (2017) 1–14, doi:[10.1016/j.comnet.2017.03.003](https://doi.org/10.1016/j.comnet.2017.03.003).
+
 ### 3.2. Atribuição de núcleo e crosstalk
 
 Seja $\mathcal{C}(p)$ o conjunto de núcleos presentes em todos os enlaces de $p$ e $\mathrm{adj}(c)$ os vizinhos de $c$ na fibra (lista `adjacentCores` do primeiro enlace). As estratégias disponíveis são:
@@ -83,7 +96,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
-*   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation.
+*   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---
 
@@ -91,6 +104,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 Para adicionar um novo algoritmo ao SNetS2:
 1.  Criar uma nova classe que implemente uma das interfaces RMSCA.
 2.  Registrar a classe no sistema de mapeamento do simulador.
+    Se o algoritmo tiver parâmetros numéricos, implementar `Configurable` e lê-los de `simulation.algorithmParameters`.
 3.  Referenciar o nome da classe no campo correspondente do JSON de entrada.
 
 Esta estrutura permite que o simulador evolua junto com o estado da arte das redes ópticas elásticas multicore.

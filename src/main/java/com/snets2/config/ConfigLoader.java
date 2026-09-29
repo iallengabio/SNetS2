@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -55,6 +56,10 @@ public class ConfigLoader {
             // Navigate to the parent object of the leaf property
             for (int i = 0; i < parts.length - 1; i++) {
                 Object next = currentMap.get(parts[i]);
+                if (next == null) { // optional map not present in the base (e.g. simulation.algorithmParameters)
+                    next = new LinkedHashMap<String, Object>();
+                    currentMap.put(parts[i], next);
+                }
                 if (!(next instanceof Map)) {
                     throw new IllegalArgumentException("Invalid override key path: " + entry.getKey() + " (not a map at '" + parts[i] + "')");
                 }

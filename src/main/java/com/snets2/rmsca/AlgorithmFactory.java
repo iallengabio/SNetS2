@@ -31,6 +31,7 @@ public class AlgorithmFactory {
         modulationRegistry.put("fixed", FixedModulationSelection.class);
         modulationRegistry.put("distance-adaptive", DistanceAdaptiveModulationSelection.class);
         modulationRegistry.put("qot-adaptive", QoTAwareModulationSelection.class);
+        modulationRegistry.put("qot-margin", QoTMarginModulationSelection.class);
         
         // Core
         coreRegistry.put("firstfitcore", FirstFitCoreAssignment.class);
@@ -66,6 +67,50 @@ public class AlgorithmFactory {
         if (rmsca.getSpectrumAssignment() instanceof RandomizedAlgorithm r) {
             r.setRandom(new java.util.Random(seed * 0x9E3779B97F4A7C15L + 2));
         }
+    }
+
+    /**
+     * Builds the full algorithm chain of a scenario: integrated RMSCA, its sub-algorithms, the random streams of the
+     * randomized ones (derived from {@code seed}) and the parameters of {@code simulation.algorithmParameters}.
+     *
+     * @throws RuntimeException if an algorithm id is unknown
+     * @throws IllegalArgumentException if a parameter value is invalid
+     */
+    public static IRMSCA createRMSCA(com.snets2.config.SimulationConfig simulation, long seed) {
+        IRMSCA rmsca = createIntegrated(simulation.integratedRMSCA());
+        if (rmsca instanceof StandardIntegratedRMSCA standard) {
+            standard.setRouting(createRouting(simulation.routing()));
+            standard.setModulationSelection(createModulation(simulation.modulationSelection()));
+            standard.setCoreAssignment(createCore(simulation.coreAndSpectrumAssignment()));
+            standard.setSpectrumAssignment(createSpectrum(simulation.spectrumAssignment()));
+            standard.setRegeneratorAssignment(createRegenerator(simulation.regeneratorAssignment()));
+            seedRandomizedAlgorithms(standard, seed);
+        }
+        configure(rmsca, simulation.algorithmParameters());
+        return rmsca;
+    }
+
+    /** Passes the parameters to every {@link Configurable} algorithm of the chain. */
+    public static void configure(IRMSCA rmsca, Map<String, Object> parameters) {
+        for (Object algorithm : chain(rmsca)) {
+            if (algorithm instanceof Configurable c) c.configure(parameters);
+        }
+    }
+
+    /** Names of the parameters read by the algorithms of the chain. */
+    public static java.util.Set<String> parameterNames(IRMSCA rmsca) {
+        java.util.Set<String> names = new java.util.TreeSet<>();
+        for (Object algorithm : chain(rmsca)) {
+            if (algorithm instanceof Configurable c) names.addAll(c.parameterNames());
+        }
+        return names;
+    }
+
+    private static java.util.List<Object> chain(IRMSCA rmsca) {
+        java.util.List<Object> chain = new java.util.ArrayList<>();
+        chain.add(rmsca);
+        if (rmsca instanceof StandardIntegratedRMSCA standard) chain.addAll(standard.components());
+        return chain;
     }
 
     public static IRMSCA createIntegrated(String id) {

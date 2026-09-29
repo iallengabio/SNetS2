@@ -612,9 +612,12 @@ public final class VerificationCampaign {
 
     static void qotNetwork(File out) throws Exception {
         record Variant(String group, String label, Map<String, Object> physical, String core, String modulation,
-                       String spectrum) {
+                       String spectrum, Map<String, Object> parameters) {
             Variant(String group, String label, Map<String, Object> physical, String core, String modulation) {
                 this(group, label, physical, core, modulation, "firstfit");
+            }
+            Variant(String group, String label, Map<String, Object> physical, String core, String modulation, String spectrum) {
+                this(group, label, physical, core, modulation, spectrum, Map.of());
             }
         }
         Map<String, Object> off = Map.of("activeQoT", false, "activeQoTForOther", false);
@@ -637,13 +640,23 @@ public final class VerificationCampaign {
             new Variant("core", "XT-aware core + staggered FF", all, "xtawarecore", "distance-adaptive", "corestaggeredfit"),
             // Issue #23: modulation chosen by maxRange vs by the physical model (ASE + NLI + XT, QoTO/XTO on)
             new Variant("modulation", "distance-adaptive", all, "firstfitcore", "distance-adaptive"),
-            new Variant("modulation", "qot-adaptive", all, "firstfitcore", "qot-adaptive"));
+            new Variant("modulation", "qot-adaptive", all, "firstfitcore", "qot-adaptive"),
+            // Issue #31: qot-adaptive with a preferred SNR (sigma) or XT (sigmaXt) margin of the new circuit
+            new Variant("margin", "qot-margin sigma=1", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigma", 1.0)),
+            new Variant("margin", "qot-margin sigma=2", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigma", 2.0)),
+            new Variant("margin", "qot-margin sigma=3", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigma", 3.0)),
+            new Variant("margin", "qot-margin sigmaXt=2", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigmaXt", 2.0)),
+            new Variant("margin", "qot-margin sigmaXt=4", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigmaXt", 4.0)));
         List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
         List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));
         modNames.forEach(m -> header.add("share_" + m));
         try (Csv csv = new Csv(out, "e8_qot_network", header.toArray(String[]::new))) {
+            // -Dvv.groups=margin,core restricts the run to some groups (default: all)
+            Set<String> groups = System.getProperty("vv.groups") == null ? null
+                    : Set.of(System.getProperty("vv.groups").split(","));
             for (Variant v : variants) {
+                if (groups != null && !groups.contains(v.group())) continue;
                 for (double load : new double[] {400, 600, 800, 1000, 1200}) {
                     Scenario s = nsfnet(0.25);
                     s.modulations = MODULATIONS;
@@ -653,6 +666,7 @@ public final class VerificationCampaign {
                             .metric("SpectrumSizeStatistics").metric("ModulationUtilization")
                             .sim("totalSlots", 128).sim("modulationSelection", v.modulation())
                             .sim("coreAndSpectrumAssignment", v.core()).sim("spectrumAssignment", v.spectrum())
+                            .sim("algorithmParameters", v.parameters())
                             .sim("requests", 22_000).sim("warmUpRequests", 2_000).load(load);
                     List<Run> runs = replicate(s.setup(), 5);
                     for (int r = 0; r < runs.size(); r++) {

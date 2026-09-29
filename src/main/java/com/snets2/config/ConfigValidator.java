@@ -1,5 +1,7 @@
 package com.snets2.config;
 
+import com.snets2.rmsca.AlgorithmFactory;
+import com.snets2.rmsca.IRMSCA;
 import java.util.*;
 
 /**
@@ -168,11 +170,37 @@ public final class ConfigValidator {
         ignoredIfSet(warnings, "simulation.powerAssignment", !isBlank(s.powerAssignment()));
         ignoredIfSet(warnings, "simulation.networkType", s.networkType() != 0);
 
+        validateAlgorithms(s, errors, warnings);
+
         if (s.activeMetrics() != null) {
             for (String metric : s.activeMetrics().keySet()) {
                 if (!KNOWN_METRICS.contains(metric)) {
                     warnings.add("simulation.activeMetrics." + metric + " is not a known metric and is ignored");
                 }
+            }
+        }
+    }
+
+    /** Unknown algorithm ids and invalid {@code algorithmParameters} are errors; parameters read by no algorithm, warnings. */
+    private static void validateAlgorithms(SimulationConfig s, List<String> errors, List<String> warnings) {
+        if (isBlank(s.integratedRMSCA()) || isBlank(s.routing()) || isBlank(s.coreAndSpectrumAssignment())
+                || isBlank(s.spectrumAssignment())) {
+            return; // already reported
+        }
+        IRMSCA rmsca;
+        try {
+            rmsca = AlgorithmFactory.createRMSCA(s, 0);
+        } catch (IllegalArgumentException e) {
+            errors.add(e.getMessage());
+            return;
+        } catch (RuntimeException e) {
+            errors.add("simulation: " + e.getMessage());
+            return;
+        }
+        Set<String> known = AlgorithmFactory.parameterNames(rmsca);
+        for (String name : s.algorithmParameters().keySet()) {
+            if (!known.contains(name)) {
+                warnings.add("simulation.algorithmParameters." + name + " is not read by the configured algorithms (ignored)");
             }
         }
     }

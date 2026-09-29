@@ -16,7 +16,6 @@ import com.snets2.output.ExcelExporter;
 import com.snets2.output.SimulationResult;
 import com.snets2.rmsca.AlgorithmFactory;
 import com.snets2.rmsca.IRMSCA;
-import com.snets2.rmsca.StandardIntegratedRMSCA;
 
 import java.io.*;
 import java.util.*;
@@ -271,16 +270,7 @@ public class ExperimentalPlanner {
         );
 
         // 2. Instantiate Algorithm Chain
-        IRMSCA rmsca = AlgorithmFactory.createIntegrated(setup.simulation().integratedRMSCA());
-
-        if (rmsca instanceof StandardIntegratedRMSCA standard) {
-            standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
-            standard.setModulationSelection(AlgorithmFactory.createModulation(setup.simulation().modulationSelection()));
-            standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
-            standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
-            standard.setRegeneratorAssignment(AlgorithmFactory.createRegenerator(setup.simulation().regeneratorAssignment()));
-            AlgorithmFactory.seedRandomizedAlgorithms(standard, repId);
-        }
+        IRMSCA rmsca = AlgorithmFactory.createRMSCA(setup.simulation(), repId);
 
         // 3. Initialize Control Plane
         ControlPlane cp = new ControlPlane(

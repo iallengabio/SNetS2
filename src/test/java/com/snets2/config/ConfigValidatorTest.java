@@ -133,4 +133,29 @@ class ConfigValidatorTest {
             assertThrows(Exception.class, () -> ConfigLoader.load(json), key);
         }
     }
+
+    @Test
+    @DisplayName("algorithmParameters: sweepable by dot notation, validated by the algorithms that read them")
+    void algorithmParameters() throws Exception {
+        String qotMargin = VALID.replace("\"integratedRMSCA\": \"standard\"",
+                "\"integratedRMSCA\": \"standard\", \"modulationSelection\": \"qot-margin\"");
+
+        // Dot-notation override creates the optional map
+        ScenarioSetup swept = ConfigLoader.applyOverrides(setup(qotMargin), Map.of("simulation.algorithmParameters.sigma", 2.0));
+        assertEquals(2.0, ((Number) swept.simulation().algorithmParameters().get("sigma")).doubleValue());
+        assertEquals(List.of(), ConfigValidator.validate(swept).warnings());
+
+        // A parameter no configured algorithm reads is a warning
+        ScenarioSetup unused = ConfigLoader.applyOverrides(setup(VALID), Map.of("simulation.algorithmParameters.sigma", 2.0));
+        assertTrue(ConfigValidator.validate(unused).warnings().stream().anyMatch(w -> w.contains("algorithmParameters.sigma")));
+
+        // Invalid values and unknown algorithm ids are errors
+        String negative = qotMargin.replace("\"modulationSelection\": \"qot-margin\"",
+                "\"modulationSelection\": \"qot-margin\", \"algorithmParameters\": {\"sigma\": -1}");
+        assertTrue(invalidMessage(negative).contains("sigma"));
+        String text = qotMargin.replace("\"modulationSelection\": \"qot-margin\"",
+                "\"modulationSelection\": \"qot-margin\", \"algorithmParameters\": {\"sigmaXt\": \"abc\"}");
+        assertTrue(invalidMessage(text).contains("sigmaXt"));
+        assertTrue(invalidMessage(VALID.replace("\"firstfitcore\"", "\"nosuchcore\"")).contains("nosuchcore"));
+    }
 }
