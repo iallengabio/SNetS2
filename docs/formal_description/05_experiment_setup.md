@@ -20,8 +20,8 @@ Define os elementos estruturais da rede, capacidades de roteamento e a geometria
 ```json
 "networkTopology": {
   "nodes": [
-    {"id": "0", "tx": 100, "rx": 100, "regenerators": 10},
-    {"id": "1", "tx": 100, "rx": 100, "regenerators": 10}
+    {"id": "0", "tx": 100, "rx": 100, "regenerators": 10, "addDropDegree": 1},
+    {"id": "1", "tx": 100, "rx": 100, "regenerators": 10, "addDropDegree": 1}
   ],
   "links": [
     {"source": "0", "destination": "1", "length": 100.0}
@@ -33,6 +33,7 @@ Define os elementos estruturais da rede, capacidades de roteamento e a geometria
 }
 ```
 * **nodes:** Lista de nós ópticos (ROADM). Cada nó possui uma quantidade definida de transmissores (`tx`), receptores (`rx`) e `regenerators`.
+  * `addDropDegree` (opcional, padrão `1`): grau de *add/drop* do ROADM (número de portas de inserção/extração), termo $a$ da potência do OXC $85\,n + 100\,a + 150$ W ([06_output_metrics.md](06_output_metrics.md), Seção 3.6). Não depende de `tx`/`rx`. Deve ser `>= 0`; o valor `0` em um nó com transceptores gera um aviso.
 * **links:** Fibras bidirecionais (ou unidirecionais dependendo da modelagem interna, a definir) conectando os nós, com o comprimento (`length`) tipicamente em quilômetros.
 * **cores:** A representação geométrica dos núcleos dentro da fibra. Em vez de forçar um modelo espacial estático, a lista de `adjacentCores` permite representar qualquer disposição (linear, anelar, hexagonal, etc.), sendo crucial para o cálculo de Crosstalk (XT).
 * **modulations:** Lista de formatos de modulação disponíveis. Cada item define o nome, o alcance máximo estimado (`maxRange`), a ordem da modulação (`M`), o limiar de SNR (SNR) e a tolerância a Crosstalk (`XT`).
@@ -190,10 +191,10 @@ Responsável por automatizar a execução de múltiplas configurações sem nece
 Antes de executar qualquer replicação, o `ExperimentalPlanner` valida **todos** os cenários do *sweep* com o `ConfigValidator`.
 * **Erros** (a execução é abortada com a lista completa):
   * `traffic.load` ausente ou ≤ 0; `loadByPair`; distribuição diferente de `uniform`.
-  * Menos de 2 nós; nós ou enlaces duplicados, desconhecidos ou com comprimento ≤ 0.
+  * Menos de 2 nós; nós ou enlaces duplicados, desconhecidos ou com comprimento ≤ 0; `tx`, `rx`, `regenerators` ou `addDropDegree` negativos.
   * Adjacência de núcleos assimétrica ou com núcleo inexistente.
   * Modulação com `M < 2` ou `maxRange ≤ 0`.
   * `warmUpRequests ≥ requests`.
   * IDs de algoritmo ausentes.
   * Parâmetros físicos obrigatórios para os efeitos ativados (ASE, NLI, XT).
-* **Avisos:** chaves reservadas com valor diferente do padrão e nomes desconhecidos em `activeMetrics`.
+* **Avisos:** chaves reservadas com valor diferente do padrão, nomes desconhecidos em `activeMetrics` e `addDropDegree = 0` em nó com transceptores.
