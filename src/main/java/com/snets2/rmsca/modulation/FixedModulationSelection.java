@@ -16,7 +16,7 @@ public class FixedModulationSelection implements IModulationSelection {
     public ModulationResult selectModulation(ControlPlane cp, Path path, double bitRate) {
         ModulationFormat fixedFormat = fixedFormat(cp);
         if (fixedFormat == null) return null;
-        int numSlots = SlotCalculator.requiredSlots(bitRate, fixedFormat, cp.getSlotBandwidth(), cp.getGuardBand());
+        int numSlots = SlotCalculator.requiredSlots(bitRate, fixedFormat, cp);
         return new ModulationResult(fixedFormat, numSlots);
     }
 

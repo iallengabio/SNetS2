@@ -25,8 +25,7 @@ public class RelativeFragmentationMetrics {
     public void initialize(ControlPlane cp, List<Double> bitRates) {
         for (double bitRate : bitRates) {
             for (ModulationFormat mod : cp.getTopology().modulations()) {
-                int numSlots = com.snets2.rmsca.modulation.SlotCalculator.requiredSlots(
-                    bitRate, mod, cp.getSlotBandwidth(), cp.getGuardBand());
+                int numSlots = com.snets2.rmsca.modulation.SlotCalculator.requiredSlots(bitRate, mod, cp);
                 possibleSlotSizes.add(numSlots);
             }
         }

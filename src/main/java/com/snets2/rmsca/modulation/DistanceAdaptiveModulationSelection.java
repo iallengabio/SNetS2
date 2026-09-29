@@ -17,7 +17,7 @@ public class DistanceAdaptiveModulationSelection implements IModulationSelection
         double distance = path.getLength();
         for (ModulationFormat format : byEfficiencyDescending(cp)) {
             if (distance <= format.maxReach()) {
-                int numSlots = SlotCalculator.requiredSlots(bitRate, format, cp.getSlotBandwidth(), cp.getGuardBand());
+                int numSlots = SlotCalculator.requiredSlots(bitRate, format, cp);
                 return new ModulationResult(format, numSlots);
             }
         }

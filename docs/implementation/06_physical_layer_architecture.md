@@ -11,7 +11,7 @@ O SNetS2 introduz o conceito de **Physical State Cache**. Em vez de recalcular t
 ### Estruturas de Dados
 Cada objeto `Core` em cada `Link` mantém os seguintes arrays:
 - `double[] nliNoiseCache`: armazena, por slot, a soma dos termos de **XCI** dos canais ativos do núcleo, $\sum_j N_{vãos}\,\mu\,G_j^2\ln\frac{|\Delta f|+B_j/2}{|\Delta f|-B_j/2}$ (adimensional; multiplicada pela PSD $G_i$ da vítima na predição, resulta em W/Hz). Um canal não escreve nos próprios slots; o seu SCI é somado analiticamente na predição. Ver `formal_description/07`.
-- `double[] xtNoiseCache`: Armazena a densidade de ruído de Crosstalk acumulada em cada slot específico.
+- `double[] xtNoiseCache`: armazena a densidade de ruído de crosstalk acumulada em cada slot (W/Hz): $\sum_j P_j h L / B_j$ dos circuitos em núcleos adjacentes. A razão de XT da vítima é $\sum_{enlaces}\text{avg}(I_{XT})/I_{ch}$ (`PhysicalLayerModel.predictXtRatio`), comparada ao limiar de XT da modulação.
 
 Métodos auxiliares como `addNliNoise`, `removeNliNoise` e `getAverageNliNoise` garantem a manipulação segura e eficiente destes caches.
 
