@@ -21,4 +21,16 @@ public interface IRegeneratorAssignment {
      * @return A list of nodes where regenerators should be allocated, or null if allocation fails.
      */
     List<Node> assignRegenerators(ControlPlane cp, Path path, int coreId, ModulationFormat mod, int startSlot, int endSlot, double bitRate);
+
+    /**
+     * Same as {@link #assignRegenerators(ControlPlane, Path, int, ModulationFormat, int, int, double)}, but lets
+     * the caller disable the reach ({@code maxReach}) criterion, e.g. for a modulation policy driven only by the
+     * physical model. Implementations that do not use the reach ignore the flag.
+     *
+     * @param enforceReach false to place regenerators only by the QoT of the transparent segments.
+     */
+    default List<Node> assignRegenerators(ControlPlane cp, Path path, int coreId, ModulationFormat mod, int startSlot,
+                                          int endSlot, double bitRate, boolean enforceReach) {
+        return assignRegenerators(cp, path, coreId, mod, startSlot, endSlot, bitRate);
+    }
 }
