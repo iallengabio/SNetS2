@@ -47,6 +47,7 @@ Os caches só são consultados pela verificação de QoT (`activeQoT`: `Standard
 - As flags são fixas durante a rodada (o setter recusa a mudança com circuitos ativos), de modo que um circuito é removido com os mesmos caches com que foi estabelecido.
 - Com `activeNLI`/`activeXT` desligados as contribuições já eram nulas, e sem leitores os caches não influenciam nenhuma decisão; os resultados são, portanto, idênticos aos de antes, para a mesma semente (`PhysicalCacheSkipTest`).
 - O `SetupEvent` só calcula o SNR/XT do circuito quando `CrosstalkStatistics` está ativa e a requisição é medida.
+- Com `activeQoT` ligado nada é pulado além dos submodelos desligados, de modo que o filtro de QoTO `StandardIntegratedRMSCA.isAffectedByCandidate` (circuitos que compartilham um enlace com o candidato no mesmo núcleo — NLI e carga do amplificador — ou num núcleo adjacente — XT) continua espelhando a pegada escrita por `applyPhysicalContribution`. O `QoTAwareModulationSelection` não lê os caches.
 
 ## 4. Predição Ultra-Rápida ($O(S)$)
 Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um intervalo de slots `[s1, s2]`:
