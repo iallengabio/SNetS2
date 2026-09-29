@@ -646,7 +646,11 @@ public final class VerificationCampaign {
             new Variant("margin", "qot-margin sigma=2", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigma", 2.0)),
             new Variant("margin", "qot-margin sigma=3", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigma", 3.0)),
             new Variant("margin", "qot-margin sigmaXt=2", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigmaXt", 2.0)),
-            new Variant("margin", "qot-margin sigmaXt=4", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigmaXt", 4.0)));
+            new Variant("margin", "qot-margin sigmaXt=4", all, "firstfitcore", "qot-margin", "firstfit", Map.of("sigmaXt", 4.0)),
+            // Issues #32-#35: joint core and spectrum algorithms ported from SNetS v1
+            new Variant("v1", "ABNE", all, "abne", "distance-adaptive"),
+            new Variant("v1", "ABNE2", all, "abne2", "distance-adaptive"),
+            new Variant("v1", "ABNE + fallback", all, "abne-fallback", "distance-adaptive"));
         List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
         List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));

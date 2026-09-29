@@ -142,7 +142,7 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
   * `integratedRMSCA`: `standard`.
   * `routing`: `djk`, `ksp`/`newksp` (k = 3).
   * `modulationSelection`: `distance-adaptive` (padrão), `qot-adaptive` ou `fixed`. `distance-adaptive` escolhe o formato mais eficiente cujo `maxRange` cobre o caminho. `qot-adaptive` escolhe o formato mais eficiente que atende aos limiares de SNR e XT do novo circuito e dos circuitos já estabelecidos, pelo modelo físico, sem usar o `maxRange`. Com `activeQoT = false`, `qot-adaptive` volta ao critério de alcance e se comporta como `distance-adaptive`. `qot-margin` é a `qot-adaptive` com margens preferidas de SNR e XT do novo circuito (parâmetros `sigma` e `sigmaXt`, ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.1).
-  * `coreAndSpectrumAssignment`: `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2).
+  * `coreAndSpectrumAssignment`: estratégias de núcleo `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2), combinadas com `spectrumAssignment`. Também aceita algoritmos **conjuntos** de núcleo e espectro portados do SNetS v1, que dispensam `spectrumAssignment`: `abne`/`csbasdm`, `abne2`/`csbasdm2` e `abne-fallback` (§3.3).
   * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`, `corestaggeredfit` (ponto de partida por núcleo).
   * `regeneratorAssignment`: `aar` (opcional).
 
@@ -199,6 +199,6 @@ Antes de executar qualquer replicação, o `ExperimentalPlanner` valida **todos*
   * Adjacência de núcleos assimétrica ou com núcleo inexistente.
   * Modulação com `M < 2` ou `maxRange ≤ 0`.
   * `warmUpRequests ≥ requests`.
-  * IDs de algoritmo ausentes ou desconhecidos; valores inválidos em `algorithmParameters`.
+  * IDs de algoritmo ausentes ou desconhecidos (`spectrumAssignment` não é exigido com algoritmo conjunto); valores inválidos em `algorithmParameters`.
   * Parâmetros físicos obrigatórios para os efeitos ativados (ASE, NLI, XT).
 * **Avisos:** chaves reservadas com valor diferente do padrão, nomes desconhecidos em `activeMetrics`, parâmetros de `algorithmParameters` que nenhum algoritmo configurado lê e `addDropDegree = 0` em nó com transceptores.

@@ -15,6 +15,7 @@ public class AlgorithmFactory {
     private static final Map<String, Class<? extends IRouting>> routingRegistry = new HashMap<>();
     private static final Map<String, Class<? extends IModulationSelection>> modulationRegistry = new HashMap<>();
     private static final Map<String, Class<? extends ICoreAssignment>> coreRegistry = new HashMap<>();
+    private static final Map<String, Class<? extends ICoreAndSpectrumAssignment>> jointRegistry = new HashMap<>();
     private static final Map<String, Class<? extends ISpectrumAssignment>> spectrumRegistry = new HashMap<>();
     private static final Map<String, Class<? extends com.snets2.rmsca.regenerator.IRegeneratorAssignment>> regeneratorRegistry = new HashMap<>();
 
@@ -41,6 +42,13 @@ public class AlgorithmFactory {
         coreRegistry.put("peripheralfirstcore", PeripheralFirstCoreAssignment.class);
         coreRegistry.put("xtawarecore", XtAwareCoreAssignment.class);
         
+        // Joint core and spectrum (coreAndSpectrumAssignment key; spectrumAssignment is then not used)
+        jointRegistry.put("abne", AbneCoreAndSpectrumAssignment.class);
+        jointRegistry.put("csbasdm", AbneCoreAndSpectrumAssignment.class);
+        jointRegistry.put("abne2", AbneCoreAndSpectrumAssignment.Abne2.class);
+        jointRegistry.put("csbasdm2", AbneCoreAndSpectrumAssignment.Abne2.class);
+        jointRegistry.put("abne-fallback", AbneCoreAndSpectrumAssignment.Fallback.class);
+
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);
         spectrumRegistry.put("randomfit", RandomFitSpectrumAssignment.class);
@@ -67,6 +75,9 @@ public class AlgorithmFactory {
         if (rmsca.getSpectrumAssignment() instanceof RandomizedAlgorithm r) {
             r.setRandom(new java.util.Random(seed * 0x9E3779B97F4A7C15L + 2));
         }
+        if (rmsca.getCoreAndSpectrumAssignment() instanceof RandomizedAlgorithm r) {
+            r.setRandom(new java.util.Random(seed * 0x9E3779B97F4A7C15L + 3));
+        }
     }
 
     /**
@@ -81,8 +92,12 @@ public class AlgorithmFactory {
         if (rmsca instanceof StandardIntegratedRMSCA standard) {
             standard.setRouting(createRouting(simulation.routing()));
             standard.setModulationSelection(createModulation(simulation.modulationSelection()));
-            standard.setCoreAssignment(createCore(simulation.coreAndSpectrumAssignment()));
-            standard.setSpectrumAssignment(createSpectrum(simulation.spectrumAssignment()));
+            if (isJointCoreAndSpectrum(simulation.coreAndSpectrumAssignment())) {
+                standard.setCoreAndSpectrumAssignment(createCoreAndSpectrum(simulation.coreAndSpectrumAssignment()));
+            } else {
+                standard.setCoreAssignment(createCore(simulation.coreAndSpectrumAssignment()));
+                standard.setSpectrumAssignment(createSpectrum(simulation.spectrumAssignment()));
+            }
             standard.setRegeneratorAssignment(createRegenerator(simulation.regeneratorAssignment()));
             seedRandomizedAlgorithms(standard, seed);
         }
@@ -128,6 +143,15 @@ public class AlgorithmFactory {
 
     public static ICoreAssignment createCore(String id) {
         return createInstance(id, coreRegistry, "Core Assignment");
+    }
+
+    /** Whether {@code id} names a joint core and spectrum algorithm (which ignores {@code spectrumAssignment}). */
+    public static boolean isJointCoreAndSpectrum(String id) {
+        return id != null && jointRegistry.containsKey(id.toLowerCase());
+    }
+
+    public static ICoreAndSpectrumAssignment createCoreAndSpectrum(String id) {
+        return createInstance(id, jointRegistry, "Core and Spectrum Assignment");
     }
 
     public static ISpectrumAssignment createSpectrum(String id) {

@@ -161,7 +161,12 @@ public final class ConfigValidator {
         if (isBlank(s.integratedRMSCA())) errors.add("simulation.integratedRMSCA is required (e.g. \"standard\")");
         if (isBlank(s.routing())) errors.add("simulation.routing is required (e.g. \"djk\")");
         if (isBlank(s.coreAndSpectrumAssignment())) errors.add("simulation.coreAndSpectrumAssignment is required (e.g. \"firstfitcore\")");
-        if (isBlank(s.spectrumAssignment())) errors.add("simulation.spectrumAssignment is required (e.g. \"firstfit\")");
+        boolean joint = AlgorithmFactory.isJointCoreAndSpectrum(s.coreAndSpectrumAssignment());
+        if (isBlank(s.spectrumAssignment()) && !joint) errors.add("simulation.spectrumAssignment is required (e.g. \"firstfit\")");
+        if (!isBlank(s.spectrumAssignment()) && joint) {
+            warnings.add("simulation.spectrumAssignment is not used by the joint core and spectrum assignment \""
+                    + s.coreAndSpectrumAssignment() + "\" (ignored)");
+        }
         if (s.threads() < 0) errors.add("simulation.threads must be >= 0");
 
         ignoredIfSet(warnings, "simulation.kRouting", !isBlank(s.kRouting()));
@@ -184,7 +189,7 @@ public final class ConfigValidator {
     /** Unknown algorithm ids and invalid {@code algorithmParameters} are errors; parameters read by no algorithm, warnings. */
     private static void validateAlgorithms(SimulationConfig s, List<String> errors, List<String> warnings) {
         if (isBlank(s.integratedRMSCA()) || isBlank(s.routing()) || isBlank(s.coreAndSpectrumAssignment())
-                || isBlank(s.spectrumAssignment())) {
+                || (isBlank(s.spectrumAssignment()) && !AlgorithmFactory.isJointCoreAndSpectrum(s.coreAndSpectrumAssignment()))) {
             return; // already reported
         }
         IRMSCA rmsca;

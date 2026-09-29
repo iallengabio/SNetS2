@@ -13,7 +13,7 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
 3. **Loop de Caminhos**: Avaliação individual de cada trajeto físico retornado pelo roteamento.
 4. **Loop de Modulação (IModulationSelection)**: Varredura de formatos de modulação disponíveis, ordenados por eficiência espectral decrescente. Com `qot-adaptive`, o alcance (`maxRange`) não filtra os formatos: o primeiro formato que passa na validação de QoT é aceito.
 5. **Cálculo de Demanda Espectral**: Determinação do número de slots de espectro requeridos.
-6. **Loop de Núcleos (ICoreAssignment)**: Varredura de núcleos candidatos do cabo de fibra multicore, na ordem dada por `selectCores(cp, path, numSlots, spectrumAssignment)`. Estratégias sensíveis ao slot (`xtawarecore`) usam o número de slots e a política espectral para ordenar os núcleos pelo crosstalk no intervalo que cada um receberia.
+6. **Loop de Núcleos (ICoreAssignment)**: Varredura de núcleos candidatos do cabo de fibra multicore, na ordem dada por `selectCores(cp, path, numSlots, spectrumAssignment)`. Estratégias sensíveis ao slot (`xtawarecore`) usam o número de slots e a política espectral para ordenar os núcleos pelo crosstalk no intervalo que cada um receberia. Com um algoritmo **conjunto** de núcleo e espectro (`ICoreAndSpectrumAssignment`, por exemplo `abne`), o laço percorre os candidatos (núcleo, intervalo) que ele propõe, e os passos 6 e 7 viram um só.
 7. **Atribuição Espectral (ISpectrumAssignment)**: Busca de slots contíguos e contínuos livres.
 8. **Atribuição de Regeneradores (IRegeneratorAssignment)**: só na segunda passada, quando nenhuma solução transparente foi encontrada.
 9. **Validação de QoT (Quality of Transmission)**:

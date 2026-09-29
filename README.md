@@ -26,7 +26,8 @@ adapted to an incremental noise cache. Deviations from v1 and the v1 keys that w
 [docs/formal_description/07_physical_layer_models.md](docs/formal_description/07_physical_layer_models.md).
 RMSCA algorithms ported from v1 (with the deviations documented in
 [docs/formal_description/04_rmsca_algorithms.md](docs/formal_description/04_rmsca_algorithms.md)):
-`qot-margin` (`ModulationSelectionByQoTAndSigma`, SNR margin σ).
+`qot-margin` (`ModulationSelectionByQoTAndSigma`, SNR margin σ), `abne`/`abne2` (`CSBASDM`/`CSBASDM2`, core and spectrum
+balancing).
 
 ---
 

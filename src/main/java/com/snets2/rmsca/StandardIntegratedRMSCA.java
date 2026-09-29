@@ -4,7 +4,10 @@ import com.snets2.config.PhysicalLayerConfig;
 import com.snets2.metrics.PhysicalLayerModel;
 import com.snets2.metrics.BlockingCause;
 import com.snets2.model.*;
+import com.snets2.rmsca.core.CoreSpectrumCandidate;
+import com.snets2.rmsca.core.ICoreAndSpectrumAssignment;
 import com.snets2.rmsca.core.ICoreAssignment;
+import com.snets2.rmsca.core.SequentialCoreAndSpectrumAssignment;
 import com.snets2.rmsca.modulation.DistanceAdaptiveModulationSelection;
 import com.snets2.rmsca.modulation.IModulationSelection;
 import com.snets2.rmsca.modulation.SlotCalculator;
@@ -22,8 +25,10 @@ import java.util.Set;
  * A standard sequential implementation of RMSCA with physical layer awareness.
  *
  * <p>Execution sequence: Tx/Rx check -> Routing -> for each pass (transparent, then regenerated) ->
- * Path loop -> Modulation loop (order given by {@link IModulationSelection}) -> Core loop
- * (strategy-dependent order) -> Spectrum -> [Regenerator placement] -> QoT validation.</p>
+ * Path loop -> Modulation loop (order given by {@link IModulationSelection}) -> (core, interval) candidates of the
+ * {@link ICoreAndSpectrumAssignment} -> [Regenerator placement] -> QoT validation. Without a joint core and spectrum
+ * algorithm the candidates are one per core, in the order of the {@link ICoreAssignment}, with the interval of the
+ * {@link ISpectrumAssignment} ({@link SequentialCoreAndSpectrumAssignment}).</p>
  *
  * <p><b>Pass 1 (transparent)</b> only tries formats whose {@code maxReach} covers the path, without
  * regenerators. <b>Pass 2</b> runs only if pass 1 failed and a regenerator assignment is configured:
@@ -34,8 +39,7 @@ import java.util.Set;
  * the format is the same on all the segments of the path.</p>
  *
  * <p>Precedence: path, then format, then core. For a given path, the most preferred format is tried on every
- * core (in the order of the core assignment, with the interval proposed by the spectrum assignment in each core)
- * before the next format; the first candidate that passes the validation is accepted.</p>
+ * (core, interval) candidate before the next format; the first candidate that passes the validation is accepted.</p>
  *
  * <p>With a modulation policy that prefers a margin ({@link IModulationSelection#snrMarginDb}, e.g. {@code qot-margin}),
  * the first candidate of a path whose new circuit keeps the margin is accepted; if none keeps it, the first feasible
@@ -49,14 +53,23 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     private IRouting routing;
     private ICoreAssignment coreAssignment;
     private ISpectrumAssignment spectrumAssignment;
+    private ICoreAndSpectrumAssignment coreAndSpectrumAssignment; // joint algorithm; null = sequential core + spectrum
     private com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment;
     private IModulationSelection modulationSelection = new DistanceAdaptiveModulationSelection();
 
     public void setRouting(IRouting routing) { this.routing = routing; }
     public ICoreAssignment getCoreAssignment() { return coreAssignment; }
     public ISpectrumAssignment getSpectrumAssignment() { return spectrumAssignment; }
+    public ICoreAndSpectrumAssignment getCoreAndSpectrumAssignment() { return coreAndSpectrumAssignment; }
     public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
     public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
+    /**
+     * Sets a joint core and spectrum assignment (e.g. ABNE), which replaces the core and spectrum assignments;
+     * {@code null} restores the sequential combination of {@link #setCoreAssignment} and {@link #setSpectrumAssignment}.
+     */
+    public void setCoreAndSpectrumAssignment(ICoreAndSpectrumAssignment coreAndSpectrumAssignment) {
+        this.coreAndSpectrumAssignment = coreAndSpectrumAssignment;
+    }
     /** Sets the modulation policy; {@code null} keeps the default (distance-adaptive). */
     public void setModulationSelection(IModulationSelection modulationSelection) {
         if (modulationSelection != null) this.modulationSelection = modulationSelection;
@@ -66,7 +79,10 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     /** The configured sub-algorithms (routing, modulation, core, spectrum and, if any, regenerator assignment). */
     public List<Object> components() {
         List<Object> list = new ArrayList<>();
-        for (Object o : new Object[] {routing, modulationSelection, coreAssignment, spectrumAssignment, regeneratorAssignment}) {
+        Object[] all = coreAndSpectrumAssignment != null
+                ? new Object[] {routing, modulationSelection, coreAndSpectrumAssignment, regeneratorAssignment}
+                : new Object[] {routing, modulationSelection, coreAssignment, spectrumAssignment, regeneratorAssignment};
+        for (Object o : all) {
             if (o != null) list.add(o);
         }
         return list;
@@ -74,9 +90,11 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
     @Override
     public AllocationResult allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
-        if (routing == null || coreAssignment == null || spectrumAssignment == null) {
+        if (routing == null || (coreAndSpectrumAssignment == null && (coreAssignment == null || spectrumAssignment == null))) {
             throw new IllegalStateException("StandardIntegratedRMSCA sub-algorithms not properly initialized.");
         }
+        ICoreAndSpectrumAssignment coreAndSpectrum = coreAndSpectrumAssignment != null ? coreAndSpectrumAssignment
+                : new SequentialCoreAndSpectrumAssignment(coreAssignment, spectrumAssignment);
 
         // 1. Hardware check
         if (!source.hasAvailableTx()) {
@@ -118,12 +136,11 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                     foundPathAndMod = true;
                     int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp);
 
-                    // 4. Core loop, in the order given by the core assignment strategy
-                    for (Integer coreId : coreAssignment.selectCores(cp, path, numSlots, spectrumAssignment)) {
+                    // 4-5. Core and spectrum candidates, in the order of the (joint) core and spectrum assignment
+                    for (CoreSpectrumCandidate candidateSlots : coreAndSpectrum.candidates(cp, path, numSlots)) {
+                        int coreId = candidateSlots.core();
                         lastAttemptedCore = coreId;
-
-                        // 5. Spectrum assignment
-                        SpectrumInterval slots = spectrumAssignment.findSlots(cp, path, coreId, numSlots);
+                        SpectrumInterval slots = candidateSlots.slots();
                         if (slots == null) continue;
                         foundFreeSlots = true;
 

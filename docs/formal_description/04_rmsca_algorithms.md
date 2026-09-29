@@ -19,6 +19,7 @@ Para garantir a interoperabilidade, cada tipo de algoritmo deve implementar uma 
 *   **`ICoreAssignment`**: Recebe um caminho e retorna a lista ordenada de núcleos (`Core`) candidatos. Uma sobrecarga recebe também o número de slots da demanda e a política espectral, para estratégias que olham os slots que cada núcleo receberia (§3.2); por padrão ela ignora esses dados.
 *   **`IModulationSelection`**: Recebe um caminho e requisitos de banda, retornando o formato de modulação e o número de slots necessários.
 *   **`ISpectrumAssignment`**: Recebe o caminho, o núcleo e a quantidade de slots, retornando os índices de início/fim dos slots (`SpectrumInterval`).
+*   **`ICoreAndSpectrumAssignment`**: Recebe o caminho e a quantidade de slots e retorna os candidatos (núcleo, intervalo) na ordem de validação (§3.3). Uma estratégia de núcleo e uma política espectral são adaptadas a este contrato.
 *   **`IRMSCA`**: Interface única que recebe a requisição completa e retorna um objeto `AllocationResult` (indicando o sucesso da alocação ou contendo os detalhes do bloqueio).
 
 ---
@@ -88,6 +89,21 @@ Na MCF hexagonal de 7 núcleos, os núcleos 1, 3, 5 enchem de baixo para cima, 2
 
 **Resultado no E8** (NSFNET × 0,25, MCF de 7 núcleos, 128 slots, ASE + NLI + XT, 5 réplicas): `xtawarecore` + `corestaggeredfit` tem bloqueio menor ou igual ao do Random-Fit core em todas as cargas (0 × 0,0056 em 400 Erl; 0,0111 × 0,0154 em 600; 0,052 × 0,055 em 800; 0,100 × 0,104 em 1000; 0,151 × 0,161 em 1200; nas duas últimas os intervalos de confiança se sobrepõem). Com First-Fit de espectro, `xtawarecore` e `peripheralfirstcore` zeram o bloqueio em 400 Erl e ficam melhores que First-Fit core e Min-crosstalk core em todas as cargas, mas ligeiramente acima do Random-Fit core entre 600 e 1000 Erl (empate em 1200 Erl): o espectro First-Fit alinha os mesmos slots baixos em todos os núcleos, e o bloqueio passa a ser dominado pelo XT do novo circuito. O escalonamento espectral por núcleo é o que remove essa sobreposição.
 
+### 3.3. Atribuição conjunta de núcleo e espectro
+
+Os algoritmos de núcleo do SNetS v1 escolhem núcleo **e** intervalo juntos (`coreAndSpectrumAssignment`). No SNetS2 eles implementam `ICoreAndSpectrumAssignment`, que devolve a sequência de candidatos $(c, I)$ de uma demanda de $n$ slots em $p$, na ordem em que o RMSCA os valida. O RMSCA aceita o primeiro candidato que passa na validação de QoT (§3). A combinação de uma estratégia de núcleo (§3.2) com uma política espectral é o caso particular com um candidato por núcleo, na ordem da estratégia, com o intervalo da política; o comportamento dessas combinações não mudou. Algoritmos conjuntos são configurados na chave `coreAndSpectrumAssignment` e dispensam `spectrumAssignment`.
+
+#### ABNE (`abne`, `abne2`, `abne-fallback`)
+Porte de `CSBASDM` e `CSBASDM2` do SNetS v1: balanceamento de núcleo e espectro de Lacerda Jr. et al. [2].
+
+* **Núcleo.** Rodízio (*round-robin*) entre os núcleos de $\mathcal{C}(p)$ em ordem de id, **um núcleo por chamada**. O contador avança a cada chamada, isto é, a cada caminho e formato tentados, como no v1. Se o núcleo da vez não tem intervalo livre, a tentativa falha mesmo com outros núcleos livres.
+* **Espectro, pela cor do núcleo** (a mesma coloração do `corestaggeredfit`): cor 0 First-Fit, cor 1 Last-Fit, cor $\ge 2$ *medium fit*. O *medium fit* escolhe o intervalo livre cujo **primeiro** slot está mais perto do slot $\lfloor N/2 \rfloor$, com empate para o menor início. Na MCF hexagonal de 7 núcleos, essa é exatamente a regra do v1: núcleos externos ímpares First-Fit, pares Last-Fit e o central *medium fit*. O v1 usa a paridade do id e um núcleo central fixo (0, ou 18 com 19 núcleos), o que só corresponde à adjacência da fibra de 7 núcleos. A coloração generaliza a regra para qualquer geometria.
+* **`abne2`** (`CSBASDM2`): os núcleos centrais (cor $\ge 2$) só entram no rodízio uma vez a cada 6 voltas.
+* **`abne-fallback`** (extensão, não existe no v1): propõe o núcleo da vez e, depois dele, os demais na ordem do rodízio, cada um com a sua política espectral.
+* **Estado.** O contador pertence à instância do algoritmo, criada por replicação.
+
+[2] J. C. Lacerda Jr., A. G. Morais, A. V. T. Cartaxo, A. Soares, "A New Algorithm to Mitigate Fragmentation and Crosstalk in Multi-Core Elastic Optical Networks", *Photonics* 11(6):504 (2024), [mdpi.com/2304-6732/11/6/504](https://www.mdpi.com/2304-6732/11/6/504). Descreve o ABNE como trabalho anterior dos autores.
+
 ---
 
 ## 4. Exemplos de Heurísticas Clássicas
@@ -96,6 +112,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
+*   **Core and Spectrum Assignment (conjunta):** ABNE (e variantes).
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---
