@@ -75,4 +75,22 @@ Para que o algoritmo RMSCA aceite uma alocação, o circuito proposto (e, com `a
 
 $$ SNR_{dB} = 10 \log_{10}(SNR) \ge SNR_{th}(mod) \qquad\text{e}\qquad XT_{dB} = 10\log_{10}(XT) \le XT_{th}(mod) \;\;(\text{se } activeXT) $$
 
-onde $SNR_{th}$ (campo `SNR`) e $XT_{th}$ (campo `XT`) são os limiares do formato de modulação. O limiar de SNR é **pré-FEC**: deve corresponder ao BER máximo que o FEC configurado em `rateOfFEC` corrige (ver `05_experiment_setup.md`, §3). O SNR é calculado na largura de sinal $B = (n - G)\,f_{slot}$, ou seja, sem os slots de guarda. Com regeneração, vale o **menor** SNR entre os segmentos transparentes.
+onde $SNR_{th}$ (campo `SNR`) e $XT_{th}$ (campo `XT`) são os limiares do formato de modulação. O limiar de SNR é **pré-FEC**: deve corresponder ao BER máximo que o FEC configurado em `rateOfFEC` corrige (ver `05_experiment_setup.md`, §3).
+
+### 6.1. Origem dos limiares (`SNR` e `XT` das modulações)
+Os limiares são **dados de entrada** do JSON. Os valores fornecidos nos experimentos do repositório foram calculados por `scripts/compute_thresholds.py` para um **SD-FEC com BER pré-FEC corrigível de $2{,}4\cdot10^{-2}$**. Esse é o valor usual para códigos de ~20 % de overhead e, portanto, conservador para os 25 % configurados.
+
+* **SNR:** menor SNR (por símbolo, na largura de sinal) cujo BER pré-FEC não excede o alvo. Usa-se a aproximação para M-QAM com codificação Gray:
+  $$ BER \approx \frac{4}{\log_2 M}\left(1-\frac{1}{\sqrt{M}}\right) Q\!\left(\sqrt{\frac{3\,SNR}{M-1}}\right) $$
+  A aproximação é da ordem de grandeza exata para QAM quadrada e padrão para 8QAM e 32QAM.
+* **XT:** $XT_{th} = -(SNR_{th} + 10{,}08\ \text{dB})$. O crosstalk deve ficar ~10 dB abaixo do nível de ruído admitido pelo limiar de SNR, o que corresponde a uma penalidade de ~0,4 dB. É a mesma convenção dos arquivos originais.
+
+| Formato | SNR (dB) | XT (dB) | Valores anteriores (HD-FEC, BER ≈ 1–3·10⁻³) |
+| :-- | :-: | :-: | :-- |
+| 4QAM | 5,92 | −16,00 | 8,95 / −19,03 |
+| 8QAM | 9,32 | −19,40 | 13,15 / −23,23 |
+| 16QAM | 12,34 | −22,42 | 15,49 / −25,57 |
+| 32QAM | 15,22 | −25,30 | 18,51 / −28,59 |
+| 64QAM | 18,02 | −28,10 | 21,28 / −31,36 |
+
+Para outro FEC, rode `python3 scripts/compute_thresholds.py <BER_alvo> [margem_XT_dB]` (ex.: `3.8e-3` para HD-FEC de 7 %). Use a tabela gerada junto com o `rateOfFEC` correspondente. O `maxRange` de cada formato é independente desses limiares e deve ser revisado para refletir o mesmo FEC. O SNR é calculado na largura de sinal $B = (n - G)\,f_{slot}$, ou seja, sem os slots de guarda. Com regeneração, vale o **menor** SNR entre os segmentos transparentes.
