@@ -84,12 +84,16 @@ class PhysicalLayerModelTest {
         
         double[] mask = PhysicalLayerModel.generateNliMask(link1, config, circuit, 320);
         
-        int center = 55;
-        assertTrue(mask[center] > 0, "Noise at center should be positive");
-        
-        // Noise should decay as we move away from center frequency
-        assertTrue(mask[center] > mask[center + 10], "NLI should decay with frequency distance");
-        assertTrue(mask[center + 10] > mask[center + 50], "NLI should continue decaying");
+        // The interferer does not write into its own slots (its SCI is computed analytically)
+        for (int s = 50; s <= 60; s++) {
+            assertEquals(0.0, mask[s], "No self-interference through the cache at slot " + s);
+        }
+        assertTrue(mask[61] > 0, "Adjacent slot receives cross-channel NLI");
+        assertEquals(mask[49], mask[61], mask[61] * 1E-12, "XCI is symmetric around the interferer");
+
+        // Cross-channel NLI decays with the frequency distance
+        assertTrue(mask[61] > mask[70], "NLI should decay with frequency distance");
+        assertTrue(mask[70] > mask[110], "NLI should continue decaying");
     }
 
     @Test

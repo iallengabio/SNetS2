@@ -33,9 +33,9 @@ Para evitar o consumo desnecessário de CPU e memória em simulações de grande
 Seguindo o princípio de organização do projeto, **classes de sistema e de motor nunca chamam métricas diretamente**. Toda coleta é mediada por eventos de observação.
 
 ### 2.1. `ResourceUtilizationObservationEvent`
-- **Gatilho:** Disparado pelo `SetupEvent` e `TeardownEvent` sempre que o estado da rede muda.
-- **Lógica:** Calcula o tempo decorrido desde a última mudança e pesa o estado anterior da rede no acumulador global.
-- **Precisão:** Este método garante que a métrica de utilização seja insensível ao "acaso" de observações periódicas, refletindo a ocupação exata da linha do tempo.
+- **Gatilho:** executado em linha pelo `SetupEvent` e pelo `TeardownEvent` **antes** de mutarem o estado, e uma última vez por `SimulationEngine.run()` no instante final.
+- **Lógica:** o estado atual (ainda não modificado) é ponderado pelo intervalo `(última observação, t]`, durante o qual esteve vigente: $\bar{U} = \frac{1}{T}\sum_k U(t_k^+)(t_{k+1}-t_k)$.
+- **Precisão:** a média temporal é exata para a trajetória simulada. Isso é verificado contra a teoria M/M/c/c ($U = A(1-B)/c$) em `ErlangBSingleLinkTest`. Até a correção CR-02, a observação era feita depois da mutação, o que enviesava o resultado (por exemplo, 0,426 contra 0,333).
 
 ---
 

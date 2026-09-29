@@ -40,18 +40,18 @@ Onde $N_l$ é o número de spans (vãos de fibra) completos no enlace.
 ---
 
 ## 4. Interferência Não-Linear ($I_{NLI}$)
-O SNetS2 suporta múltiplas formulações para o cálculo do NLI (como o modelo de Johannisson ou o modelo estendido de Habibi). A premissa central de ambos é que a interferência sofrida por um circuito $i$ depende da potência dos circuitos vizinhos $j$, da distância na frequência $\Delta f_{ij}$ entre eles, e das características da fibra.
+O SNetS2 usa o **modelo GN incoerente** em forma fechada. Para um canal vítima $i$ com PSD total (dupla polarização) $G_i = P/B_i$ e largura $B_i$, cada vão contribui com:
 
-### O Modelo (GN-Model simplificado)
-O ruído NLI total num canal $i$ ($G_{NLI}$) é composto por:
-1.  **Self-Channel Interference (SCI):** Interferência do sinal sobre si mesmo.
-2.  **Cross-Channel Interference (XCI):** Interferência gerada pelos outros canais ativos $j$ *no mesmo núcleo* da fibra.
+$$ G_{NLI,i} = \mu \, G_i \left[ G_i^2 \,\mathrm{asinh}\!\left(\rho B_i^2\right) + \sum_{j \neq i} G_j^2 \ln\!\frac{|\Delta f_{ij}| + B_j/2}{|\Delta f_{ij}| - B_j/2} \right] $$
 
-De forma genérica:
-$$ G_{NLI\_i} = \mu \times (Termo_{SCI} + \sum_{j \neq i} Termo_{XCI}(\Delta f_{ij}, P_j)) $$
-(onde $\mu$ engloba constantes de dispersão, não-linearidade e atenuação da fibra).
+$$ \mu = \frac{8}{27}\,\frac{\gamma^2 L_{eff}^2}{\pi |\beta_2| L_{eff,a}}, \qquad \rho = \frac{\pi^2}{2} |\beta_2| L_{eff,a}, \qquad L_{eff} = \frac{1-e^{-\alpha L_s}}{\alpha}, \quad L_{eff,a} = \frac{1}{\alpha} $$
 
-A característica vital do NLI é que **ele diminui drasticamente à medida que a distância espectral ($\Delta f_{ij}$) entre os canais aumenta.**
+* $\alpha$: atenuação de potência (1/m, a partir de `fiberLoss` em dB/km); $L_s$ = `spanLength`; $\gamma$ = `fiberNonlinearity` (1/(W·m)); $|\beta_2| = D\lambda^2/(2\pi c)$ com $D$ = `fiberDispersion` (s/m²).
+* **SCI** (1º termo): forma fechada do GN de Poggiolini (2012) para um canal isolado.
+* **XCI** (somatório, forma de Johannisson & Karlsson): limite de alta dispersão do GN, consistente com o SCI. Para canais iguais e contíguos, SCI + ΣXCI tende ao SCI da banda ocupada inteira (verificado em `PhysicalLayerMagnitudeTest`). Só entram os canais **do mesmo núcleo** do enlace.
+* O decaimento do XCI com $\Delta f$ é lento, $\approx B_j/|\Delta f|$, e dominado pelos vizinhos espectrais próximos.
+* Vãos somam-se **incoerentemente**: $I_{NLI,\,enlace} = N_{vãos}\cdot G_{NLI,i}$, com $N_{vãos} = \max(1, \lceil L/L_s\rceil)$.
+* Consequência verificável: para um canal isolado, o SNR em função da potência tem um máximo em $P_{opt}$, onde $I_{NLI} = I_{ASE}/2$.
 
 ---
 

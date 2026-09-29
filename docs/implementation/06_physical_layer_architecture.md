@@ -10,7 +10,7 @@ O SNetS2 introduz o conceito de **Physical State Cache**. Em vez de recalcular t
 
 ### Estruturas de Dados
 Cada objeto `Core` em cada `Link` mantém os seguintes arrays:
-- `double[] nliNoiseCache`: Armazena a densidade de ruído NLI acumulada em cada slot específico.
+- `double[] nliNoiseCache`: armazena, por slot, a soma dos termos de **XCI** dos canais ativos do núcleo, $\sum_j N_{vãos}\,\mu\,G_j^2\ln\frac{|\Delta f|+B_j/2}{|\Delta f|-B_j/2}$ (adimensional; multiplicada pela PSD $G_i$ da vítima na predição, resulta em W/Hz). Um canal não escreve nos próprios slots; o seu SCI é somado analiticamente na predição. Ver `formal_description/07`.
 - `double[] xtNoiseCache`: Armazena a densidade de ruído de Crosstalk acumulada em cada slot específico.
 
 Métodos auxiliares como `addNliNoise`, `removeNliNoise` e `getAverageNliNoise` garantem a manipulação segura e eficiente destes caches.
@@ -23,7 +23,7 @@ A computação pesada é deslocada da fase de **Predição** (que ocorre milhare
 
 ### Ao Estabelecer um Circuito (`SetupEvent`)
 1. O `ControlPlane` invoca o `PhysicalLayerModel` para gerar as máscaras de interferência.
-2. **NLI:** O método `generateNliMask` calcula a contribuição do novo circuito para todos os slots do mesmo núcleo (incluindo o decaimento logarítmico com a distância de frequência).
+2. **NLI:** o método `generateNliMask` calcula o termo de XCI que o novo circuito injeta em todos os slots do mesmo núcleo fora da sua própria banda (forma GN $\ln((|\Delta f|+B/2)/(|\Delta f|-B/2))$, por vão).
 3. **XT:** O método `calculateXtContribution` calcula o ruído que será injetado nos núcleos adjacentes exatamente nos mesmos slots ocupados.
 4. O `ControlPlane` atualiza os caches dos objetos `Core` afetados.
 
@@ -33,7 +33,7 @@ A computação pesada é deslocada da fase de **Predição** (que ocorre milhare
 ## 4. Predição Ultra-Rápida ($O(S)$)
 Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um intervalo de slots `[s1, s2]`:
 1. Ele chama `PhysicalLayerModel.predictSNR`.
-2. O motor consulta os caches e calcula o SNR linear: $SNR = I_{ch} / (I_{ASE} + \text{avg}(I_{NLI}) + \text{avg}(I_{XT}))$.
+2. O motor consulta os caches e calcula o SNR linear: $SNR = I_{ch} / \sum_{enlaces}(I_{ASE} + I_{ch}\cdot\text{avg}(C_{XCI}) + I_{SCI}(B) + \text{avg}(I_{XT}))$, com $I_{ch} = P/B$.
 3. O custo computacional depende apenas do número de slots da requisição ($S$), e **não** do número total de conexões na rede.
 
 ## 5. Resumo de Ganhos

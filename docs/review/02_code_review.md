@@ -4,6 +4,17 @@
 > Método: revisão estática + **execução de micro-experimentos** (harness de Erlang-B, contagem de eventos e sondas numéricas da camada física) para confirmar os achados marcados com ✅ *confirmado empiricamente*.
 > Commit revisado: `e64a13d`. Companheiros: [`01_revisao_documentacao.md`](01_revisao_documentacao.md) e [`03_plano_de_verificacao.md`](03_plano_de_verificacao.md).
 
+## Status das correções
+
+| ID | Status | Onde |
+| :-- | :-- | :-- |
+| CR-01 | ✅ Corrigido: NLI GN em forma fechada (SCI de Poggiolini + XCI por interferente, por vão), sem a divisão extra | `PhysicalLayerModel`; testes `PhysicalLayerMagnitudeTest` (L9-b/c/d) |
+| CR-02 | ✅ Corrigido: observação antes da mutação e fechamento da janela no fim | `SetupEvent`, `TeardownEvent`, `SimulationEngine.run`; `ErlangBSingleLinkTest.utilizationMatchesTheory` reativado |
+| CR-03 | ✅ Corrigido: o RMSCA usa `IModulationSelection.candidateFormats` (padrão `distance-adaptive`); `SlotCalculator` centraliza o nº de slots | `StandardIntegratedRMSCA`; teste L8-b |
+| CR-04 | ✅ Corrigido: flag de medição decidida na chegada e drenagem dos eventos da última requisição | `ArrivalEvent`, `SetupEvent`, `BlockEvent`, `SimulationEngine.run`; testes L1-c |
+| CR-08 | ✅ Corrigido: `RandomizedAlgorithm` + sementes derivadas da replicação | `AlgorithmFactory.seedRandomizedAlgorithms`; teste L1-f |
+| Demais | ⏳ Pendentes | — |
+
 ## 0. Resumo executivo
 
 | Severidade | Qtde | Significado |
