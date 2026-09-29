@@ -22,7 +22,7 @@ public class TeardownEvent extends Event {
 
         // 1. Update energy metrics before circuit is gone (to get its power)
         if (engine.getMetricsManager().getConsumedEnergy() != null && engine.isActiveMetric("ConsumedEnergy")) {
-            engine.getMetricsManager().getConsumedEnergy().update(time, engine.isWarmUp());
+            engine.getMetricsManager().getConsumedEnergy().update(time);
             
             // Find circuit in active list to calculate its power
             Circuit circuit = engine.getControlPlane().getActiveCircuits().stream()

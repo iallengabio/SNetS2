@@ -29,6 +29,7 @@ public class SimulationEngine {
     private int arrivalCounter;
     private final int maxArrivals;
     private final int warmUpRequests;
+    private double warmUpEndTime; // T_w: start of the measured window (0 without warm-up)
     
     // Traffic parameters
     private final double lambda; // Arrival rate
@@ -132,7 +133,7 @@ public class SimulationEngine {
 
         // Final energy update at simulation end
         if (metricsManager.getConsumedEnergy() != null && isActiveMetric("ConsumedEnergy")) {
-            metricsManager.getConsumedEnergy().update(currentTime, false);
+            metricsManager.getConsumedEnergy().update(currentTime);
         }
     }
 
@@ -151,8 +152,30 @@ public class SimulationEngine {
     /** @return The manager for all simulation metrics. */
     public MetricsManager getMetricsManager() { return metricsManager; }
 
-    /** Increments the total arrival count. */
-    public void incrementArrivalCounter() { arrivalCounter++; }
+    /**
+     * Increments the total arrival count. When it reaches {@code warmUpRequests}, the warm-up ends at the current
+     * time: {@link #isWarmUp()} becomes false and the measured window of the energy metric starts at this instant.
+     */
+    public void incrementArrivalCounter() {
+        arrivalCounter++;
+        if (arrivalCounter == warmUpRequests) {
+            endWarmUp();
+        }
+    }
+
+    /**
+     * Records the end of the warm-up (T_w = current time) and opens the measured window of the energy metric,
+     * which integrates the power exactly over [T_w, T] (docs/formal_description/06_output_metrics.md, Section 3.6).
+     */
+    private void endWarmUp() {
+        warmUpEndTime = currentTime;
+        if (metricsManager.getConsumedEnergy() != null) {
+            metricsManager.getConsumedEnergy().startMeasurement(currentTime);
+        }
+    }
+
+    /** @return Instant T_w at which the warm-up ended (0 without warm-up or while it has not ended). */
+    public double getWarmUpEndTime() { return warmUpEndTime; }
     
     /** @return The number of arrivals processed so far. */
     public int getArrivalCounter() { return arrivalCounter; }

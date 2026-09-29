@@ -82,7 +82,7 @@ public class SetupEvent extends Event {
 
         // 2. Update energy metrics (dynamic part)
         if (engine.getMetricsManager().getConsumedEnergy() != null && engine.isActiveMetric("ConsumedEnergy")) {
-            engine.getMetricsManager().getConsumedEnergy().update(time, engine.isWarmUp());
+            engine.getMetricsManager().getConsumedEnergy().update(time);
             double circuitPower = EnergyConsumptionModel.calculateCircuitPower(circuit, engine.getControlPlane().getSlotBandwidth());
             engine.getMetricsManager().getConsumedEnergy().addCircuitPower(circuitPower);
         }
