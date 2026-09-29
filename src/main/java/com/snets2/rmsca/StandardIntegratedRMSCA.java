@@ -37,6 +37,10 @@ import java.util.Set;
  * core (in the order of the core assignment, with the interval proposed by the spectrum assignment in each core)
  * before the next format; the first candidate that passes the validation is accepted.</p>
  *
+ * <p>With a modulation policy that prefers a margin ({@link IModulationSelection#snrMarginDb}, e.g. {@code qot-margin}),
+ * the first candidate of a path whose new circuit keeps the margin is accepted; if none keeps it, the first feasible
+ * candidate of the path is accepted at the end of the path. Without margins the flow is unchanged.</p>
+ *
  * <p>Every candidate is validated by the same {@link #evaluate} step: SNR of the new circuit, its
  * crosstalk against the modulation threshold, and the SNR/crosstalk of the circuits already active.</p>
  */
@@ -58,6 +62,15 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         if (modulationSelection != null) this.modulationSelection = modulationSelection;
     }
     public void setRegeneratorAssignment(com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment) { this.regeneratorAssignment = regeneratorAssignment; }
+
+    /** The configured sub-algorithms (routing, modulation, core, spectrum and, if any, regenerator assignment). */
+    public List<Object> components() {
+        List<Object> list = new ArrayList<>();
+        for (Object o : new Object[] {routing, modulationSelection, coreAssignment, spectrumAssignment, regeneratorAssignment}) {
+            if (o != null) list.add(o);
+        }
+        return list;
+    }
 
     @Override
     public AllocationResult allocate(ControlPlane cp, Node source, Node destination, double bitRate) {
@@ -87,11 +100,16 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         Integer lastAttemptedCore = null;
 
         boolean enforceReach = modulationSelection.enforcesReach(cp);
+        // Preferred margins of the new circuit (qot-margin); factors of 1 = no margin
+        double snrMarginFactor = Math.pow(10, modulationSelection.snrMarginDb(cp) / 10);
+        double xtMarginFactor = Math.pow(10, modulationSelection.xtMarginDb(cp) / 10);
         int passes = regeneratorAssignment == null ? 1 : 2;
         for (int pass = 0; pass < passes; pass++) {
             boolean withRegenerators = pass == 1;
 
             for (Path path : candidatePaths) {
+                // First feasible candidate of this path that does not keep the margin (used if none keeps it)
+                AllocationResult withoutMargin = null;
                 // 3. Modulation loop: candidate formats and their order come from the configured policy
                 for (ModulationFormat mod : modulationSelection.candidateFormats(cp, path, bitRate)) {
                     boolean reachViolated = enforceReach && path.getLength() > mod.maxReach();
@@ -119,20 +137,25 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                         }
 
                         // 7. QoT validation (new circuit and active circuits)
-                        BlockingCause failure = evaluate(cp, path, regens, coreId, slots, mod, bitRate);
-                        if (failure != null) {
-                            currentCause = failure;
+                        Verdict verdict = evaluate(cp, path, regens, coreId, slots, mod, bitRate,
+                                snrMarginFactor, xtMarginFactor, withoutMargin == null);
+                        if (verdict.failure() != null) {
+                            currentCause = verdict.failure();
                             currentCoreId = coreId;
                             continue;
                         }
-
-                        // 8. Success
-                        return new AllocationResult(
+                        AllocationResult candidate = new AllocationResult(
                             source, destination, path.links(), getCoreIndicesList(path.links().size(), coreId),
                             slots.start(), slots.end(), mod, bitRate, regens
                         );
+
+                        // 8. Success (with the margin, if any)
+                        if (verdict.marginKept()) return candidate;
+                        if (withoutMargin == null) withoutMargin = candidate;
                     }
                 }
+                // No candidate of this path keeps the margin: the first feasible one
+                if (withoutMargin != null) return withoutMargin;
             }
         }
 
@@ -148,35 +171,56 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     }
 
     /**
+     * Outcome of the validation of a candidate.
+     *
+     * @param failure    {@code null} if the candidate is feasible, otherwise the blocking cause
+     * @param marginKept whether the new circuit keeps the preferred margins (always true without margins)
+     */
+    private record Verdict(BlockingCause failure, boolean marginKept) {
+        static final Verdict FEASIBLE = new Verdict(null, true);
+        static final Verdict FEASIBLE_WITHOUT_MARGIN = new Verdict(null, false);
+    }
+
+    /**
      * Validates the physical layer of a candidate allocation.
      *
-     * @return {@code null} if the candidate is feasible, otherwise the blocking cause:
+     * <p>{@code snrMarginFactor} and {@code xtMarginFactor} (linear, {@code >= 1}) are the preferred margins of the new
+     * circuit ({@link IModulationSelection#snrMarginDb}). A candidate that does not keep them is still feasible; if
+     * {@code checkOthersWithoutMargin} is false (a feasible candidate without margin is already known on this path),
+     * such a candidate cannot be chosen and the costly check of the active circuits is skipped.</p>
+     *
+     * @return {@link Verdict#failure()} {@code null} if the candidate is feasible, otherwise the blocking cause:
      *         {@link BlockingCause#QOT_NEW} / {@link BlockingCause#CROSSTALK} for the new circuit and
      *         {@link BlockingCause#QOT_OTHERS} / {@link BlockingCause#XT_OTHERS} for active circuits.
      */
-    private BlockingCause evaluate(ControlPlane cp, Path path, List<Node> regens, int coreId,
-                                   SpectrumInterval slots, ModulationFormat mod, double bitRate) {
+    private Verdict evaluate(ControlPlane cp, Path path, List<Node> regens, int coreId, SpectrumInterval slots,
+                             ModulationFormat mod, double bitRate, double snrMarginFactor, double xtMarginFactor,
+                             boolean checkOthersWithoutMargin) {
         PhysicalLayerConfig physConfig = cp.getPhysicalLayerConfig();
-        if (physConfig == null || !physConfig.activeQoT()) return null;
+        if (physConfig == null || !physConfig.activeQoT()) return Verdict.FEASIBLE;
 
         // a. SNR of the new circuit (min over the transparent segments)
         double snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
         if (snr < mod.getSnrThresholdLinear()) {
             if (physConfig.activeXT()) {
                 double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
-                if (snrNoXt >= mod.getSnrThresholdLinear()) return BlockingCause.CROSSTALK;
+                if (snrNoXt >= mod.getSnrThresholdLinear()) return new Verdict(BlockingCause.CROSSTALK, false);
             }
-            return BlockingCause.QOT_NEW;
+            return new Verdict(BlockingCause.QOT_NEW, false);
         }
+        boolean marginKept = snrMarginFactor <= 1 || snr >= mod.getSnrThresholdLinear() * snrMarginFactor;
 
         // b. Crosstalk of the new circuit against the threshold of its modulation format
         if (physConfig.activeXT()) {
             double xt = PhysicalLayerModel.predictXtRatio(cp, path, regens, coreId, slots.start(), slots.end());
-            if (xt > mod.getCrosstalkThresholdLinear()) return BlockingCause.CROSSTALK;
+            if (xt > mod.getCrosstalkThresholdLinear()) return new Verdict(BlockingCause.CROSSTALK, false);
+            marginKept &= xtMarginFactor <= 1 || xt <= mod.getCrosstalkThresholdLinear() / xtMarginFactor;
         }
+        if (!marginKept && !checkOthersWithoutMargin) return Verdict.FEASIBLE_WITHOUT_MARGIN; // not selectable anyway
 
         // c. SNR and crosstalk of the active circuits with the candidate's interference applied
-        if (!physConfig.activeQoTForOther()) return null;
+        Verdict feasible = marginKept ? Verdict.FEASIBLE : Verdict.FEASIBLE_WITHOUT_MARGIN;
+        if (!physConfig.activeQoTForOther()) return feasible;
         applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, true);
         try {
             Set<Link> candidateLinks = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -193,20 +237,20 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                     if (physConfig.activeXTForOther()) {
                         double activeSnrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, activePath, active.getRegeneratorNodes(),
                                 activeCore, active.getStartSlot(), active.getEndSlot(), activeMod, active.getBitRate());
-                        if (activeSnrNoXt >= activeMod.getSnrThresholdLinear()) return BlockingCause.XT_OTHERS;
+                        if (activeSnrNoXt >= activeMod.getSnrThresholdLinear()) return new Verdict(BlockingCause.XT_OTHERS, false);
                     }
-                    return BlockingCause.QOT_OTHERS;
+                    return new Verdict(BlockingCause.QOT_OTHERS, false);
                 }
                 if (physConfig.activeXTForOther()) {
                     double activeXt = PhysicalLayerModel.predictXtRatio(cp, activePath, active.getRegeneratorNodes(),
                             activeCore, active.getStartSlot(), active.getEndSlot());
-                    if (activeXt > activeMod.getCrosstalkThresholdLinear()) return BlockingCause.XT_OTHERS;
+                    if (activeXt > activeMod.getCrosstalkThresholdLinear()) return new Verdict(BlockingCause.XT_OTHERS, false);
                 }
             }
         } finally {
             applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, false);
         }
-        return null;
+        return feasible;
     }
 
     /**

@@ -120,6 +120,7 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
   "integratedRMSCA": "standard",
   "modulationSelection": "distance-adaptive",
   "regeneratorAssignment": "aar",
+  "algorithmParameters": { "sigma": 1.0 },
   "activeMetrics": {
     "BlockingProbability": true,
     "BitRateBlockingProbability": true,
@@ -140,10 +141,12 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
 * **Algoritmos (RMSCA):** IDs registrados na `AlgorithmFactory`:
   * `integratedRMSCA`: `standard`.
   * `routing`: `djk`, `ksp`/`newksp` (k = 3).
-  * `modulationSelection`: `distance-adaptive` (padrão), `qot-adaptive` ou `fixed`. `distance-adaptive` escolhe o formato mais eficiente cujo `maxRange` cobre o caminho. `qot-adaptive` escolhe o formato mais eficiente que atende aos limiares de SNR e XT do novo circuito e dos circuitos já estabelecidos, pelo modelo físico, sem usar o `maxRange`. Com `activeQoT = false`, `qot-adaptive` volta ao critério de alcance e se comporta como `distance-adaptive`.
+  * `modulationSelection`: `distance-adaptive` (padrão), `qot-adaptive` ou `fixed`. `distance-adaptive` escolhe o formato mais eficiente cujo `maxRange` cobre o caminho. `qot-adaptive` escolhe o formato mais eficiente que atende aos limiares de SNR e XT do novo circuito e dos circuitos já estabelecidos, pelo modelo físico, sem usar o `maxRange`. Com `activeQoT = false`, `qot-adaptive` volta ao critério de alcance e se comporta como `distance-adaptive`. `qot-margin` é a `qot-adaptive` com margens preferidas de SNR e XT do novo circuito (parâmetros `sigma` e `sigmaXt`, ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.1).
   * `coreAndSpectrumAssignment`: `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2).
   * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`, `corestaggeredfit` (ponto de partida por núcleo).
   * `regeneratorAssignment`: `aar` (opcional).
+
+* **algorithmParameters** (opcional): parâmetros numéricos dos algoritmos, num mapa plano nome → valor. Cada algoritmo lê os nomes que declara. Parâmetros atuais: `sigma` e `sigmaXt` (`qot-margin`, dB, ≥ 0, padrão 0). Podem ser variados no planejamento experimental, por exemplo `"simulation.algorithmParameters.sigma": [0, 1, 2]`.
 
   As chaves `kRouting`, `grooming`, `reallocation`, `powerAssignment` e `networkType` são aceitas, mas **ignoradas**; o simulador emite um aviso.
 * **activeMetrics:** liga ou desliga cada métrica. Uma métrica **omitida é considerada ativa**. Desativar métricas complexas (ex.: fragmentação) melhora significativamente o desempenho. Nomes desconhecidos geram aviso.
@@ -196,6 +199,6 @@ Antes de executar qualquer replicação, o `ExperimentalPlanner` valida **todos*
   * Adjacência de núcleos assimétrica ou com núcleo inexistente.
   * Modulação com `M < 2` ou `maxRange ≤ 0`.
   * `warmUpRequests ≥ requests`.
-  * IDs de algoritmo ausentes.
+  * IDs de algoritmo ausentes ou desconhecidos; valores inválidos em `algorithmParameters`.
   * Parâmetros físicos obrigatórios para os efeitos ativados (ASE, NLI, XT).
-* **Avisos:** chaves reservadas com valor diferente do padrão, nomes desconhecidos em `activeMetrics` e `addDropDegree = 0` em nó com transceptores.
+* **Avisos:** chaves reservadas com valor diferente do padrão, nomes desconhecidos em `activeMetrics`, parâmetros de `algorithmParameters` que nenhum algoritmo configurado lê e `addDropDegree = 0` em nó com transceptores.

@@ -76,7 +76,7 @@ Consequências do desenho em duas passadas:
 * Uma modulação menos eficiente que alcança o destino **sem** regeneração é sempre preferida a uma solução regenerada.
 * Todo candidato, inclusive os regenerados, passa pela mesma validação da QoT dos circuitos ativos.
 
-Precedência: caminho → formato → núcleo. Um formato só é rebaixado depois de tentado em todos os núcleos (cada um com o intervalo proposto pela atribuição espectral). Com `qot-adaptive`, o resultado é o formato mais eficiente que respeita o QoT do novo circuito e dos já estabelecidos. Se nenhum for viável, a causa de bloqueio é a do formato mais robusto (a última falha específica).
+Precedência: caminho → formato → núcleo. Um formato só é rebaixado depois de tentado em todos os núcleos (cada um com o intervalo proposto pela atribuição espectral). Com `qot-adaptive`, o resultado é o formato mais eficiente que respeita o QoT do novo circuito e dos já estabelecidos. Se nenhum for viável, a causa de bloqueio é a do formato mais robusto (a última falha específica). Com `qot-margin`, o primeiro candidato do caminho cujo novo circuito mantém as margens σ (SNR) e σ<sub>XT</sub> (XT) é aceito; se nenhum as mantém, o primeiro viável do caminho (a escolha de `qot-adaptive`) é aceito ao fim do caminho.
 
 A verificação dos circuitos ativos (passo iii) só reavalia os que compartilham um enlace com o candidato no mesmo núcleo (NLI e carga dos amplificadores) ou num núcleo adjacente (XT). O candidato não altera o ruído dos demais, então a decisão é a mesma de verificar todos, com custo menor.
 

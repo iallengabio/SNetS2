@@ -31,18 +31,18 @@ class QoTAwareModulationSelectionTest {
     private static final double SLOT = 12.5E9;
 
     /** Formats of the verification campaign with a 1 km reach: any choice beyond 1 km comes from the physical model. */
-    private static final List<ModulationFormat> SHORT_REACH = List.of(
+    static final List<ModulationFormat> SHORT_REACH = List.of(
         mod("4QAM", 1, 4, 5.92, -16.00), mod("8QAM", 1, 8, 9.32, -19.40), mod("16QAM", 1, 16, 12.34, -22.42),
         mod("32QAM", 1, 32, 15.22, -25.30), mod("64QAM", 1, 64, 18.02, -28.10));
 
-    private static ModulationFormat mod(String name, double maxReach, double m, double snrDb, double xtDb) {
+    static ModulationFormat mod(String name, double maxReach, double m, double snrDb, double xtDb) {
         return new ModulationFormat(name, maxReach, m, snrDb, xtDb, 32, 0.1);
     }
 
     /** Lenient format for background circuits: its own thresholds never block anything. */
-    private static final ModulationFormat LENIENT = mod("lenient", 1E6, 4, -100, 100);
+    static final ModulationFormat LENIENT = mod("lenient", 1E6, 4, -100, 100);
 
-    private static PhysicalLayerConfig config(boolean qot, boolean nli, boolean xt, boolean fixedPsd) {
+    static PhysicalLayerConfig config(boolean qot, boolean nli, boolean xt, boolean fixedPsd) {
         return new PhysicalLayerConfig(
             qot, qot, true, nli, xt, xt,
             0.0, 0.0, 80.0, 0.2, 0.0013, 1.6E-5, 1.9385E14,
@@ -50,7 +50,7 @@ class QoTAwareModulationSelectionTest {
             fixedPsd, SLOT, 1.0E7, 0.01, 0.012, 4.5E-5, 1.0, 0, SLOT);
     }
 
-    private static List<Core> cores(int n, int slots) {
+    static List<Core> cores(int n, int slots) {
         List<Core> cs = new ArrayList<>();
         for (int c = 0; c < n; c++) {
             List<Integer> adj = new ArrayList<>();
@@ -61,7 +61,7 @@ class QoTAwareModulationSelectionTest {
     }
 
     /** Chain 0 -> 1 -> ... -> hops, one directed link per hop, all cores mutually adjacent. */
-    private static ControlPlane chain(int hops, double hopKm, int cores, int slots, int regenerators,
+    static ControlPlane chain(int hops, double hopKm, int cores, int slots, int regenerators,
                                       List<ModulationFormat> mods, PhysicalLayerConfig cfg, StandardIntegratedRMSCA rmsca) {
         List<Node> nodes = new ArrayList<>();
         for (int i = 0; i <= hops; i++) nodes.add(new Node(String.valueOf(i), 1000, 1000, regenerators));
@@ -72,7 +72,7 @@ class QoTAwareModulationSelectionTest {
         return new ControlPlane(new NetworkTopology(nodes, links, mods), rmsca, SLOT, 0, cfg);
     }
 
-    private static StandardIntegratedRMSCA rmsca(IModulationSelection modulation) {
+    static StandardIntegratedRMSCA rmsca(IModulationSelection modulation) {
         StandardIntegratedRMSCA r = new StandardIntegratedRMSCA();
         r.setRouting(new DijkstraRouting());
         r.setCoreAssignment(new FirstFitCoreAssignment());
@@ -81,7 +81,7 @@ class QoTAwareModulationSelectionTest {
         return r;
     }
 
-    private static Circuit circuit(ControlPlane cp, String id, int link, int core, int s, int e, ModulationFormat m) {
+    static Circuit circuit(ControlPlane cp, String id, int link, int core, int s, int e, ModulationFormat m) {
         List<Link> path = List.of(cp.getLinks().get(link));
         return new Circuit(id, cp.getNode(path.get(0).getSourceId()), cp.getNode(path.get(0).getDestinationId()),
                 path, List.of(core), s, e, m, 100.0);

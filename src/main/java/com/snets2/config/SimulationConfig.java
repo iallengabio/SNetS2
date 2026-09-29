@@ -18,5 +18,12 @@ public record SimulationConfig(
     String regeneratorAssignment,
     int networkType,
     int threads,
-    Map<String, Boolean> activeMetrics
-) {}
+    Map<String, Boolean> activeMetrics,
+    // Numeric parameters of the RMSCA algorithms, by name (e.g. "sigma"); see AlgorithmFactory.configure
+    Map<String, Object> algorithmParameters
+) {
+    /** Parameters of the algorithms; never {@code null}. */
+    public Map<String, Object> algorithmParameters() {
+        return algorithmParameters == null ? Map.of() : algorithmParameters;
+    }
+}

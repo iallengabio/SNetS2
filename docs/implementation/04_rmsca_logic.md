@@ -17,6 +17,7 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 - **Contrato:** `candidateFormats(cp, path, bitRate)` devolve a lista ordenada de formatos que o `StandardIntegratedRMSCA` pode tentar. `enforcesReach(cp)` (padrão `true`) diz se o RMSCA deve descartar, na passada transparente, os formatos com `comprimento > maxReach`; o mesmo valor é repassado à atribuição de regeneradores. `selectModulation` devolve só o primeiro formato viável.
 - **DistanceAdaptiveModulationSelection** (ID: `distance-adaptive`, padrão quando `modulationSelection` é omitido): candidatos em ordem decrescente de eficiência espectral ($M$). Com o filtro de alcance, a primeira tentativa é o formato mais eficiente que alcança o destino; os menos eficientes servem de alternativa quando o espectro ou o QoT falham.
 - **QoTAwareModulationSelection** (ID: `qot-adaptive`): candidatos em ordem decrescente de eficiência espectral e `enforcesReach = false` enquanto `activeQoT = true`. Nenhum formato é descartado pelo `maxRange`: o formato aceito é o primeiro cujo candidato passa no `evaluate` (SNR e XT do novo circuito e dos circuitos já estabelecidos). Com `activeQoT = false` (ou sem camada física) não há critério físico, então `enforcesReach = true` e a política equivale a `distance-adaptive`. `selectModulation`, usado fora do RMSCA integrado, devolve um limite superior: o formato mais eficiente viável para um circuito isolado no caminho (ASE + SCI, sem vizinhos).
+- **QoTMarginModulationSelection** (ID: `qot-margin`, issue #31): estende `qot-adaptive` com margens preferidas do novo circuito, `snrMarginDb` (parâmetro `sigma`) e `xtMarginDb` (parâmetro `sigmaXt`), expostas por métodos padrão de `IModulationSelection` (0 dB nas demais políticas e sem QoT). Porte de `ModulationSelectionByQoTAndSigma` do SNetS v1.
 - **FixedModulationSelection** (ID: `fixed`): um único candidato, BPSK se disponível e, caso contrário, a primeira modulação listada na topologia, independentemente do comprimento do caminho.
 - **SlotCalculator:** fonte única do número de slots, $n = \lceil R / (\log_2 M \cdot f_{slot}) \rceil + G$. É usado pelo RMSCA, pelas políticas de modulação e pela métrica de fragmentação relativa.
 - **ModulationResult:** Encapsula o formato escolhido e a contagem de slots necessária.
@@ -41,6 +42,11 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 
 ---
 
+### 1.5. Parâmetros dos algoritmos (`Configurable`)
+- `simulation.algorithmParameters` é um mapa plano nome → número (como as `variables` do SNetS v1), variável no planejamento experimental por notação de ponto (`"simulation.algorithmParameters.sigma": [0, 1, 2]`).
+- Algoritmos com parâmetros implementam `com.snets2.rmsca.Configurable`: `parameterNames()` declara os nomes lidos e `configure(map)` os lê, lançando `IllegalArgumentException` para valores inválidos.
+- `AlgorithmFactory.createRMSCA(simulation, seed)` monta a cadeia completa (integrado, subalgoritmos, sementes dos aleatórios e parâmetros). É o único caminho de montagem, usado por `ExperimentalPlanner.runReplication` e pelo `ConfigValidator`, que assim rejeita IDs desconhecidos e valores inválidos antes da execução e avisa sobre parâmetros que nenhum algoritmo lê.
+
 ## 2. Orquestração
 
 ### 2.1. `StandardIntegratedRMSCA`
@@ -53,6 +59,7 @@ Esta classe implementa a interface `IRMSCA` e atua como um coordenador sequencia
 6.  **Spectrum:** Invoca `ISpectrumAssignment`.
 7.  **Validação (`evaluate`):** um único método para todos os candidatos. Verifica o SNR e o XT do novo circuito contra os limiares da sua modulação. Depois aplica temporariamente o ruído do candidato e verifica o SNR e o XT dos circuitos ativos afetados, iterando a visão somente-leitura `ControlPlane.getActiveCircuitsView()`. Só são reavaliados os circuitos que compartilham ao menos um enlace com o candidato no mesmo núcleo (NLI e carga dos amplificadores) ou num núcleo adjacente a ele (XT), que é exatamente a pegada escrita por `ControlPlane.applyPhysicalContribution`. O ruído dos demais não muda, então o resultado é o mesmo da verificação de todos, desde que os circuitos estabelecidos já atendam aos limiares (invariante mantido por esta própria verificação). O ruído temporário é removido num bloco `finally`.
     **Precedência:** caminho → formato → núcleo. Para um caminho, o formato preferido é tentado em todos os núcleos (na ordem do `ICoreAssignment`, com o intervalo proposto pelo `ISpectrumAssignment` em cada núcleo) antes de rebaixar o formato. Outros intervalos do mesmo núcleo não são tentados.
+    **Margens (`qot-margin`):** o `evaluate` devolve também se o novo circuito mantém as margens. O primeiro candidato viável do caminho que as mantém é aceito; o primeiro viável que não as mantém fica guardado e é aceito ao fim do caminho se nenhum outro as mantiver. Depois que ele é guardado, os candidatos seguintes que não mantêm a margem não podem mais ser escolhidos, então a verificação dos circuitos ativos é pulada para eles. O resultado é o de duas passadas (com e sem margem) por caminho, com uma única varredura. Sem margens, o fluxo é idêntico ao anterior.
 8.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).
 
 ---

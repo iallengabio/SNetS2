@@ -24,6 +24,9 @@ SNetS2 inherits from it the `physicalLayer` configuration keys and the physical 
 saturation and noise factor model, ROADM insertion loss, fixed/variable power spectral density, inter-core crosstalk),
 adapted to an incremental noise cache. Deviations from v1 and the v1 keys that were dropped are documented in
 [docs/formal_description/07_physical_layer_models.md](docs/formal_description/07_physical_layer_models.md).
+RMSCA algorithms ported from v1 (with the deviations documented in
+[docs/formal_description/04_rmsca_algorithms.md](docs/formal_description/04_rmsca_algorithms.md)):
+`qot-margin` (`ModulationSelectionByQoTAndSigma`, SNR margin σ).
 
 ---
 
