@@ -15,28 +15,28 @@ public class DistanceAdaptiveModulationSelection implements IModulationSelection
     @Override
     public ModulationResult selectModulation(ControlPlane cp, Path path, double bitRate) {
         double distance = path.getLength();
-        double slotBandwidth = cp.getSlotBandwidth();
-        
-        // Sort modulations by spectral efficiency (M) descending
-        List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
-            .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
-            .toList();
-
-        for (ModulationFormat format : availableModulations) {
+        for (ModulationFormat format : byEfficiencyDescending(cp)) {
             if (distance <= format.maxReach()) {
-                // Number of slots = ceil( bitRate / (bitsPerSymbol * slotBandwidth) )
-                // Note: bitRate is in Gbps, slotBandwidth is in Hz (e.g. 12.5E9)
-                // We need to match units. bitRate * 1E9 / (bitsPerSymbol * slotBandwidth)
-                int bitsPerSymbol = format.getBitsPerSymbol();
-                int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * slotBandwidth));
-                
-                // Add guard band from configuration
-                numSlots += cp.getGuardBand(); 
-
+                int numSlots = SlotCalculator.requiredSlots(bitRate, format, cp);
                 return new ModulationResult(format, numSlots);
             }
         }
-
         return null;
+    }
+
+    /**
+     * All formats by spectral efficiency (M) descending. Combined with the reach check of the RMSCA,
+     * the first feasible candidate is the most efficient format that reaches the destination, and the
+     * less efficient ones are fallbacks when spectrum or QoT fail.
+     */
+    @Override
+    public List<ModulationFormat> candidateFormats(ControlPlane cp, Path path, double bitRate) {
+        return byEfficiencyDescending(cp);
+    }
+
+    private static List<ModulationFormat> byEfficiencyDescending(ControlPlane cp) {
+        return cp.getTopology().modulations().stream()
+            .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
+            .toList();
     }
 }

@@ -2,6 +2,7 @@ package com.snets2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snets2.config.ConfigLoader;
+import com.snets2.config.ConfigValidator;
 import com.snets2.config.ExperimentSetup;
 import com.snets2.config.ScenarioSetup;
 import com.snets2.config.TopologyMapper;
@@ -118,6 +119,23 @@ public class ExperimentalPlanner {
         }
 
         ScenarioSetup baseScenario = baseSetup.getBaseScenario();
+
+        // Fail fast: validate every scenario before running any replication
+        Map<Map<String, Object>, ScenarioSetup> scenarioSetups = new LinkedHashMap<>();
+        Set<String> warnings = new LinkedHashSet<>();
+        for (Map<String, Object> scenario : scenarios) {
+            ScenarioSetup scenarioSetup = ConfigLoader.applyOverrides(baseScenario, scenario);
+            try {
+                warnings.addAll(ConfigValidator.validate(scenarioSetup).warnings());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Scenario " + scenario + ": " + e.getMessage(), e);
+            }
+            scenarioSetups.put(scenario, scenarioSetup);
+        }
+        for (String warning : warnings) {
+            System.err.println("WARNING: " + warning);
+        }
+
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
         System.out.println("Running simulation sweep using " + numThreads + " thread(s)...");
@@ -125,7 +143,7 @@ public class ExperimentalPlanner {
         List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<>());
 
         for (Map<String, Object> scenario : scenarios) {
-            ScenarioSetup scenarioSetup = ConfigLoader.applyOverrides(baseScenario, scenario);
+            ScenarioSetup scenarioSetup = scenarioSetups.get(scenario);
             for (int rep = 0; rep < replications; rep++) {
                 final int repId = rep;
                 final Map<String, Object> scenarioMap = scenario;
@@ -192,9 +210,11 @@ public class ExperimentalPlanner {
 
         if (rmsca instanceof StandardIntegratedRMSCA standard) {
             standard.setRouting(AlgorithmFactory.createRouting(setup.simulation().routing()));
+            standard.setModulationSelection(AlgorithmFactory.createModulation(setup.simulation().modulationSelection()));
             standard.setCoreAssignment(AlgorithmFactory.createCore(setup.simulation().coreAndSpectrumAssignment()));
             standard.setSpectrumAssignment(AlgorithmFactory.createSpectrum(setup.simulation().spectrumAssignment()));
             standard.setRegeneratorAssignment(AlgorithmFactory.createRegenerator(setup.simulation().regeneratorAssignment()));
+            AlgorithmFactory.seedRandomizedAlgorithms(standard, repId);
         }
 
         // 3. Initialize Control Plane
@@ -207,7 +227,7 @@ public class ExperimentalPlanner {
         );
 
         // 4. Initialize Engine
-        double load = setup.traffic().load() != null ? setup.traffic().load() : 1.0;
+        double load = setup.traffic().load(); // required and validated by ConfigValidator
         SimulationEngine engine = new SimulationEngine(
             topology, 
             cp, 

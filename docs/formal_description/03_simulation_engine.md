@@ -101,5 +101,6 @@ A filosofia de separação de responsabilidades garante que todo e qualquer *log
 ---
 
 ## 5. Condições de Parada e Estabilização
-*   **Parada:** A simulação termina quando o contador de eventos de `Arrival` atinge o valor definido em `simulation.requests`.
-*   **Warm-up (Transitório):** Os primeiros eventos podem ser descartados das métricas para garantir que os dados reflitam o "estado estacionário" (Steady State) da rede.
+*   **Parada:** a simulação termina depois que a chegada nº `simulation.requests` foi processada **e** todos os eventos do mesmo instante (o `Setup`/`Block` dessa requisição e suas observações) também foram. Assim, o resultado da última requisição contada nunca se perde. Eventos futuros, como a próxima chegada e as partidas, ficam na FEL. Ao final, as métricas ponderadas no tempo são fechadas no instante final.
+*   **Warm-up (Transitório):** as primeiras `simulation.warmUpRequests` requisições são descartadas das métricas. A classificação (aquecimento ou medida) é decidida **na chegada** e propagada ao `SetupEvent`/`BlockEvent` da mesma requisição. Com isso vale sempre o invariante `chegadas medidas = aceitas + bloqueadas`.
+*   **Métricas ponderadas no tempo:** o estado da rede é observado **antes** de cada mutação (`Setup`/`Teardown`) e no instante final. Cada estado é ponderado pelo intervalo em que esteve vigente: $\bar{U} = \frac{1}{T}\sum_k U(t_k^+)(t_{k+1}-t_k)$.

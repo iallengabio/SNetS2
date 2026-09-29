@@ -82,12 +82,16 @@ class PhysicalLayerModelTest {
         
         double[] mask = PhysicalLayerModel.generateNliMask(link1, config, circuit, 320);
         
-        int center = 55;
-        assertTrue(mask[center] > 0, "Noise at center should be positive");
-        
-        // Noise should decay as we move away from center frequency
-        assertTrue(mask[center] > mask[center + 10], "NLI should decay with frequency distance");
-        assertTrue(mask[center + 10] > mask[center + 50], "NLI should continue decaying");
+        // The interferer does not write into its own slots (its SCI is computed analytically)
+        for (int s = 50; s <= 60; s++) {
+            assertEquals(0.0, mask[s], "No self-interference through the cache at slot " + s);
+        }
+        assertTrue(mask[61] > 0, "Adjacent slot receives cross-channel NLI");
+        assertEquals(mask[49], mask[61], mask[61] * 1E-12, "XCI is symmetric around the interferer");
+
+        // Cross-channel NLI decays with the frequency distance
+        assertTrue(mask[61] > mask[70], "NLI should decay with frequency distance");
+        assertTrue(mask[70] > mask[110], "NLI should continue decaying");
     }
 
     @Test
@@ -216,15 +220,19 @@ class PhysicalLayerModelTest {
         PhysicalLayerConfig fixedPsd = config(0, 100.0, 5.0, true);
         double pRef = PhysicalLayerModel.dbmToWatts(0.0);
 
-        double p100 = PhysicalLayerModel.circuitLaunchPower(fixedPsd, qpsk, 100.0);
-        double p200 = PhysicalLayerModel.circuitLaunchPower(fixedPsd, qpsk, 200.0);
-        assertEquals(2.0 * p100, p200, p100 * 1E-12);
-        assertEquals(pRef / 1.25E10, PhysicalLayerModel.signalPsd(fixedPsd, qpsk, 100.0), 1E-20);
-        assertEquals(pRef / 1.25E10, PhysicalLayerModel.signalPsd(fixedPsd, qpsk, 200.0), 1E-20);
+        double p3 = PhysicalLayerModel.circuitLaunchPower(fixedPsd, 3 * 12.5E9);
+        double p6 = PhysicalLayerModel.circuitLaunchPower(fixedPsd, 6 * 12.5E9);
+        assertEquals(2.0 * p3, p6, p3 * 1E-12);
+        assertEquals(pRef / 1.25E10, p3 / (3 * 12.5E9), 1E-20);
 
         // Variable PSD: every circuit uses 'power'
-        assertEquals(pRef, PhysicalLayerModel.circuitLaunchPower(config, qpsk, 100.0), 1E-15);
-        assertEquals(pRef, PhysicalLayerModel.circuitLaunchPower(config, qpsk, 200.0), 1E-15);
+        assertEquals(pRef, PhysicalLayerModel.circuitLaunchPower(config, 3 * 12.5E9), 1E-15);
+        assertEquals(pRef, PhysicalLayerModel.circuitLaunchPower(config, 6 * 12.5E9), 1E-15);
+
+        // A circuit uses its signal bandwidth (guard band excluded): slots 10..20 with 1 guard slot = 10 slots
+        Circuit circuit = new Circuit("c1", topology.nodes().get(0), topology.nodes().get(1),
+                                      List.of(link1), List.of(0), 10, 20, qpsk, 100.0);
+        assertEquals(pRef / 1.25E10 * 10 * 12.5E9, PhysicalLayerModel.circuitLaunchPower(fixedPsd, circuit), 1E-15);
     }
 
     @Test
@@ -245,11 +253,5 @@ class PhysicalLayerModelTest {
         core0.removeLaunchPower(0.05);
         double b = PhysicalLayerModel.predictSNR(cpFixed, path, 0, 10, 20, qpsk, 100.0);
         assertEquals(a, b, a * 1E-12);
-    }
-
-    @Test
-    @DisplayName("Invalid typeOfAmplifierGain is rejected")
-    void testInvalidAmplifierGainType() {
-        assertThrows(IllegalArgumentException.class, () -> config(2, 100.0, 5.0, false));
     }
 }

@@ -12,8 +12,14 @@ import java.util.Random;
  * Core assignment using the Random Fit policy.
  * It returns all valid core IDs in random order.
  */
-public class RandomFitCoreAssignment implements ICoreAssignment {
-    private final Random random = new Random();
+public class RandomFitCoreAssignment implements ICoreAssignment, com.snets2.rmsca.RandomizedAlgorithm {
+    // Fixed default seed keeps runs reproducible even when no seed is injected.
+    private Random random = new Random(0);
+
+    @Override
+    public void setRandom(Random random) {
+        this.random = random;
+    }
 
     @Override
     public List<Integer> selectCores(ControlPlane cp, Path path) {

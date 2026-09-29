@@ -10,8 +10,8 @@ O SNetS2 introduz o conceito de **Physical State Cache**. Em vez de recalcular t
 
 ### Estruturas de Dados
 Cada objeto `Core` em cada `Link` mantém os seguintes campos:
-- `double[] nliNoiseCache`: Armazena a densidade de ruído NLI acumulada em cada slot específico.
-- `double[] xtNoiseCache`: Armazena a densidade de ruído de Crosstalk acumulada em cada slot específico.
+- `double[] nliNoiseCache`: armazena, por slot, a soma dos termos de **XCI** dos canais ativos do núcleo, $\sum_j N_{vãos}\,\mu\,G_j^2\ln\frac{|\Delta f|+B_j/2}{|\Delta f|-B_j/2}$ (adimensional; multiplicada pela PSD $G_i$ da vítima na predição, resulta em W/Hz). Um canal não escreve nos próprios slots; o seu SCI é somado analiticamente na predição. Ver `formal_description/07`.
+- `double[] xtNoiseCache`: armazena a densidade de ruído de crosstalk acumulada em cada slot (W/Hz): $\sum_j P_j h L / B_j$ dos circuitos em núcleos adjacentes. A razão de XT da vítima é $\sum_{enlaces}\text{avg}(I_{XT})/I_{ch}$ (`PhysicalLayerModel.predictXtRatio`), comparada ao limiar de XT da modulação.
 - `double totalLaunchPower` (W): soma das potências de lançamento dos circuitos ativos no núcleo (`addLaunchPower`/`removeLaunchPower`), usada pelo modelo de ganho saturado dos amplificadores.
 
 Métodos auxiliares como `addNliNoise`, `removeNliNoise` e `getAverageNliNoise` garantem a manipulação segura e eficiente destes caches.
@@ -27,7 +27,7 @@ A computação pesada é deslocada da fase de **Predição** (que ocorre milhare
 Toda a atualização física é feita por `ControlPlane.applyPhysicalContribution(circuit, add)`, também usado pelo `StandardIntegratedRMSCA` para aplicar temporariamente o circuito candidato durante a verificação de QoT dos outros circuitos (QoTO).
 1. A potência de lançamento do circuito (`PhysicalLayerModel.circuitLaunchPower`, que respeita `fixedPowerSpectralDensity`) é somada ao `totalLaunchPower` do núcleo em cada enlace.
 2. O `ControlPlane` invoca o `PhysicalLayerModel` para gerar as máscaras de interferência.
-3. **NLI:** O método `generateNliMask` calcula a contribuição do novo circuito para todos os slots do mesmo núcleo (incluindo o decaimento logarítmico com a distância de frequência).
+3. **NLI:** o método `generateNliMask` calcula o termo de XCI que o novo circuito injeta em todos os slots do mesmo núcleo fora da sua própria banda (forma GN $\ln((|\Delta f|+B/2)/(|\Delta f|-B/2))$, por vão).
 4. **XT:** O método `calculateXtContribution` calcula o ruído que será injetado nos núcleos adjacentes exatamente nos mesmos slots ocupados.
 5. O `ControlPlane` atualiza os caches dos objetos `Core` afetados.
 
@@ -37,7 +37,7 @@ Toda a atualização física é feita por `ControlPlane.applyPhysicalContributio
 ## 4. Predição Ultra-Rápida ($O(S)$)
 Quando um algoritmo RMSCA (ex: `StandardIntegratedRMSCA`) precisa validar um intervalo de slots `[s1, s2]`:
 1. Ele chama `PhysicalLayerModel.predictSNR`.
-2. O motor consulta os caches e calcula o SNR linear: $SNR = I_{ch} / (I_{ASE} + \text{avg}(I_{NLI}) + \text{avg}(I_{XT}))$, com $I_{ch}$ dado por `PhysicalLayerModel.signalPsd`.
+2. O motor consulta os caches e calcula o SNR linear: $SNR = I_{ch} / \sum_{enlaces}(I_{ASE} + I_{ch}\cdot\text{avg}(C_{XCI}) + I_{SCI}(B) + \text{avg}(I_{XT}))$, com $I_{ch} = P/B$ (P dado por `circuitLaunchPower`) e $I_{ASE}$ estático (ganho fixo) ou recalculado a partir da carga do núcleo (ganho saturado).
 3. O custo computacional depende apenas do número de slots da requisição ($S$), e **não** do número total de conexões na rede.
 
 ## 5. Resumo de Ganhos

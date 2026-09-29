@@ -11,7 +11,8 @@ Gerencia o ciclo de vida global de uma simulação.
 - **Validação de Causalidade:** Se `strictValidationEnabled` estiver ativo, o motor lança uma exceção caso um evento na FEL tente ser processado com um timestamp anterior ao tempo atual da simulação (violação de causalidade).
 - **Parâmetros de Carga:** Calcula as taxas $\lambda$ (chegada) e $\mu$ (partida) para atingir a carga em Erlangs desejada.
 - **Multi-Bandwidth:** Suporta a geração de requisições com diferentes taxas de bits (`bitRate`) baseada em pesos configuráveis. O método `nextBitRate()` realiza o sorteio estocástico a cada nova chegada.
-- **Descarte de Transiente (Warm-up):** Suporta descartar as primeiras $N$ requisições configuradas via `warmUpRequests` para evitar a contaminação das estatísticas de estado estacionário (Steady State).
+- **Descarte de Transiente (Warm-up):** Suporta descartar as primeiras $N$ requisições configuradas via `warmUpRequests` para evitar a contaminação das estatísticas de estado estacionário (Steady State). O `ArrivalEvent` decide se a requisição é medida (`measured = !isWarmUp()`) e repassa essa flag ao `SetupEvent`/`BlockEvent`, de modo que chegada e desfecho de uma requisição são sempre contados juntos.
+- **Término:** `run()` para quando `arrivalCounter >= maxArrivals` e o próximo evento da FEL está num instante posterior ao atual. Os eventos imediatos da última requisição são processados; em seguida, a janela das métricas temporais é fechada com uma `ResourceUtilizationObservationEvent` no tempo final.
 
 ### 1.2. `Event` (com.snets2.engine.Event)
 Classe base abstrata para todas as ações do simulador.
@@ -32,13 +33,14 @@ Marca a entrada de uma nova solicitação.
 
 ### 2.2. `SetupEvent`
 Efetiva a conexão na rede.
-1.  Chama `ControlPlane.establishCircuit`.
-2.  Gera um tempo de retenção (Exponencial) e agenda o `DepartureEvent`.
+1.  Executa em linha uma `ResourceUtilizationObservationEvent`, que registra o estado **anterior** à mutação.
+2.  Chama `ControlPlane.establishCircuit`.
+3.  Gera um tempo de retenção (Exponencial) e agenda o `DepartureEvent`.
 
 ### 2.3. `DepartureEvent` & `TeardownEvent`
 Gerenciam o fim da vida de uma conexão.
 - O `DepartureEvent` sinaliza que o tempo expirou.
-- O `TeardownEvent` realiza a limpeza no `ControlPlane`, liberando slots e portas de hardware.
+- O `TeardownEvent` executa a observação temporal (estado anterior) e depois realiza a limpeza no `ControlPlane`, liberando slots e portas de hardware.
 
 ### 2.4. `BlockEvent`
 Evento puramente administrativo para registro de estatísticas de rejeição de chamadas.

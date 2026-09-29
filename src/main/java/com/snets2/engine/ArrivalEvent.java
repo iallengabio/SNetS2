@@ -44,8 +44,11 @@ public class ArrivalEvent extends Event {
             System.out.println(String.format("[DEBUG] t=%.4f | ArrivalEvent", time));
         }
 
-        // 1. Record metric arrival
-        if (!engine.isWarmUp() && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
+        // 1. Record metric arrival. The warm-up classification is decided once, here, and carried
+        // by the Setup/Block events of this request so that arrivals and outcomes are always
+        // counted together (chegadas = aceitas + bloqueadas).
+        final boolean measured = !engine.isWarmUp();
+        if (measured && (engine.isActiveMetric("BlockingProbability") || engine.isActiveMetric("BitRateBlockingProbability"))) {
             engine.getMetricsManager().getBitRateBlocking().recordArrival(source.getId(), destination.getId(), bitRate);
         }
 
@@ -69,12 +72,12 @@ public class ArrivalEvent extends Event {
 
         if (!result.isBlocked()) {
             // Success: Schedule immediate SetupEvent
-            engine.schedule(new SetupEvent(time, result));
+            engine.schedule(new SetupEvent(time, result, measured));
         } else {
             // Failure: Schedule immediate BlockEvent with exact cause
             BlockingCause cause = result.blockingCause();
             Integer coreId = result.blockingCoreId();
-            engine.schedule(new BlockEvent(time, source, destination, bitRate, cause, coreId));
+            engine.schedule(new BlockEvent(time, source, destination, bitRate, cause, coreId, measured));
         }
     }
 }

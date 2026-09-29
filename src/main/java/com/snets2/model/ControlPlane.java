@@ -67,6 +67,11 @@ public class ControlPlane {
         return new ArrayList<>(activeCircuits.values());
     }
 
+    /** Read-only live view of the active circuits (no copy). Must not be iterated while circuits are added or removed. */
+    public java.util.Collection<Circuit> getActiveCircuitsView() {
+        return java.util.Collections.unmodifiableCollection(activeCircuits.values());
+    }
+
     public void establishCircuit(Circuit circuit) {
         if (activeCircuits.containsKey(circuit.getId())) {
             throw new IllegalArgumentException("Circuit ID already exists: " + circuit.getId());
@@ -186,7 +191,7 @@ public class ControlPlane {
         if (physicalLayerConfig == null) return;
 
         double launchPower = com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
-            physicalLayerConfig, circuit.getModulation(), circuit.getBitRate());
+            physicalLayerConfig, circuit);
 
         for (int i = 0; i < circuit.getPath().size(); i++) {
             Link link = circuit.getPath().get(i);

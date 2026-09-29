@@ -37,47 +37,35 @@ public class PhysicalLayerModel {
     // ------------------------------------------------------------------
 
     /**
-     * Effective (Nyquist) signal bandwidth of a circuit, excluding guard bands:
-     * B_si = R_b (1 + r_FEC) / (N_pol log2 M).
-     *
-     * <p>Same definition as {@code Modulation.getBandwidthFromBitRate} in SNetS v1.</p>
-     *
-     * @param bitRate Requested bit rate in Gbps.
-     * @return Bandwidth in Hz.
-     */
-    public static double effectiveBandwidth(PhysicalLayerConfig config, ModulationFormat mod, double bitRate) {
-        return (bitRate * 1E9 * (1.0 + config.rateOfFEC()))
-                / (config.effectivePolarizationModes() * mod.getBitsPerSymbol());
-    }
-
-    /**
-     * Launch power of a circuit (W).
+     * Launch power (W) of a circuit whose signal occupies {@code bandwidth} Hz (see {@link #signalBandwidth}).
      *
      * <ul>
      *   <li>Variable PSD ({@code fixedPowerSpectralDensity = false}): every circuit is launched with
      *       {@code power}, so wider circuits have a lower PSD.</li>
      *   <li>Fixed PSD ({@code fixedPowerSpectralDensity = true}): {@code power} is the power in the
      *       reference bandwidth B_ref and every circuit keeps the PSD P_ref / B_ref, i.e.
-     *       P_i = (P_ref / B_ref) B_si ("flat PSD" launch, as assumed by the GN-model closed forms in
+     *       P_i = (P_ref / B_ref) B_i ("flat PSD" launch, as assumed by the GN-model closed forms in
      *       Poggiolini, JLT 2012, and Johannisson &amp; Agrell, JLT 2014).</li>
      * </ul>
      *
      * <p>Follows {@code PhysicalLayer.getCircuitLaunchPower} of SNetS v1.</p>
      */
-    public static double circuitLaunchPower(PhysicalLayerConfig config, ModulationFormat mod, double bitRate) {
+    public static double circuitLaunchPower(PhysicalLayerConfig config, double bandwidth) {
         double referencePower = dbmToWatts(config.power());
         if (!config.fixedPowerSpectralDensity()) {
             return referencePower;
         }
-        double psd = referencePower / config.referenceBandwidthForPowerSpectralDensity();
-        return psd * effectiveBandwidth(config, mod, bitRate);
+        return referencePower / config.referenceBandwidthForPowerSpectralDensity() * bandwidth;
     }
 
-    /**
-     * Signal power spectral density I = P_i / B_si (W/Hz). With a fixed PSD this equals P_ref / B_ref.
-     */
-    public static double signalPsd(PhysicalLayerConfig config, ModulationFormat mod, double bitRate) {
-        return circuitLaunchPower(config, mod, bitRate) / effectiveBandwidth(config, mod, bitRate);
+    /** Launch power (W) of an allocated circuit. */
+    public static double circuitLaunchPower(PhysicalLayerConfig config, Circuit circuit) {
+        return circuitLaunchPower(config, circuitBandwidth(config, circuit));
+    }
+
+    /** Signal bandwidth (Hz) of an allocated circuit, guard band excluded. */
+    static double circuitBandwidth(PhysicalLayerConfig config, Circuit circuit) {
+        return signalBandwidth(circuit.getStartSlot(), circuit.getEndSlot(), config.guardBand(), config.bvtSpectralWidth());
     }
 
     // ------------------------------------------------------------------
@@ -216,58 +204,117 @@ public class PhysicalLayerModel {
         if (!config.activeXT()) return 0.0;
 
         // Lobato Model: P_xt = P_j * h * L
-        // Noise Density I_xt = P_xt / B_si
-        double pLinear = circuitLaunchPower(config, circuit.getModulation(), circuit.getBitRate());
+        // Noise Density I_xt = P_xt / Bandwidth
+        double bandwidth = circuitBandwidth(config, circuit);
+        double pLinear = circuitLaunchPower(config, bandwidth);
         
         // h (power-coupling coefficient)
         double hFiber = (2.0 * Math.pow(config.couplingCoefficient(), 2) * config.bendingRadius()) / 
                         (config.propagationConstant() * config.corePitch());
         
         double pXt = pLinear * hFiber * (link.getLength() * 1000.0); // Length in meters
-        
-        double bandwidth = effectiveBandwidth(config, circuit.getModulation(), circuit.getBitRate());
-        
+
         return pXt / bandwidth;
     }
 
+    // ------------------------------------------------------------------------------------------
+    // Non-linear interference (NLI): incoherent GN model. For a victim channel i (total dual-
+    // polarization PSD G_i, bandwidth B_i), per span:
+    //
+    //   G_NLI,i = mu * G_i * [ G_i^2 * asinh(rho * B_i^2)                                  (SCI)
+    //                          + sum_{j != i} G_j^2 * ln((|df_ij| + B_j/2) / (|df_ij| - B_j/2)) ] (XCI)
+    //
+    //   mu  = (8/27) gamma^2 Leff^2 / (pi |beta2| Leff,a),   rho = (pi^2 / 2) |beta2| Leff,a
+    //   Leff = (1 - exp(-alpha Ls)) / alpha,  Leff,a = 1 / alpha   (alpha: power attenuation)
+    //
+    // The SCI term is Poggiolini's GN closed form; the XCI term (Johannisson & Karlsson form) is its
+    // large-dispersion limit, consistent with it: for equal, contiguous channels SCI + sum XCI equals
+    // the SCI of the whole occupied band. Spans add incoherently (N_spans = ceil(L / spanLength)).
+    // The XCI sum is kept in the
+    // per-slot cache of each core (see generateNliMask); the SCI term and the victim factor G_i
+    // are applied at prediction time, so a channel never interferes with itself through the cache.
+    // ------------------------------------------------------------------------------------------
+
+    /** Attenuation coefficient alpha (1/m) from fiberLoss (dB/km). */
+    static double alpha(PhysicalLayerConfig config) {
+        return config.fiberLoss() / (10.0 * Math.log10(Math.E) * 1000.0);
+    }
+
+    /** |beta2| (s^2/m) from the dispersion parameter D (s/m^2): |beta2| = D * lambda^2 / (2 pi c). */
+    static double beta2(PhysicalLayerConfig config) {
+        double c = 299792458.0;
+        double lambda = c / config.centerFrequency();
+        return Math.abs(config.fiberDispersion() * lambda * lambda / (2.0 * Math.PI * c));
+    }
+
+    /** Per-span GN coefficient mu = (8/27) gamma^2 Leff^2 / (pi |beta2| Leff,a), gamma in 1/(W m). */
+    static double nliMu(PhysicalLayerConfig config) {
+        double gamma = config.fiberNonlinearity();
+        double a = alpha(config);
+        double leff = (1.0 - Math.exp(-a * config.spanLength() * 1000.0)) / a;
+        double leffA = 1.0 / a;
+        return (8.0 / 27.0) * gamma * gamma * leff * leff / (Math.PI * beta2(config) * leffA);
+    }
+
+    /** rho = (pi^2 / 2) |beta2| Leff,a (s^2, multiplies a bandwidth squared). */
+    static double nliRho(PhysicalLayerConfig config) {
+        return Math.PI * Math.PI / 2.0 * beta2(config) / alpha(config);
+    }
+
+    /** Number of fiber spans of a link (at least one). */
+    static int numberOfSpans(Link link, PhysicalLayerConfig config) {
+        return Math.max(1, (int) Math.ceil(link.getLength() / config.spanLength()));
+    }
+
     /**
-     * Generates a noise mask for NLI contribution in the same core.
-     * 
-     * <p>Note: For true O(S) prediction, we assume the NLI added to slot 's' 
-     * by a circuit at 'f_c' is G_nli(s, f_c).</p>
+     * Self-channel interference PSD (W/Hz) of a channel of bandwidth {@code bandwidth} (Hz) on a link:
+     * {@code N_spans * mu * G^3 * asinh(rho * B^2)}.
+     */
+    public static double selfChannelInterference(Link link, PhysicalLayerConfig config, double bandwidth) {
+        if (!config.activeNLI()) return 0.0;
+        double g = circuitLaunchPower(config, bandwidth) / bandwidth;
+        return numberOfSpans(link, config) * nliMu(config) * g * g * g
+                * asinh(nliRho(config) * bandwidth * bandwidth);
+    }
+
+    /**
+     * Cross-channel NLI contribution of {@code circuit} (the interferer j) to every slot of its core.
+     *
+     * <p>Entry {@code s} is {@code N_spans * mu * G_j^2 * ln((|df| + B_j/2) / (|df| - B_j/2))}, with
+     * {@code df} the distance between the centre of slot {@code s} and the centre of the interferer.
+     * Slots occupied by the interferer itself are zero. The cache is multiplied by the PSD {@code G_i}
+     * of the victim at prediction time, which yields W/Hz.</p>
      */
     public static double[] generateNliMask(Link link, PhysicalLayerConfig config, Circuit circuit, int totalSlots) {
         double[] mask = new double[totalSlots];
         if (!config.activeNLI()) return mask;
 
-        // GN-Model simplified: I_nli is highest at the circuit's frequency and decays.
-        // For this version, we will use a very simplified version where it adds noise 
-        // to all slots in the core based on the Johannisson/Habibi curves.
-        
-        double gamma = config.fiberNonlinearity();
-        double alpha = config.fiberLoss() / (10.0 * Math.log10(Math.E) * 1000.0); // 1/m
-        double beta2 = Math.abs(-1.0 * config.fiberDispersion() * Math.pow(3E8 / config.centerFrequency(), 2) / (2.0 * Math.PI * 3E8));
-        
-        double bandwidth = (circuit.getEndSlot() - circuit.getStartSlot() + 1) * config.bvtSpectralWidth();
-        double gSignal = signalPsd(config, circuit.getModulation(), circuit.getBitRate());
-
-        // mi calculation from Johannisson
-        double mi = Math.pow(gSignal, 3) * (3.0 * Math.pow(gamma, 2)) / (2.0 * Math.PI * alpha * beta2);
-        
-        int centerSlot = (circuit.getStartSlot() + circuit.getEndSlot()) / 2;
+        double slotWidth = config.bvtSpectralWidth();
+        double bandwidth = signalBandwidth(circuit.getStartSlot(), circuit.getEndSlot(), config.guardBand(), slotWidth);
+        double g = circuitLaunchPower(config, bandwidth) / bandwidth;
+        double factor = numberOfSpans(link, config) * nliMu(config) * g * g;
+        double center = (circuit.getStartSlot() + circuit.getEndSlot() + 1) / 2.0; // in slot units
 
         for (int s = 0; s < totalSlots; s++) {
-            double deltaF = Math.abs(s - centerSlot) * config.bvtSpectralWidth();
-            if (deltaF == 0) deltaF = config.bvtSpectralWidth() / 10.0;
-            
-            // Logarithmic decay of NLI interference with frequency distance
-            double ro = Math.pow(bandwidth, 2) * Math.pow(Math.PI, 2) * beta2 / (2.0 * alpha);
-            double contribution = mi * Math.log(1.0 + (ro / Math.pow(deltaF / bandwidth, 2)));
-            
-            mask[s] = Math.max(0, contribution / bandwidth); // Density
+            if (s >= circuit.getStartSlot() && s <= circuit.getEndSlot()) continue;
+            double deltaF = Math.abs(s + 0.5 - center) * slotWidth;
+            mask[s] = factor * Math.log((deltaF + bandwidth / 2.0) / (deltaF - bandwidth / 2.0));
         }
-
         return mask;
+    }
+
+    /**
+     * Bandwidth (Hz) actually occupied by the signal of an allocation {@code [startSlot, endSlot]}: the
+     * allocated range includes {@code guardBand} guard slots, which carry no signal power. At least one
+     * slot is always considered. The PSD of the channel is {@code P / signalBandwidth}.
+     */
+    public static double signalBandwidth(int startSlot, int endSlot, int guardBand, double slotWidth) {
+        int allocated = endSlot - startSlot + 1;
+        return Math.max(1, allocated - Math.max(0, guardBand)) * slotWidth;
+    }
+
+    private static double asinh(double x) {
+        return Math.log(x + Math.sqrt(x * x + 1.0));
     }
 
     /**
@@ -294,60 +341,58 @@ public class PhysicalLayerModel {
     }
 
     /**
-     * Calculates the current average XT (dB) for a proposed allocation.
+     * Inter-core crosstalk ratio (linear, dimensionless) of a proposed allocation on one transparent
+     * segment: {@code XT = sum_links avg(I_XT) / I_ch}, i.e. the crosstalk power coupled into the victim
+     * divided by its signal power. For one fully-overlapping neighbour of the same bandwidth on a link of
+     * length {@code L} this equals {@code h L}.
      */
-    public static double predictXT(Path path, int coreId, int startSlot, int endSlot) {
+    public static double predictXtRatio(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot) {
+        PhysicalLayerConfig config = cp.getPhysicalLayerConfig();
+        double bandwidth = signalBandwidth(startSlot, endSlot, cp.getGuardBand(), cp.getSlotBandwidth());
+        double pLinear = config != null ? circuitLaunchPower(config, bandwidth) : 1E-4;
+        double iCh = pLinear / bandwidth;
         double totalXtDensity = 0;
         for (Link link : path.links()) {
-            Core core = link.getCore(coreId);
-            totalXtDensity += core.getAverageXtNoise(startSlot, endSlot);
+            totalXtDensity += link.getCore(coreId).getAverageXtNoise(startSlot, endSlot);
         }
-        return 10 * Math.log10(Math.max(1E-30, totalXtDensity));
+        return totalXtDensity / iCh;
     }
 
     /**
-     * Predicts the OSNR (Linear) for a proposed allocation.
+     * Predicts the SNR (linear, in the signal bandwidth) of a proposed allocation on one transparent
+     * segment: {@code I_ch / sum_links (I_ASE + I_NLI + I_XT)}, with {@code I_ch = P / B}.
      */
     public static double predictSNR(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
-        return predictSnr(cp, path, coreId, startSlot, endSlot, mod, bitRate, true);
+        return predictSegmentSnr(cp, path, coreId, startSlot, endSlot, true);
     }
 
     /**
-     * Predicts the SNR (Linear) for a proposed allocation excluding inter-core crosstalk.
+     * Predicts the SNR (linear) for a proposed allocation excluding inter-core crosstalk.
      */
     public static double predictSnrWithoutXt(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate) {
-        return predictSnr(cp, path, coreId, startSlot, endSlot, mod, bitRate, false);
+        return predictSegmentSnr(cp, path, coreId, startSlot, endSlot, false);
     }
 
-    /**
-     * SNR = I / (I_ASE + I_NLI [+ I_XT]), with I the signal PSD (see {@link #signalPsd}).
-     */
-    private static double predictSnr(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot,
-                                     ModulationFormat mod, double bitRate, boolean includeXt) {
+    private static double predictSegmentSnr(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, boolean includeXt) {
         PhysicalLayerConfig config = cp.getPhysicalLayerConfig();
-
-        double iCh;
-        double candidatePower;
-        if (config != null) {
-            candidatePower = circuitLaunchPower(config, mod, bitRate);
-            iCh = signalPsd(config, mod, bitRate);
-        } else {
-            candidatePower = 1E-4; // Default fallback
-            iCh = candidatePower / ((endSlot - startSlot + 1) * cp.getSlotBandwidth());
-        }
+        double bandwidth = signalBandwidth(startSlot, endSlot, cp.getGuardBand(), cp.getSlotBandwidth());
+        double pLinear = config != null ? circuitLaunchPower(config, bandwidth) : 1E-4; // 1E-4 W: legacy fallback
+        double iCh = pLinear / bandwidth;
 
         double totalNoiseDensity = 0;
         for (Link link : path.links()) {
             Core core = link.getCore(coreId);
             totalNoiseDensity += config != null
-                ? linkAseForPrediction(link, core, config, startSlot, endSlot, candidatePower)
+                ? linkAseForPrediction(link, core, config, startSlot, endSlot, pLinear)
                 : link.getStaticAseNoise();
-            totalNoiseDensity += core.getAverageNliNoise(startSlot, endSlot);
+            if (config != null && config.activeNLI()) {
+                totalNoiseDensity += iCh * core.getAverageNliNoise(startSlot, endSlot)
+                        + selfChannelInterference(link, config, bandwidth);
+            }
             if (includeXt) {
                 totalNoiseDensity += core.getAverageXtNoise(startSlot, endSlot);
             }
         }
-
         return iCh / Math.max(1E-30, totalNoiseDensity);
     }
 
@@ -375,16 +420,24 @@ public class PhysicalLayerModel {
         return minSnr;
     }
 
-    public static double predictXT(Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
-        List<Path> segments = getPathSegments(path, regenerators);
-        double maxXtDb = -Double.MAX_VALUE;
-        for (Path segment : segments) {
-            double xtDb = predictXT(segment, coreId, startSlot, endSlot);
-            if (xtDb > maxXtDb) {
-                maxXtDb = xtDb;
-            }
+    /**
+     * Worst (largest) crosstalk ratio over the transparent segments delimited by regenerators, linear.
+     */
+    public static double predictXtRatio(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
+        double worst = 0;
+        for (Path segment : getPathSegments(path, regenerators)) {
+            worst = Math.max(worst, predictXtRatio(cp, segment, coreId, startSlot, endSlot));
         }
-        return maxXtDb;
+        return worst;
+    }
+
+    /**
+     * Worst crosstalk over the transparent segments, in dB ({@code 10 log10(XT ratio)}); comparable with the
+     * {@code XT} threshold of the modulation formats. Allocations without any overlapping neighbour are
+     * reported at the floor of -300 dB.
+     */
+    public static double predictXT(ControlPlane cp, Path path, List<Node> regenerators, int coreId, int startSlot, int endSlot) {
+        return 10 * Math.log10(Math.max(1E-30, predictXtRatio(cp, path, regenerators, coreId, startSlot, endSlot)));
     }
 
     private static List<Path> getPathSegments(Path path, List<Node> regenerators) {

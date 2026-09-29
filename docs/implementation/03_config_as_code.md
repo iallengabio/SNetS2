@@ -32,6 +32,14 @@ Essa arquitetura garante que, ao adicionar qualquer novo campo ao JSON de config
 
 ---
 
+### 2.2. `ConfigValidator` (com.snets2.config.ConfigValidator)
+Validação *fail-fast* de cada `ScenarioSetup` gerado pelo *sweep*, antes de qualquer replicação ser submetida.
+- **Erros** são agregados numa única `IllegalArgumentException`, que aborta o experimento. A lista está em `formal_description/05` §7.
+- **Avisos** são impressos uma vez em `stderr`: chaves reservadas com valor diferente do padrão e nomes desconhecidos em `activeMetrics`.
+- Eliminou o padrão silencioso de `load = 1,0` e o laço infinito com topologias de um único nó.
+
+---
+
 ## 2. Mapeamento para o Modelo Real
 
 ### 2.1. `TopologyMapper` (com.snets2.config.TopologyMapper)

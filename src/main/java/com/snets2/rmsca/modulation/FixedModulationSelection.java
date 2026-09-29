@@ -14,26 +14,26 @@ public class FixedModulationSelection implements IModulationSelection {
 
     @Override
     public ModulationResult selectModulation(ControlPlane cp, Path path, double bitRate) {
+        ModulationFormat fixedFormat = fixedFormat(cp);
+        if (fixedFormat == null) return null;
+        int numSlots = SlotCalculator.requiredSlots(bitRate, fixedFormat, cp);
+        return new ModulationResult(fixedFormat, numSlots);
+    }
+
+    @Override
+    public List<ModulationFormat> candidateFormats(ControlPlane cp, Path path, double bitRate) {
+        ModulationFormat fixedFormat = fixedFormat(cp);
+        return fixedFormat == null ? List.of() : List.of(fixedFormat);
+    }
+
+    private static ModulationFormat fixedFormat(ControlPlane cp) {
         List<ModulationFormat> available = cp.getTopology().modulations();
         if (available.isEmpty()) return null;
-
-        ModulationFormat fixedFormat = null;
         for (ModulationFormat format : available) {
             if (format.name().equalsIgnoreCase("bpsk")) {
-                fixedFormat = format;
-                break;
+                return format;
             }
         }
-
-        if (fixedFormat == null) {
-            fixedFormat = available.get(0);
-        }
-
-        int bitsPerSymbol = fixedFormat.getBitsPerSymbol();
-        double slotBandwidth = cp.getSlotBandwidth();
-        int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * slotBandwidth));
-        numSlots += cp.getGuardBand();
-
-        return new ModulationResult(fixedFormat, numSlots);
+        return available.get(0);
     }
 }

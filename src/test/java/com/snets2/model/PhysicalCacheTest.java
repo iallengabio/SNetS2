@@ -51,8 +51,10 @@ class PhysicalCacheTest {
         // 2. Establish circuit on Core 0
         cp.establishCircuit(circuit);
         
-        // NLI on Core 0 should be > 0
-        assertTrue(core0.getAverageNliNoise(10, 20) > 0);
+        // NLI (cross-channel) cache on Core 0 is > 0 outside the circuit and 0 on its own slots
+        // (a channel does not interfere with itself through the cache; SCI is added at prediction)
+        assertTrue(core0.getAverageNliNoise(25, 30) > 0);
+        assertEquals(0.0, core0.getAverageNliNoise(10, 20));
         // XT on Core 1 (adjacent) should be > 0
         assertTrue(core1.getAverageXtNoise(10, 20) > 0);
         // Core 0 load (used by the saturated-gain model) holds the circuit launch power (0 dBm = 1 mW)
@@ -63,7 +65,7 @@ class PhysicalCacheTest {
         cp.teardownCircuit("c1");
 
         // Caches must return to 0 (with small epsilon for double precision)
-        assertEquals(0.0, core0.getAverageNliNoise(10, 20), 1E-20);
+        assertEquals(0.0, core0.getAverageNliNoise(25, 30), 1E-20);
         assertEquals(0.0, core1.getAverageXtNoise(10, 20), 1E-20);
         assertEquals(0.0, core0.getTotalLaunchPower(), 1E-20);
     }

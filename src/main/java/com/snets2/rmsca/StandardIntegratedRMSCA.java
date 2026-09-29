@@ -5,19 +5,30 @@ import com.snets2.metrics.PhysicalLayerModel;
 import com.snets2.metrics.BlockingCause;
 import com.snets2.model.*;
 import com.snets2.rmsca.core.ICoreAssignment;
+import com.snets2.rmsca.modulation.DistanceAdaptiveModulationSelection;
+import com.snets2.rmsca.modulation.IModulationSelection;
+import com.snets2.rmsca.modulation.SlotCalculator;
 import com.snets2.rmsca.routing.IRouting;
 import com.snets2.rmsca.routing.Path;
 import com.snets2.rmsca.spectrum.ISpectrumAssignment;
 import com.snets2.rmsca.spectrum.SpectrumInterval;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
  * A standard sequential implementation of RMSCA with physical layer awareness.
- * 
- * <p>Execution sequence: Routing -> Modulation Loop (descending efficiency) 
- * -> Core Loop (strategy-dependent order) -> Spectrum -> QoT Validation.</p>
+ *
+ * <p>Execution sequence: Tx/Rx check -> Routing -> for each pass (transparent, then regenerated) ->
+ * Path loop -> Modulation loop (order given by {@link IModulationSelection}) -> Core loop
+ * (strategy-dependent order) -> Spectrum -> [Regenerator placement] -> QoT validation.</p>
+ *
+ * <p><b>Pass 1 (transparent)</b> only tries formats whose {@code maxReach} covers the path, without
+ * regenerators. <b>Pass 2</b> runs only if pass 1 failed and a regenerator assignment is configured:
+ * it retries every format with regenerators placed by the assignment. Hence a transparent solution
+ * with a less efficient format is always preferred to a regenerated one.</p>
+ *
+ * <p>Every candidate is validated by the same {@link #evaluate} step: SNR of the new circuit, its
+ * crosstalk against the modulation threshold, and the SNR/crosstalk of the circuits already active.</p>
  */
 public class StandardIntegratedRMSCA implements IRMSCA {
 
@@ -25,10 +36,17 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     private ICoreAssignment coreAssignment;
     private ISpectrumAssignment spectrumAssignment;
     private com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment;
+    private IModulationSelection modulationSelection = new DistanceAdaptiveModulationSelection();
 
     public void setRouting(IRouting routing) { this.routing = routing; }
+    public ICoreAssignment getCoreAssignment() { return coreAssignment; }
+    public ISpectrumAssignment getSpectrumAssignment() { return spectrumAssignment; }
     public void setCoreAssignment(ICoreAssignment coreAssignment) { this.coreAssignment = coreAssignment; }
     public void setSpectrumAssignment(ISpectrumAssignment spectrumAssignment) { this.spectrumAssignment = spectrumAssignment; }
+    /** Sets the modulation policy; {@code null} keeps the default (distance-adaptive). */
+    public void setModulationSelection(IModulationSelection modulationSelection) {
+        if (modulationSelection != null) this.modulationSelection = modulationSelection;
+    }
     public void setRegeneratorAssignment(com.snets2.rmsca.regenerator.IRegeneratorAssignment regeneratorAssignment) { this.regeneratorAssignment = regeneratorAssignment; }
 
     @Override
@@ -36,10 +54,6 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         if (routing == null || coreAssignment == null || spectrumAssignment == null) {
             throw new IllegalStateException("StandardIntegratedRMSCA sub-algorithms not properly initialized.");
         }
-
-        // Default blocking cause tracked locally
-        BlockingCause currentCause = BlockingCause.OTHER;
-        Integer currentCoreId = null;
 
         // 1. Hardware check
         if (!source.hasAvailableTx()) {
@@ -55,133 +69,58 @@ public class StandardIntegratedRMSCA implements IRMSCA {
             return new AllocationResult(source, destination, bitRate, BlockingCause.NO_PATH);
         }
 
-        PhysicalLayerConfig physConfig = cp.getPhysicalLayerConfig();
-        boolean checkQoT = physConfig != null && physConfig.activeQoT();
-
+        // Blocking cause tracked across all attempts (the last specific failure wins)
+        BlockingCause currentCause = BlockingCause.OTHER;
+        Integer currentCoreId = null;
         boolean foundPathAndMod = false;
         boolean foundFreeSlots = false;
         Integer lastAttemptedCore = null;
 
-        for (Path path : candidatePaths) {
-            // 3. Modulation Loop (Interleaved with Core, Spectrum and QoT)
-            // Sort available modulations by spectral efficiency (M) descending
-            List<ModulationFormat> availableModulations = cp.getTopology().modulations().stream()
-                .sorted(Comparator.comparingDouble(ModulationFormat::m).reversed())
-                .toList();
+        int passes = regeneratorAssignment == null ? 1 : 2;
+        for (int pass = 0; pass < passes; pass++) {
+            boolean withRegenerators = pass == 1;
 
-            for (ModulationFormat mod : availableModulations) {
-                // a. Distance check (only bypass if no regenerator assignment is configured)
-                if (path.getLength() > mod.maxReach() && regeneratorAssignment == null) continue;
-
-                foundPathAndMod = true;
-
-                // b. Calculate slots required
-                int bitsPerSymbol = mod.getBitsPerSymbol();
-                int numSlots = (int) Math.ceil((bitRate * 1E9) / (bitsPerSymbol * cp.getSlotBandwidth()));
-                numSlots += cp.getGuardBand();
-
-                // c. Iterate through candidate Cores provided by the strategy
-                List<Integer> candidateCores = coreAssignment.selectCores(cp, path);
-                for (Integer coreId : candidateCores) {
-                    lastAttemptedCore = coreId;
-
-                    // d. Spectrum Assignment
-                    SpectrumInterval slots = spectrumAssignment.findSlots(cp, path, coreId, numSlots);
-                    if (slots == null) continue;
-
-                    foundFreeSlots = true;
-
-                    List<Node> regens = List.of();
+            for (Path path : candidatePaths) {
+                // 3. Modulation loop: candidate formats and their order come from the configured policy
+                for (ModulationFormat mod : modulationSelection.candidateFormats(cp, path, bitRate)) {
                     boolean reachViolated = path.getLength() > mod.maxReach();
+                    if (reachViolated && !withRegenerators) continue;
 
-                    if (reachViolated) {
-                        if (regeneratorAssignment == null) continue;
-                        regens = regeneratorAssignment.assignRegenerators(cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
-                        if (regens == null) continue;
-                    }
+                    foundPathAndMod = true;
+                    int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp);
 
-                    // e. QoT Validation
-                    if (checkQoT) {
-                        double snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
-                        if (snr < mod.getSnrThresholdLinear()) {
-                            // If we haven't tried assigning regenerators yet, let's try now to see if they can fix the QoT
-                            if (!reachViolated && regeneratorAssignment != null) {
-                                regens = regeneratorAssignment.assignRegenerators(cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
-                                if (regens != null && !regens.isEmpty()) {
-                                    snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
-                                    if (snr >= mod.getSnrThresholdLinear()) {
-                                        // Passed with regenerators!
-                                        List<Integer> coreIndices = new ArrayList<>();
-                                        for (int i = 0; i < path.links().size(); i++) {
-                                            coreIndices.add(coreId);
-                                        }
-                                        return new AllocationResult(
-                                            source, destination, path.links(), coreIndices, 
-                                            slots.start(), slots.end(), mod, bitRate, regens
-                                        );
-                                    }
-                                }
-                            }
+                    // 4. Core loop, in the order given by the core assignment strategy
+                    for (Integer coreId : coreAssignment.selectCores(cp, path)) {
+                        lastAttemptedCore = coreId;
 
-                            // Check if it would pass without crosstalk to isolate the cause
-                            if (physConfig.activeXT()) {
-                                double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
-                                if (snrNoXt >= mod.getSnrThresholdLinear()) {
-                                    currentCause = BlockingCause.CROSSTALK;
-                                    currentCoreId = coreId;
-                                    continue;
-                                }
-                            }
-                            currentCause = BlockingCause.QOT_NEW;
+                        // 5. Spectrum assignment
+                        SpectrumInterval slots = spectrumAssignment.findSlots(cp, path, coreId, numSlots);
+                        if (slots == null) continue;
+                        foundFreeSlots = true;
+
+                        // 6. Regenerator placement (pass 2 only)
+                        List<Node> regens = List.of();
+                        if (withRegenerators) {
+                            regens = regeneratorAssignment.assignRegenerators(
+                                    cp, path, coreId, mod, slots.start(), slots.end(), bitRate);
+                            // null: no feasible placement; empty: transparent, already evaluated in pass 1
+                            if (regens == null || regens.isEmpty()) continue;
+                        }
+
+                        // 7. QoT validation (new circuit and active circuits)
+                        BlockingCause failure = evaluate(cp, path, regens, coreId, slots, mod, bitRate);
+                        if (failure != null) {
+                            currentCause = failure;
                             currentCoreId = coreId;
-                            continue; // Try next core or modulation
+                            continue;
                         }
-                    }
 
-                    // e2. Check QoT of other active circuits
-                    boolean otherQotOk = true;
-                    if (checkQoT && physConfig.activeQoTForOther()) {
-                        applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, true);
-                        for (Circuit activeCircuit : cp.getActiveCircuits()) {
-                            double activeSnr = PhysicalLayerModel.predictSNR(
-                                cp, new Path(activeCircuit.getPath()), activeCircuit.getRegeneratorNodes(),
-                                activeCircuit.getCoreIndices().get(0), activeCircuit.getStartSlot(), activeCircuit.getEndSlot(),
-                                activeCircuit.getModulation(), activeCircuit.getBitRate()
-                            );
-                            if (activeSnr < activeCircuit.getModulation().getSnrThresholdLinear()) {
-                                otherQotOk = false;
-                                currentCause = BlockingCause.QOT_OTHERS;
-                                if (physConfig.activeXTForOther()) {
-                                    double activeSnrNoXt = PhysicalLayerModel.predictSnrWithoutXt(
-                                        cp, new Path(activeCircuit.getPath()), activeCircuit.getRegeneratorNodes(),
-                                        activeCircuit.getCoreIndices().get(0), activeCircuit.getStartSlot(), activeCircuit.getEndSlot(),
-                                        activeCircuit.getModulation(), activeCircuit.getBitRate()
-                                    );
-                                    if (activeSnrNoXt >= activeCircuit.getModulation().getSnrThresholdLinear()) {
-                                        currentCause = BlockingCause.XT_OTHERS;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                        applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, false);
+                        // 8. Success
+                        return new AllocationResult(
+                            source, destination, path.links(), getCoreIndicesList(path.links().size(), coreId),
+                            slots.start(), slots.end(), mod, bitRate, regens
+                        );
                     }
-
-                    if (!otherQotOk) {
-                        currentCoreId = coreId;
-                        continue; // Try next core or modulation
-                    }
-
-                    // f. Success: Return Solution
-                    List<Integer> coreIndices = new ArrayList<>();
-                    for (int i = 0; i < path.links().size(); i++) {
-                        coreIndices.add(coreId);
-                    }
-
-                    return new AllocationResult(
-                        source, destination, path.links(), coreIndices, 
-                        slots.start(), slots.end(), mod, bitRate, regens
-                    );
                 }
             }
         }
@@ -198,8 +137,67 @@ public class StandardIntegratedRMSCA implements IRMSCA {
     }
 
     /**
-     * Temporarily applies (or removes) the physical footprint of the candidate circuit so the QoT of the
-     * already established circuits can be re-evaluated (QoTO).
+     * Validates the physical layer of a candidate allocation.
+     *
+     * @return {@code null} if the candidate is feasible, otherwise the blocking cause:
+     *         {@link BlockingCause#QOT_NEW} / {@link BlockingCause#CROSSTALK} for the new circuit and
+     *         {@link BlockingCause#QOT_OTHERS} / {@link BlockingCause#XT_OTHERS} for active circuits.
+     */
+    private BlockingCause evaluate(ControlPlane cp, Path path, List<Node> regens, int coreId,
+                                   SpectrumInterval slots, ModulationFormat mod, double bitRate) {
+        PhysicalLayerConfig physConfig = cp.getPhysicalLayerConfig();
+        if (physConfig == null || !physConfig.activeQoT()) return null;
+
+        // a. SNR of the new circuit (min over the transparent segments)
+        double snr = PhysicalLayerModel.predictSNR(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
+        if (snr < mod.getSnrThresholdLinear()) {
+            if (physConfig.activeXT()) {
+                double snrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, path, regens, coreId, slots.start(), slots.end(), mod, bitRate);
+                if (snrNoXt >= mod.getSnrThresholdLinear()) return BlockingCause.CROSSTALK;
+            }
+            return BlockingCause.QOT_NEW;
+        }
+
+        // b. Crosstalk of the new circuit against the threshold of its modulation format
+        if (physConfig.activeXT()) {
+            double xt = PhysicalLayerModel.predictXtRatio(cp, path, regens, coreId, slots.start(), slots.end());
+            if (xt > mod.getCrosstalkThresholdLinear()) return BlockingCause.CROSSTALK;
+        }
+
+        // c. SNR and crosstalk of the active circuits with the candidate's interference applied
+        if (!physConfig.activeQoTForOther()) return null;
+        applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, true);
+        try {
+            for (Circuit active : cp.getActiveCircuitsView()) {
+                Path activePath = new Path(active.getPath());
+                int activeCore = active.getCoreIndices().get(0);
+                ModulationFormat activeMod = active.getModulation();
+
+                double activeSnr = PhysicalLayerModel.predictSNR(cp, activePath, active.getRegeneratorNodes(),
+                        activeCore, active.getStartSlot(), active.getEndSlot(), activeMod, active.getBitRate());
+                if (activeSnr < activeMod.getSnrThresholdLinear()) {
+                    if (physConfig.activeXTForOther()) {
+                        double activeSnrNoXt = PhysicalLayerModel.predictSnrWithoutXt(cp, activePath, active.getRegeneratorNodes(),
+                                activeCore, active.getStartSlot(), active.getEndSlot(), activeMod, active.getBitRate());
+                        if (activeSnrNoXt >= activeMod.getSnrThresholdLinear()) return BlockingCause.XT_OTHERS;
+                    }
+                    return BlockingCause.QOT_OTHERS;
+                }
+                if (physConfig.activeXTForOther()) {
+                    double activeXt = PhysicalLayerModel.predictXtRatio(cp, activePath, active.getRegeneratorNodes(),
+                            activeCore, active.getStartSlot(), active.getEndSlot());
+                    if (activeXt > activeMod.getCrosstalkThresholdLinear()) return BlockingCause.XT_OTHERS;
+                }
+            }
+        } finally {
+            applyTemporaryCircuit(cp, path, coreId, slots.start(), slots.end(), mod, bitRate, regens, false);
+        }
+        return null;
+    }
+
+    /**
+     * Temporarily applies (or removes) the physical footprint of the candidate circuit (NLI, crosstalk and
+     * amplifier load) so the QoT of the already established circuits can be re-evaluated (QoTO).
      */
     private void applyTemporaryCircuit(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, ModulationFormat mod, double bitRate, List<Node> regens, boolean add) {
         if (cp.getPhysicalLayerConfig() == null) return;

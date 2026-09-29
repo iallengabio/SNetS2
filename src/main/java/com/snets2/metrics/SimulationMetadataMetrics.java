@@ -44,10 +44,11 @@ public class SimulationMetadataMetrics {
     public synchronized void recordObservation(ControlPlane cp, double currentTime) {
         double deltaT = currentTime - lastObservationTime;
         int activeCount = cp.getActiveCircuits().size();
-        
-        history.add(new HistoryPoint(currentTime, activeCount));
-        
+
         if (deltaT > 0) {
+            // The observed state has been valid since the previous observation (the caller observes
+            // before mutating), so the history point starts at lastObservationTime.
+            history.add(new HistoryPoint(lastObservationTime, activeCount));
             weightedActiveRequests += activeCount * deltaT;
             totalObservationTime += deltaT;
         }

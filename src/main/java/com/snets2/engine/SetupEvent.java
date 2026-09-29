@@ -10,10 +10,12 @@ import com.snets2.model.Circuit;
  */
 public class SetupEvent extends Event {
     private final AllocationResult result;
+    private final boolean measured; // false if the originating arrival belonged to the warm-up period
 
-    public SetupEvent(double time, AllocationResult result) {
+    public SetupEvent(double time, AllocationResult result, boolean measured) {
         super(time);
         this.result = result;
+        this.measured = measured;
     }
 
     @Override
@@ -37,7 +39,7 @@ public class SetupEvent extends Event {
             circuit.getModulation(), circuit.getBitRate());
         
         double xtDb = com.snets2.metrics.PhysicalLayerModel.predictXT(
-            new com.snets2.rmsca.routing.Path(circuit.getPath()), 
+            engine.getControlPlane(), new com.snets2.rmsca.routing.Path(circuit.getPath()), 
             circuit.getRegeneratorNodes(),
             circuit.getCoreIndices().get(0), circuit.getStartSlot(), circuit.getEndSlot());
             
@@ -50,10 +52,10 @@ public class SetupEvent extends Event {
             // Launch power actually used by the circuit (differs from 'power' when the PSD is fixed)
             powerDbm = com.snets2.metrics.PhysicalLayerModel.wattsToDbm(
                 com.snets2.metrics.PhysicalLayerModel.circuitLaunchPower(
-                    engine.getControlPlane().getPhysicalLayerConfig(), circuit.getModulation(), circuit.getBitRate()));
+                    engine.getControlPlane().getPhysicalLayerConfig(), circuit));
         }
 
-        if (!engine.isWarmUp()) {
+        if (measured) {
             if (engine.isActiveMetric("CrosstalkStatistics")) {
                 engine.getMetricsManager().getPhysicalLayer().recordCircuitSetup(
                     circuit.getSource().getId(), circuit.getDestination().getId(), 
@@ -71,6 +73,10 @@ public class SetupEvent extends Event {
             }
         }
 
+        // --- TIME-WEIGHTED OBSERVATION (must precede the mutation) ---
+        // The state that was valid during (lastObservation, time] is the state BEFORE this setup.
+        new ResourceUtilizationObservationEvent(time).execute(engine);
+
         // --- COMMIT MUTATION ---
         engine.getControlPlane().establishCircuit(circuit);
 
@@ -85,11 +91,8 @@ public class SetupEvent extends Event {
         double holdTime = engine.nextHoldTime();
         engine.schedule(new DepartureEvent(time + holdTime, circuitId));
 
-        if (!engine.isWarmUp() && engine.isActiveMetric("SimulationMetadata")) {
+        if (measured && engine.isActiveMetric("SimulationMetadata")) {
             engine.getMetricsManager().getSimulationMetadata().recordRequestDuration(holdTime, circuit.getBitRate());
         }
-
-        // 4. Trigger observation following the organizational pattern
-        engine.schedule(new ResourceUtilizationObservationEvent(time));
     }
 }
