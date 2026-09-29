@@ -43,10 +43,12 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 Esta classe implementa a interface `IRMSCA` e atua como um coordenador sequencial:
 1.  **Check:** Verifica disponibilidade de Tx/Rx nos nós.
 2.  **Routing:** Invoca `IRouting`.
-3.  **Modulation:** obtém de `IModulationSelection.candidateFormats` a lista ordenada de formatos a tentar (padrão: `distance-adaptive`).
-4.  **Core:** Invoca `ICoreAssignment`.
-5.  **Spectrum:** Invoca `ISpectrumAssignment`.
-6.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).
+3.  **Passadas:** a passada 1 é transparente, só com formatos que alcançam o destino. A passada 2 só roda se houver `IRegeneratorAssignment` e a passada 1 falhar; ela tenta todos os formatos com regeneradores. Candidatos da passada 2 que não precisam de regenerador são pulados, porque já foram avaliados na passada 1.
+4.  **Modulation:** obtém de `IModulationSelection.candidateFormats` a lista ordenada de formatos a tentar (padrão: `distance-adaptive`); o nº de slots vem do `SlotCalculator`.
+5.  **Core:** Invoca `ICoreAssignment`.
+6.  **Spectrum:** Invoca `ISpectrumAssignment`.
+7.  **Validação (`evaluate`):** um único método para todos os candidatos. Verifica o SNR e o XT do novo circuito contra os limiares da sua modulação. Depois aplica temporariamente o ruído do candidato e verifica o SNR e o XT de cada circuito ativo, iterando a visão somente-leitura `ControlPlane.getActiveCircuitsView()`. O ruído temporário é removido num bloco `finally`.
+8.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).
 
 ---
 

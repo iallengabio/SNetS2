@@ -81,7 +81,9 @@ Contém todos os parâmetros fundamentais para a avaliação da Qualidade de Tra
 ```
 * **Parâmetros Baseados em Componentes:** Perdas de fibra, não-linearidades, dispersão e parâmetros dos amplificadores ópticos.
 * **Parâmetros MC-EON / XT:** `propagationConstant`, `bendingRadius`, `couplingCoefficient`, `corePitch` são os coeficientes necessários para o cálculo matemático do Crosstalk estatístico entre núcleos.
-* **Granularidade e Transceptores:** `guardBand` (número de slots vazios para evitar interferência adjacente) e `bvtSpectralWidth` (amplitude espectral ocupada por um slot do Bandwidth Variable Transceiver).
+* **Granularidade e Transceptores:** `guardBand` (número de slots vazios para evitar interferência adjacente) e `bvtSpectralWidth` (largura de um slot, em Hz).
+* **Número de slots por requisição:** $n = \lceil R\,(1+\text{rateOfFEC}) / (\text{polarizationModes}\cdot\log_2 M\cdot f_{slot}) \rceil + \text{guardBand}$. `rateOfFEC` é a **fração de overhead** do FEC (0,25 = 25 %). Se `polarizationModes` não for informado (0), assume-se 1 polarização.
+* **Chaves reservadas** (aceitas e ignoradas, com aviso quando diferentes do padrão): `physicalLayerModel`, `crosstalkModel`, `typeOfTestQoT`, `powerSaturationOfOpticalAmplifier`, `noiseFactorModelParameterA1/A2`, `typeOfAmplifierGain`, `switchInsertionLoss`, `fixedPowerSpectralDensity`, `referenceBandwidthForPowerSpectralDensity`.
 
 ---
 
@@ -91,14 +93,13 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
 ```json
 "simulation": {
   "requests": 100000,
-  "routing": "djk",
-  "kRouting": "newksp",
+  "warmUpRequests": 5000,
+  "totalSlots": 320,
+  "routing": "newksp",
   "spectrumAssignment": "randomfit",
-  "coreAndSpectrumAssignment": "csbasdm",
+  "coreAndSpectrumAssignment": "mincrosstalkcore",
   "integratedRMSCA": "standard",
-  "modulationSelection": "modulationbyqotv2",
-  "reallocation": "fsalfav1",
-  "powerAssignment": "apamem",
+  "modulationSelection": "distance-adaptive",
   "regeneratorAssignment": "aar",
   "activeMetrics": {
     "BlockingProbability": true,
@@ -110,15 +111,23 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
     "TransmittersReceiversRegeneratorsUtilization": false,
     "ModulationUtilization": true,
     "ConsumedEnergy": false,
-    "GroomingStatistics": false,
-    "DataSetInformation": false,
-    "CrosstalkStatistics": true
+    "CrosstalkStatistics": true,
+    "SimulationMetadata": false
   }
 }
 ```
 * **requests:** Critério de parada primário da simulação (número total de requisições geradas).
-* **Algoritmos (RMSCA):** Strings que identificam as heurísticas que serão instanciadas via Reflection/Factory Pattern no simulador.
-* **activeMetrics:** Sistema de *opt-in* para métricas. Desativar métricas complexas (ex: fragmentação) pode melhorar significativamente a performance da simulação.
+* **warmUpRequests:** número de requisições iniciais descartadas das métricas (deve ser `< requests`). **totalSlots:** slots por núcleo.
+* **Algoritmos (RMSCA):** IDs registrados na `AlgorithmFactory`:
+  * `integratedRMSCA`: `standard`.
+  * `routing`: `djk`, `ksp`/`newksp` (k = 3).
+  * `modulationSelection`: `distance-adaptive` (padrão) ou `fixed`.
+  * `coreAndSpectrumAssignment`: `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`.
+  * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`.
+  * `regeneratorAssignment`: `aar` (opcional).
+
+  As chaves `kRouting`, `grooming`, `reallocation`, `powerAssignment` e `networkType` são aceitas, mas **ignoradas**; o simulador emite um aviso.
+* **activeMetrics:** liga ou desliga cada métrica. Uma métrica **omitida é considerada ativa**. Desativar métricas complexas (ex.: fragmentação) melhora significativamente o desempenho. Nomes desconhecidos geram aviso.
 
 ---
 
@@ -129,14 +138,13 @@ Controla o gerador de eventos da simulação, definindo a carga e a distribuiç�
   "loadDistributionPerPair": "uniform",
   "load": 1000,
   "bitRates": [
-```
     {"value": 100.0, "weight": 1.0},
     {"value": 200.0, "weight": 0.5},
     {"value": 400.0, "weight": 0.25}
   ]
 }
 ```
-* **Carga (Load):** O usuário deve definir *obrigatoriamente apenas um* dentre `load` ou `loadByPair`. Ambos são valores em Erlangs.
+* **Carga (`load`):** carga **total** oferecida à rede, em Erlangs. É obrigatória. Os pares (origem, destino) são sorteados uniformemente (`loadDistributionPerPair: "uniform"`, a única opção suportada). `loadByPair` não é suportado e gera erro de validação.
 * **bitRates:** Uma lista de objetos que definem as larguras de banda requisitadas.
     * `value`: A taxa de bits da requisição em Gbps.
     * `weight`: O peso estatístico desta largura de banda. A probabilidade de uma requisição ter um determinado `value` é dada por $P(v_i) = \frac{weight_i}{\sum weight}$. No exemplo acima, requisições de 100G são 2x mais prováveis que as de 200G e 4x mais prováveis que as de 400G.
@@ -158,3 +166,17 @@ Responsável por automatizar a execução de múltiplas configurações sem nece
 * **Produto Cartesiano:** O simulador cria combinações de todas as listas. No exemplo acima, serão gerados 9 cenários únicos (3 cargas $\times$ 3 algoritmos de espectro).
 * **Replications:** Para cada um dos 9 cenários, o simulador executará o experimento 10 vezes (provavelmente paralelizado via `simulation.threads`). Cada replicação utilizará uma **semente de aleatoriedade diferente**.
 * **Estatísticas Finais:** Ao final de todas as replicações, o simulador agrega os resultados das métricas ativas e calcula a Média, Desvio Padrão e Intervalo de Confiança.
+
+---
+
+## 7. Validação da Configuração
+Antes de executar qualquer replicação, o `ExperimentalPlanner` valida **todos** os cenários do *sweep* com o `ConfigValidator`.
+* **Erros** (a execução é abortada com a lista completa):
+  * `traffic.load` ausente ou ≤ 0; `loadByPair`; distribuição diferente de `uniform`.
+  * Menos de 2 nós; nós ou enlaces duplicados, desconhecidos ou com comprimento ≤ 0.
+  * Adjacência de núcleos assimétrica ou com núcleo inexistente.
+  * Modulação com `M < 2` ou `maxRange ≤ 0`.
+  * `warmUpRequests ≥ requests`.
+  * IDs de algoritmo ausentes.
+  * Parâmetros físicos obrigatórios para os efeitos ativados (ASE, NLI, XT).
+* **Avisos:** chaves reservadas com valor diferente do padrão e nomes desconhecidos em `activeMetrics`.

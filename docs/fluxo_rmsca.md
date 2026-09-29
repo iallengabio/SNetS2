@@ -15,7 +15,7 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
 5. **Cálculo de Demanda Espectral**: Determinação do número de slots de espectro requeridos.
 6. **Loop de Núcleos (ICoreAssignment)**: Varredura de núcleos candidatos do cabo de fibra multicore.
 7. **Atribuição Espectral (ISpectrumAssignment)**: Busca de slots contíguos e contínuos livres.
-8. **Atribuição de Regeneradores (IRegeneratorAssignment)**: Alocação de regeneradores se o alcance máximo for violado.
+8. **Atribuição de Regeneradores (IRegeneratorAssignment)**: só na segunda passada, quando nenhuma solução transparente foi encontrada.
 9. **Validação de QoT (Quality of Transmission)**:
    - **Canal Próprio**: Predição de SNR linear e crosstalk inter-núcleo (XT).
    - **Canais Vizinhos**: Predição do impacto de interferência nas conexões já ativas na rede.
@@ -36,42 +36,43 @@ O algoritmo segue uma estratégia estruturada em etapas lógicas, executadas de 
    ├──> 3. Cálculo de Caminhos (IRouting)
    │       Se a lista de caminhos candidatos for vazia ──> [BLOQUEIO: NO_PATH]
    │
-   └──> 4. Laço: Iterar sobre cada Caminho Candidato
+   └──> 4. Duas passadas: (P1) transparente; (P2) com regeneradores, só se P1 falhar
+           │     e houver `regeneratorAssignment` configurado
            │
-           └──> 5. Laço: Iterar sobre cada Modulação (ordenadas da mais eficiente para a menos eficiente)
+           └──> 5. Laço: Iterar sobre cada Caminho Candidato
                    │
-                   ├──> a. Teste de Alcance Físico (Reach)
-                   │       Se Distância > Alcance Máximo E sem Regenerador ativo ──> Pular Modulação
-                   │
-                   ├──> b. Cálculo do número de slots requeridos
-                   │
-                   └──> c. Laço: Iterar sobre cada Núcleo (Core) Candidato
+                   └──> 6. Laço: Iterar sobre cada Modulação (ordem dada por IModulationSelection.candidateFormats)
                            │
-                           ├──> i. Atribuição Espectral (ISpectrumAssignment)
-                           │       Buscar slots contíguos e contínuos livres.
-                           │       Se não encontrar ──> Pular Core (Causa temporária: FRAGMENTATION)
+                           ├──> a. Teste de Alcance Físico (Reach)
+                           │       P1: se Distância > Alcance Máximo ──> Pular Modulação
+                           │       P2: todas as modulações são tentadas (com regeneração)
                            │
-                           ├──> ii. Alocação de Regeneradores (se Distância > Alcance Máximo)
-                           │         Tentar alocar nós intermediários com regeneração.
-                           │         Se falhar ──> Pular Core
+                           ├──> b. Número de slots: ⌈R(1+FEC)/(N_pol·log2 M·f_slot)⌉ + guarda (SlotCalculator)
                            │
-                           ├──> iii. Validação de QoT do Novo Canal (Se QoT ativo)
-                           │          Calcular a SNR predita.
-                           │          Se SNR < Limiar Mínimo:
-                           │             - Tentar regeneradores adicionais para restaurar sinal.
-                           │             - Se persistir a falha:
-                           │                 Isolar a causa (CROSSTALK se passar sem XT, senão QOT_NEW).
-                           │                 Pular Core
-                           │
-                           ├──> iv. Validação de QoT nos Canais Vizinhos (Se QoT ativo para outros)
-                           │         Aplicar ruído temporário (NLI e XT) nas fibras adjacentes.
-                           │         Calcular se alguma conexão ativa degrada abaixo do limiar.
-                           │         Remover ruído temporário.
-                           │         Se degradar ──> Isolar causa (XT_OTHERS ou QOT_OTHERS) e Pular Core
-                           │
-                           └──> v. SUCESSO DE ALOCAÇÃO
-                                   Retorna imediatamente AllocationResult de sucesso.
+                           └──> c. Laço: Iterar sobre cada Núcleo (Core) Candidato
+                                   │
+                                   ├──> i. Atribuição Espectral (ISpectrumAssignment)
+                                   │       Se não encontrar ──> Pular Core (causa provisória: FRAGMENTATION)
+                                   │
+                                   ├──> ii. (P2) Alocação de Regeneradores (AAR: por alcance e por SNR)
+                                   │         Se falhar, ou se não precisar de regenerador (já avaliado em P1) ──> Pular Core
+                                   │
+                                   ├──> iii. evaluate(): validação física do candidato (se activeQoT)
+                                   │         - SNR do novo canal < limiar ──> CROSSTALK (se passaria sem XT) ou QOT_NEW
+                                   │         - XT do novo canal > limiar XT da modulação ──> CROSSTALK
+                                   │         - Aplica o ruído temporário do candidato (NLI/XT) e, para cada circuito ativo:
+                                   │             SNR < limiar ──> XT_OTHERS (se passaria sem XT) ou QOT_OTHERS
+                                   │             XT > limiar XT da sua modulação ──> XT_OTHERS
+                                   │           (o ruído temporário é removido num bloco finally)
+                                   │         Se falhar ──> Pular Core
+                                   │
+                                   └──> iv. SUCESSO DE ALOCAÇÃO
+                                           Retorna imediatamente AllocationResult de sucesso.
 ```
+
+Consequências do desenho em duas passadas:
+* Uma modulação menos eficiente que alcança o destino **sem** regeneração é sempre preferida a uma solução regenerada.
+* Todo candidato, inclusive os regenerados, passa pela mesma validação da QoT dos circuitos ativos.
 
 ---
 

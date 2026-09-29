@@ -56,27 +56,23 @@ $$ \mu = \frac{8}{27}\,\frac{\gamma^2 L_{eff}^2}{\pi |\beta_2| L_{eff,a}}, \qqua
 ---
 
 ## 5. Crosstalk Inter-Core ($I_{XT}$)
-Especificidade das Redes Ópticas Multicore (MC-EON), o Crosstalk ocorre quando fótons "vazam" de um núcleo espacial para um núcleo adjacente.
+Especificidade das Redes Ópticas Multicore (MC-EON), o Crosstalk ocorre quando potência "vaza" de um núcleo espacial para um núcleo adjacente.
 
-Baseado no modelo de Lobato et al., o acoplamento de potência $P_{xt}$ que um circuito $i$ (no núcleo central) recebe de um circuito $j$ (num núcleo vizinho adjacente) depende fortemente da sobreposição de espectro:
+O modelo é de acoplamento de potência para XT pequeno ($hL \ll 1$). O coeficiente é $h = 2\kappa^2 R/(\beta \Lambda)$, com $\kappa$ = `couplingCoefficient`, $R$ = `bendingRadius`, $\beta$ = `propagationConstant` e $\Lambda$ = `corePitch`. Um circuito $j$ num núcleo adjacente injeta, em cada slot que ocupa, a densidade
 
-$$ P_{XT\_ij} = P_j \times I_{soij} \times h \times L $$
+$$ I_{XT,j} = \frac{P_j\, h\, L}{B_j} $$
 
-Onde:
-*   $P_j$: Potência do circuito vizinho.
-*   $I_{soij}$: Índice de Sobreposição Espectral (porcentagem de slots que compartilham a mesma frequência).
-*   $h$: Coeficiente de acoplamento de potência intrínseco da fibra.
-*   $L$: Comprimento físico do enlace.
+em que $L$ é o comprimento do enlace e $B_j$ a largura de sinal de $j$. As contribuições somam-se sobre os vizinhos e os enlaces. Para a vítima $i$, a média sobre os seus slots dá a sobreposição espectral (índice $I_{so}$). A **razão de crosstalk** adimensional é
 
-O ruído total de Crosstalk em $i$ é a soma de todos os $P_{XT}$ recebidos de todos os núcleos adjacentes.
-A conversão para densidade para o cálculo do SNR é dada por:
-$$ I_{XT} = \frac{\sum P_{XT}}{B_{si}} $$
+$$ XT_i = \frac{\sum_{enlaces} \overline{I_{XT}}}{I_{ch,i}}, \qquad I_{ch,i} = \frac{P}{B_i} $$
+
+Para um único vizinho totalmente sobreposto e de mesma largura, $XT = hL$. Com os parâmetros de exemplo ($h = 6{,}4\cdot10^{-9}$ m⁻¹), isso dá −31,9 dB em 100 km. O XT entra no SNR como ruído ($I_{XT}$) e é também comparado com o limiar de XT da modulação (§6). Com regeneração, vale o maior XT entre os segmentos transparentes.
 
 ---
 
 ## 6. Viabilidade de Conexão
-Para que o algoritmo RMSCA aceite uma alocação, o OSNR calculado para o circuito proposto deve satisfazer:
+Para que o algoritmo RMSCA aceite uma alocação, o circuito proposto (e, com `activeQoTForOther`/`activeXTForOther`, cada circuito ativo) deve satisfazer:
 
-$$ OSNR_{dB} = 10 \times \log_{10}(SNR) \ge SNR_{threshold\_mod} $$
+$$ SNR_{dB} = 10 \log_{10}(SNR) \ge SNR_{th}(mod) \qquad\text{e}\qquad XT_{dB} = 10\log_{10}(XT) \le XT_{th}(mod) \;\;(\text{se } activeXT) $$
 
-Onde $SNR_{threshold\_mod}$ é o limiar de tolerância específico do formato de modulação selecionado.
+onde $SNR_{th}$ (campo `SNR`) e $XT_{th}$ (campo `XT`) são os limiares do formato de modulação. O SNR é calculado na largura de sinal $B = (n - G)\,f_{slot}$, ou seja, sem os slots de guarda. Com regeneração, vale o **menor** SNR entre os segmentos transparentes.

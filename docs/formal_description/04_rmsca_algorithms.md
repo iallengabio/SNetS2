@@ -28,11 +28,11 @@ Para garantir a interoperabilidade, cada tipo de algoritmo deve implementar uma 
 O fluxo padrão executado pelo Plano de Controle ao receber uma `ArrivalEvent` é:
 
 1.  **Cálculo de Caminhos:** O algoritmo de *Routing* gera $k$ caminhos.
-2.  **Loop de Tentativas:** Para cada caminho candidato:
-    a. **Seleção de Modulação:** Determina a modulação viável para a distância do caminho.
-    b. **Atribuição de Core:** Escolhe o núcleo alvo.
-    c. **Alocação Espectral:** Tenta encontrar slots contíguos no núcleo/caminho escolhido.
-    d. **Validação de QoT:** O Plano de Controle verifica se a solução atende aos requisitos físicos (ASE, NLI, XT).
+2.  **Loop de Tentativas** em duas passadas. A primeira é transparente. A segunda usa regeneradores e só roda se houver `regeneratorAssignment` e a primeira falhar. Em cada passada, para cada caminho candidato:
+    a. **Seleção de Modulação:** a política configurada fornece a lista ordenada de formatos. Na passada transparente, só entram os que alcançam o destino (`comprimento ≤ maxRange`).
+    b. **Atribuição de Core:** a estratégia fornece a lista ordenada de núcleos.
+    c. **Alocação Espectral:** tenta encontrar slots contíguos e contínuos no núcleo/caminho escolhido.
+    d. **Validação de QoT:** SNR (ASE + NLI + XT) e XT do novo circuito contra os limiares da sua modulação; em seguida, SNR e XT de todos os circuitos ativos com a interferência do candidato aplicada.
 3.  **Resultado:** Se uma combinação válida for encontrada, o circuito é agendado. Caso contrário, a requisição é bloqueada.
 
 ---

@@ -13,7 +13,13 @@
 | CR-03 | ✅ Corrigido: o RMSCA usa `IModulationSelection.candidateFormats` (padrão `distance-adaptive`); `SlotCalculator` centraliza o nº de slots | `StandardIntegratedRMSCA`; teste L8-b |
 | CR-04 | ✅ Corrigido: flag de medição decidida na chegada e drenagem dos eventos da última requisição | `ArrivalEvent`, `SetupEvent`, `BlockEvent`, `SimulationEngine.run`; testes L1-c |
 | CR-08 | ✅ Corrigido: `RandomizedAlgorithm` + sementes derivadas da replicação | `AlgorithmFactory.seedRandomizedAlgorithms`; teste L1-f |
-| Demais | ⏳ Pendentes | — |
+| CR-05 | ✅ Corrigido: XT como razão adimensional (`predictXtRatio`, `predictXT` em dB) e limiar de XT da modulação aplicado ao novo circuito (`CROSSTALK`) e aos ativos (`XT_OTHERS`) | `PhysicalLayerModel`, `StandardIntegratedRMSCA.evaluate`; `RmscaPhysicalConstraintsTest` (L9-e/f/j) |
+| CR-06 | ✅ Corrigido: validação única (`evaluate`) para todos os candidatos, inclusive os regenerados; ruído temporário removido em `finally`; ativos iterados sem cópia | `StandardIntegratedRMSCA`; `RmscaPhysicalConstraintsTest` |
+| CR-07 | ✅ Corrigido: duas passadas (transparente → com regeneradores) | `StandardIntegratedRMSCA`; `RmscaPhysicalConstraintsTest` |
+| CR-09 | ✅ Corrigido: `ConfigValidator` com erros (*fail-fast*) e avisos para chaves ignoradas | `ExperimentalPlanner`; `ConfigValidatorTest` |
+| CR-10 | ✅ Corrigido: nº de slots com `polarizationModes` e `rateOfFEC`; PSD calculada na largura de sinal (sem banda de guarda) | `SlotCalculator`, `PhysicalLayerModel.signalBandwidth`; `SlotCalculatorTest` (L0-6) |
+| CR-12 | 🟡 Parcial: `try/finally` e iteração sem cópia; a verificação continua O(N_ativos) por candidato | — |
+| Demais | ⏳ Pendentes (CR-11, CR-13 a CR-21) | — |
 
 ## 0. Resumo executivo
 
