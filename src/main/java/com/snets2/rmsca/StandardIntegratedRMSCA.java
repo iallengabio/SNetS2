@@ -83,7 +83,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                 foundPathAndMod = true;
 
                 // b. Calculate slots required
-                int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp.getSlotBandwidth(), cp.getGuardBand());
+                int numSlots = SlotCalculator.requiredSlots(bitRate, mod, cp);
 
                 // c. Iterate through candidate Cores provided by the strategy
                 List<Integer> candidateCores = coreAssignment.selectCores(cp, path);

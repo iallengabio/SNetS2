@@ -56,8 +56,8 @@ public class PhysicalLayerModel {
         
         double pXt = pLinear * hFiber * (link.getLength() * 1000.0); // Length in meters
         
-        double bandwidth = (circuit.getEndSlot() - circuit.getStartSlot() + 1) * config.bvtSpectralWidth();
-        
+        double bandwidth = signalBandwidth(circuit.getStartSlot(), circuit.getEndSlot(), config.guardBand(), config.bvtSpectralWidth());
+
         return pXt / bandwidth;
     }
 
@@ -139,7 +139,7 @@ public class PhysicalLayerModel {
         if (!config.activeNLI()) return mask;
 
         double slotWidth = config.bvtSpectralWidth();
-        double bandwidth = (circuit.getEndSlot() - circuit.getStartSlot() + 1) * slotWidth;
+        double bandwidth = signalBandwidth(circuit.getStartSlot(), circuit.getEndSlot(), config.guardBand(), slotWidth);
         double g = launchPowerWatts(config) / bandwidth;
         double factor = numberOfSpans(link, config) * nliMu(config) * g * g;
         double center = (circuit.getStartSlot() + circuit.getEndSlot() + 1) / 2.0; // in slot units
@@ -150,6 +150,16 @@ public class PhysicalLayerModel {
             mask[s] = factor * Math.log((deltaF + bandwidth / 2.0) / (deltaF - bandwidth / 2.0));
         }
         return mask;
+    }
+
+    /**
+     * Bandwidth (Hz) actually occupied by the signal of an allocation {@code [startSlot, endSlot]}: the
+     * allocated range includes {@code guardBand} guard slots, which carry no signal power. At least one
+     * slot is always considered. The PSD of the channel is {@code P / signalBandwidth}.
+     */
+    public static double signalBandwidth(int startSlot, int endSlot, int guardBand, double slotWidth) {
+        int allocated = endSlot - startSlot + 1;
+        return Math.max(1, allocated - Math.max(0, guardBand)) * slotWidth;
     }
 
     private static double asinh(double x) {
@@ -209,7 +219,7 @@ public class PhysicalLayerModel {
     private static double predictSegmentSnr(ControlPlane cp, Path path, int coreId, int startSlot, int endSlot, boolean includeXt) {
         PhysicalLayerConfig config = cp.getPhysicalLayerConfig();
         double pLinear = config != null ? launchPowerWatts(config) : 1E-4; // 1E-4 W: legacy fallback
-        double bandwidth = (endSlot - startSlot + 1) * cp.getSlotBandwidth();
+        double bandwidth = signalBandwidth(startSlot, endSlot, cp.getGuardBand(), cp.getSlotBandwidth());
         double iCh = pLinear / bandwidth;
 
         double totalNoiseDensity = 0;
