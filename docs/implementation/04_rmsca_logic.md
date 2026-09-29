@@ -22,9 +22,11 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 - **ModulationResult:** Encapsula o formato escolhido e a contagem de slots necessária.
 
 ### 1.3. Alocação de Core (`com.snets2.rmsca.core`)
-- **ICoreAssignment:** Interface para seleção de núcleos espaciais.
+- **ICoreAssignment:** Interface para seleção de núcleos espaciais. `selectCores(cp, path)` devolve os núcleos em ordem de prioridade. A sobrecarga `selectCores(cp, path, numSlots, spectrumAssignment)`, chamada pelo `StandardIntegratedRMSCA` depois de calcular o número de slots do formato, permite ordenar pelos slots que cada núcleo receberia; o método `default` delega para a versão sem esses dados, então as estratégias existentes não mudam.
 - **FirstFitCoreAssignment:** Percorre os núcleos disponíveis e seleciona o primeiro índice que existe em todos os links do trajeto.
 - **MinCrosstalkCoreAssignment:** Seleciona e ordena os núcleos com base no nível mínimo de interferência crosstalk inter-núcleo (calculado como o total de slots ocupados nos núcleos espacialmente adjacentes ao longo do caminho) (ID: `mincrosstalkcore` / `mincrosstalk`).
+- **PeripheralFirstCoreAssignment** (ID: `peripheralfirstcore`): ordem fixa com os núcleos de menos vizinhos primeiro (guloso: menos vizinhos já ordenados, depois menor grau, depois menor id). Na MCF hexagonal de 7 núcleos: `1, 3, 5, 2, 4, 6, 0`. Expõe `peripheralOrder(path)` e `coreColours(path)` (coloração gulosa em que núcleos adjacentes nunca compartilham cor), reutilizados pelas outras estratégias.
+- **XtAwareCoreAssignment** (ID: `xtawarecore`): para cada núcleo, pede à política espectral configurada o intervalo de `numSlots` slots (First-Fit se a política for `RandomizedAlgorithm`, para não consumir o seu gerador) e calcula o custo $\sum_l L_l \cdot$ (slots ocupados nos núcleos adjacentes dentro do intervalo), lendo os bitsets de `Spectrum` (sempre mantidos, ao contrário dos caches de NLI/XT desde a issue #28). Ordena por custo crescente com `List.sort` estável sobre a ordem peripheral-first; núcleos sem intervalo livre ficam no fim. O intervalo é recalculado no laço do RMSCA, então o custo extra é uma chamada de `findSlots` por núcleo. Fórmula em `docs/formal_description/04_rmsca_algorithms.md`, §3.2.
 
 ### 1.4. Atribuição de Espectro (`com.snets2.rmsca.spectrum`)
 - **ISpectrumAssignment:** Interface para busca de slots contíguos.
@@ -34,6 +36,7 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 - **Reprodutibilidade (`RandomizedAlgorithm`):** `RandomFitSpectrumAssignment` e `RandomFitCoreAssignment` recebem, via `AlgorithmFactory.seedRandomizedAlgorithms`, geradores derivados da semente da replicação. Esses geradores são independentes do gerador de tráfego, então o fluxo de requisições é o mesmo entre algoritmos (números aleatórios comuns).
 - **LastFitSpectrumAssignment:** Similar ao First Fit, mas inicia a busca a partir do fim do espectro (maior índice de slot) e retrocede, reduzindo colisões de alocação (ID: `lastfit` / `lf`).
 - **ExactFitSpectrumAssignment:** Busca o bloco contíguo de slots que melhor se ajusta ao tamanho da requisição, priorizando blocos livres cujo tamanho é o mais próximo possível de `numSlots` para minimizar a fragmentação do espectro (ID: `exactfit` / `ef`).
+- **CoreStaggeredFitSpectrumAssignment** (ID: `corestaggeredfit`): ponto de partida por cor do núcleo (`PeripheralFirstCoreAssignment.coreColours`): cor 0 First-Fit, cor 1 Last-Fit, cor $q \ge 2$ First-Fit a partir de $\lfloor N(q-1)/(k-1) \rfloor$ com volta ao slot 0. Na MCF hexagonal de 7 núcleos, 1/3/5 enchem de baixo, 2/4/6 de cima e o central a partir do meio. Determinística; sem adjacência equivale ao First-Fit.
 - **SpectrumInterval:** Representa o intervalo `[start, end]` dos slots alocados.
 
 ---
