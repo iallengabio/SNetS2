@@ -139,14 +139,14 @@ Define as políticas lógicas, algoritmos ativados, e quais métricas devem ser 
 * **requests:** Critério de parada primário da simulação (número total de requisições geradas).
 * **warmUpRequests:** número de requisições iniciais descartadas das métricas (deve ser `< requests`). **totalSlots:** slots por núcleo.
 * **Algoritmos (RMSCA):** IDs registrados na `AlgorithmFactory`:
-  * `integratedRMSCA`: `standard`.
-  * `routing`: `djk`, `ksp`/`newksp` (k = 3).
+  * `integratedRMSCA`: `standard` (primeiro candidato viável) ou `kspxt` (candidato viável de menor custo XT + utilização; ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.3).
+  * `routing`: `djk`, `ksp`/`newksp` (k = 3, ou o parâmetro `k`).
   * `modulationSelection`: `distance-adaptive` (padrão), `qot-adaptive` ou `fixed`. `distance-adaptive` escolhe o formato mais eficiente cujo `maxRange` cobre o caminho. `qot-adaptive` escolhe o formato mais eficiente que atende aos limiares de SNR e XT do novo circuito e dos circuitos já estabelecidos, pelo modelo físico, sem usar o `maxRange`. Com `activeQoT = false`, `qot-adaptive` volta ao critério de alcance e se comporta como `distance-adaptive`. `qot-margin` é a `qot-adaptive` com margens preferidas de SNR e XT do novo circuito (parâmetros `sigma` e `sigmaXt`, ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.1).
-  * `coreAndSpectrumAssignment`: estratégias de núcleo `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2), combinadas com `spectrumAssignment`. Também aceita algoritmos **conjuntos** de núcleo e espectro portados do SNetS v1, que dispensam `spectrumAssignment`: `abne`/`csbasdm`, `abne2`/`csbasdm2`, `abne-fallback`, `cpcas`, `cpcas-fallback`, `rccas`, `rccas-fallback`, `icxtaa` e `xtawaregreedy` (§3.3).
+  * `coreAndSpectrumAssignment`: estratégias de núcleo `firstfitcore`, `randomfitcore`, `mincrosstalkcore`/`mincrosstalk`, `peripheralfirstcore`, `xtawarecore` (ver [04_rmsca_algorithms.md](04_rmsca_algorithms.md), §3.2), combinadas com `spectrumAssignment`. Também aceita algoritmos **conjuntos** de núcleo e espectro portados do SNetS v1, que dispensam `spectrumAssignment`: `abne`/`csbasdm`, `abne2`/`csbasdm2`, `abne-fallback`, `cpcas`, `cpcas-fallback`, `rccas`, `rccas-fallback`, `icxtaa`, `xtawaregreedy` e `colourfit` (§3.3).
   * `spectrumAssignment`: `firstfit`, `lastfit`/`lf`, `exactfit`/`ef`, `randomfit`, `dummyfit`, `corestaggeredfit` (ponto de partida por núcleo).
   * `regeneratorAssignment`: `aar` (opcional).
 
-* **algorithmParameters** (opcional): parâmetros numéricos dos algoritmos, num mapa plano nome → valor. Cada algoritmo lê os nomes que declara. Parâmetros atuais: `sigma` e `sigmaXt` (`qot-margin`, dB, ≥ 0, padrão 0). Podem ser variados no planejamento experimental, por exemplo `"simulation.algorithmParameters.sigma": [0, 1, 2]`.
+* **algorithmParameters** (opcional): parâmetros numéricos dos algoritmos, num mapa plano nome → valor. Cada algoritmo lê os nomes que declara. Parâmetros atuais: `sigma` e `sigmaXt` (`qot-margin`, dB, ≥ 0, padrão 0); `k` (`ksp`, inteiro ≥ 1, padrão 3); `alpha1` e `alpha2` (`kspxt`, ≥ 0, padrão 0,5). Podem ser variados no planejamento experimental, por exemplo `"simulation.algorithmParameters.sigma": [0, 1, 2]`.
 
   As chaves `kRouting`, `grooming`, `reallocation`, `powerAssignment` e `networkType` são aceitas, mas **ignoradas**; o simulador emite um aviso.
 * **activeMetrics:** liga ou desliga cada métrica. Uma métrica **omitida é considerada ativa**. Desativar métricas complexas (ex.: fragmentação) melhora significativamente o desempenho. Nomes desconhecidos geram aviso.

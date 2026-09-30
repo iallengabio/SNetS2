@@ -612,7 +612,11 @@ public final class VerificationCampaign {
 
     static void qotNetwork(File out) throws Exception {
         record Variant(String group, String label, Map<String, Object> physical, String core, String modulation,
-                       String spectrum, Map<String, Object> parameters) {
+                       String spectrum, Map<String, Object> parameters, Map<String, Object> simulation) {
+            Variant(String group, String label, Map<String, Object> physical, String core, String modulation,
+                    String spectrum, Map<String, Object> parameters) {
+                this(group, label, physical, core, modulation, spectrum, parameters, Map.of());
+            }
             Variant(String group, String label, Map<String, Object> physical, String core, String modulation) {
                 this(group, label, physical, core, modulation, "firstfit");
             }
@@ -660,7 +664,16 @@ public final class VerificationCampaign {
             new Variant("v1", "XT-aware greedy", all, "xtawaregreedy", "distance-adaptive"),
             new Variant("v1", "XT-aware greedy + qot-adaptive", all, "xtawaregreedy", "qot-adaptive"),
             new Variant("v1", "XT-aware greedy + qot-margin sigma=3", all, "xtawaregreedy", "qot-margin", "firstfit",
-                    Map.of("sigma", 3.0)));
+                    Map.of("sigma", 3.0)),
+            // Issue #36: KSPXT (lowest alpha1 XT/XT_th + alpha2 utilization over all feasible candidates), k = 3 paths
+            new Variant("v1", "KSP + colourfit (first feasible)", all, "colourfit", "distance-adaptive", "firstfit", Map.of(),
+                    Map.of("routing", "ksp")),
+            new Variant("v1", "KSPXT alpha1=0.5", all, "colourfit", "distance-adaptive", "firstfit", Map.of(),
+                    Map.of("routing", "ksp", "integratedRMSCA", "kspxt")),
+            new Variant("v1", "KSPXT alpha1=1", all, "colourfit", "distance-adaptive", "firstfit",
+                    Map.of("alpha1", 1.0, "alpha2", 0.0), Map.of("routing", "ksp", "integratedRMSCA", "kspxt")),
+            new Variant("v1", "KSPXT alpha1=0", all, "colourfit", "distance-adaptive", "firstfit",
+                    Map.of("alpha1", 0.0, "alpha2", 1.0), Map.of("routing", "ksp", "integratedRMSCA", "kspxt")));
         List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
         List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));
@@ -685,6 +698,7 @@ public final class VerificationCampaign {
                             .sim("coreAndSpectrumAssignment", v.core()).sim("spectrumAssignment", v.spectrum())
                             .sim("algorithmParameters", v.parameters())
                             .sim("requests", 22_000).sim("warmUpRequests", 2_000).load(load);
+                    v.simulation().forEach(s::sim);
                     List<Run> runs = replicate(s.setup(), 5);
                     for (int r = 0; r < runs.size(); r++) {
                         BitRateBlockingMetrics b = runs.get(r).blocking();

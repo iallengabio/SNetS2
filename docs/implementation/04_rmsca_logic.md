@@ -35,6 +35,7 @@ O SNetS2 utiliza interfaces granulares organizadas em subpacotes dentro de `com.
 - **ZonePrioritizedCoreAndSpectrumAssignment** (issue #33): base de `CorePrioritizationCoreAndSpectrumAssignment` (IDs: `cpcas`, `cpcas-fallback`) e `RandomCoreZoneAssignment` (IDs: `rccas`, `rccas-fallback`, `RandomizedAlgorithm`). A subclasse dá a ordem dos núcleos, chamada uma vez por chamada, e a base aplica `SpectrumZones.zonedFirstFit` com as zonas do grupo (cor) de cada núcleo. Os pesos do CPCAS ficam num `IdentityHashMap<Link, int[]>` da instância.
 - **IcxtAwareCoreAndSpectrumAssignment** (ID: `icxtaa`, issue #34): lista todos os intervalos livres (núcleos em ordem decrescente de id; zonas do grupo, a própria primeiro; slots iniciais em ordem crescente) e deixa a escolha para a validação do RMSCA. Um núcleo sem intervalo livre aparece uma vez com `slots == null`.
 - **XtAwareGreedyCoreAndSpectrumAssignment** (IDs: `xtawaregreedy`/`xtawaregreedyalgorithm`, issue #35): lista todos os intervalos livres de todos os núcleos, calcula `PhysicalLayerModel.predictXtRatio` de cada um e ordena por XT crescente com `List.sort` estável (empates na ordem núcleo, slot). O primeiro viável é o de maior margem de XT. Sem XT, a ordem é First-Fit.
+- **ColourFitCoreAndSpectrumAssignment** (ID: `colourfit`): um candidato por núcleo, núcleos em ordem decrescente, regra espectral do ABNE por cor. É o gerador de candidatos do KSPXT do v1.
 - **Configuração:** `AlgorithmFactory.isJointCoreAndSpectrum(id)` diz se o ID de `coreAndSpectrumAssignment` é conjunto. Nesse caso `createRMSCA` chama `setCoreAndSpectrumAssignment` e ignora `spectrumAssignment`: o `ConfigValidator` não o exige e avisa se ele estiver definido. Algoritmos conjuntos aleatórios recebem um gerador próprio (`RandomizedAlgorithm`).
 
 ### 1.4. Atribuição de Espectro (`com.snets2.rmsca.spectrum`)
@@ -71,6 +72,11 @@ Esta classe implementa a interface `IRMSCA` e atua como um coordenador sequencia
 8.  **Result:** Retorna um objeto `AllocationResult` contendo todos os detalhes técnicos da proposta de alocação ou da causa do bloqueio (nunca retorna `null`).
 
 ---
+
+### 2.2. `KspXtIntegratedRMSCA` (ID: `kspxt`, issue #36)
+Subclasse de `StandardIntegratedRMSCA` que liga a seleção por custo. O laço de `allocate` tem dois ganchos protegidos:
+- `selectsByCost()`: falso no padrão. Quando verdadeiro, o RMSCA não para no primeiro candidato viável. Em cada passada, guarda o de menor `candidateCost` que mantém a margem e o de menor custo geral (empate: o primeiro), e devolve um deles no fim da passada. Nesse modo, a verificação dos circuitos ativos roda para todo candidato viável.
+- `candidateCost(cp, path, regens, core, slots, mod)`: no KSPXT, $\alpha_1 \cdot XT/XT_{th} + \alpha_2 \cdot$ utilização média do núcleo no caminho (bitsets de espectro). `alpha1` e `alpha2` vêm de `Configurable`. O `k` do `KShortestPathsRouting` passou a ser configurável (`simulation.algorithmParameters.k`, padrão 3).
 
 ## 3. Resultado de Alocação (`AllocationResult`)
 

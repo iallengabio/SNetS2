@@ -132,6 +132,19 @@ Porte de `XtAwareGreedyAlgorithm` do SNetS v1. Entre todos os pares $(c, I)$ liv
 * **Sem XT** (`activeXT = false`): todos os candidatos empatam, e a ordem é First-Fit de núcleo com First-Fit de espectro sobre todos os intervalos.
 * **Verificação:** um teste compara a escolha com a busca exaustiva do v1 (cada candidato validado isoladamente pelo RMSCA) em 600 passos de uma rede dinâmica, com resultado idêntico.
 
+#### Algoritmo integrado KSPXT (`kspxt`)
+Porte de `KSPXT` do SNetS v1 como algoritmo integrado (`integratedRMSCA: "kspxt"`). Em vez de aceitar o primeiro candidato viável na precedência caminho → formato → núcleo, avalia **todos** os candidatos: todos os caminhos da rota configurada (use `ksp`), todos os formatos da política de modulação e todos os pares $(c, I)$ da atribuição de núcleo e espectro. Entre os viáveis, escolhe o de menor custo
+
+$$\mathrm{custo} = \alpha_1 \frac{XT_{novo}}{XT_{th}(m)} + \alpha_2\, \bar u_c(p), \qquad \bar u_c(p) = \frac{1}{|p|} \sum_{l \in p} \frac{|O_l(c)|}{N},$$
+
+em que $XT$ é linear (0 sem crosstalk) e $\bar u_c(p)$ é a utilização média do núcleo no caminho antes da alocação. Empates ficam com o primeiro candidato.
+
+* **Parâmetros:** `alpha1` e `alpha2` (padrão 0,5 e 0,5, como no v1) e `k` (número de caminhos da rota `ksp`, padrão 3).
+* **Candidatos do v1:** um intervalo por núcleo, com a regra espectral do ABNE, em ordem decrescente de núcleo. Isso é a atribuição conjunta `colourfit`.
+* **Normalização do XT:** o v1 divide o XT pelo **maior XT observado até então** na simulação, então o custo de uma decisão depende do histórico. Aqui a divisão é pelo limiar do formato, o que deixa o termo em $[0, 1]$ para candidatos viáveis e o torna independente do histórico.
+* **Formatos e alcance:** vêm da política de modulação. Com regeneradores, a comparação de custo é feita dentro de cada passada, e uma solução transparente continua preferida. Com `qot-margin`, o candidato mais barato que mantém a margem vence qualquer um que não a mantém.
+* **Custo computacional:** todo candidato viável passa pela verificação completa, inclusive a dos circuitos ativos.
+
 [3] S. Fujii, Y. Hirota, H. Tode, K. Murakami, "On-Demand Spectrum and Core Allocation for Reducing Crosstalk in Multicore Fibers in Elastic Optical Networks", *JOCN* 6(12):1059–1071 (2014), [opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059](https://opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059).
 
 [2] J. C. Lacerda Jr., A. G. Morais, A. V. T. Cartaxo, A. Soares, "A New Algorithm to Mitigate Fragmentation and Crosstalk in Multi-Core Elastic Optical Networks", *Photonics* 11(6):504 (2024), [mdpi.com/2304-6732/11/6/504](https://www.mdpi.com/2304-6732/11/6/504). Descreve o ABNE como trabalho anterior dos autores.
@@ -144,7 +157,8 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
-*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS, RCCAS (e variantes), ICXTAA e XT-aware greedy.
+*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS, RCCAS (e variantes), ICXTAA, XT-aware greedy e colourfit.
+*   **Integrados:** Standard (primeiro candidato viável) e KSPXT (menor custo XT + utilização).
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---
