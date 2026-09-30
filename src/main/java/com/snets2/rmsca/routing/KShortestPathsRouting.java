@@ -6,10 +6,13 @@ import com.snets2.model.Node;
 import java.util.*;
 
 /**
- * k-Shortest Paths (KSP) routing algorithm using Yen's algorithm.
+ * k-Shortest Paths (KSP) routing algorithm using Yen's algorithm. The number of paths is the parameter {@code k} of
+ * {@code simulation.algorithmParameters} (default 3), as the {@code k} variable of SNetS v1.
  */
-public class KShortestPathsRouting implements IRouting {
-    private final int k;
+public class KShortestPathsRouting implements IRouting, com.snets2.rmsca.Configurable {
+    public static final String K = "k";
+
+    private int k;
 
     public KShortestPathsRouting() {
         this(3); // Default to 3 paths
@@ -17,6 +20,20 @@ public class KShortestPathsRouting implements IRouting {
 
     public KShortestPathsRouting(int k) {
         this.k = k;
+    }
+
+    @Override
+    public Set<String> parameterNames() {
+        return Set.of(K);
+    }
+
+    @Override
+    public void configure(Map<String, Object> parameters) {
+        double value = com.snets2.rmsca.Configurable.doubleParameter(parameters, K, 3);
+        if (value < 1 || value != Math.rint(value) || value > 1000) {
+            throw new IllegalArgumentException("simulation.algorithmParameters.k must be an integer in [1, 1000], got " + value);
+        }
+        this.k = (int) value;
     }
 
     @Override

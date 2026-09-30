@@ -121,9 +121,13 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         // Preferred margins of the new circuit (qot-margin); factors of 1 = no margin
         double snrMarginFactor = Math.pow(10, modulationSelection.snrMarginDb(cp) / 10);
         double xtMarginFactor = Math.pow(10, modulationSelection.xtMarginDb(cp) / 10);
+        boolean byCost = selectsByCost();
         int passes = regeneratorAssignment == null ? 1 : 2;
         for (int pass = 0; pass < passes; pass++) {
             boolean withRegenerators = pass == 1;
+            // Cost-based selection (selectsByCost): best candidate of the pass keeping the margin, and best overall
+            AllocationResult bestKept = null, bestAny = null;
+            double bestKeptCost = Double.POSITIVE_INFINITY, bestAnyCost = Double.POSITIVE_INFINITY;
 
             for (Path path : candidatePaths) {
                 // First feasible candidate of this path that does not keep the margin (used if none keeps it)
@@ -155,7 +159,7 @@ public class StandardIntegratedRMSCA implements IRMSCA {
 
                         // 7. QoT validation (new circuit and active circuits)
                         Verdict verdict = evaluate(cp, path, regens, coreId, slots, mod, bitRate,
-                                snrMarginFactor, xtMarginFactor, withoutMargin == null);
+                                snrMarginFactor, xtMarginFactor, byCost || withoutMargin == null);
                         if (verdict.failure() != null) {
                             currentCause = verdict.failure();
                             currentCoreId = coreId;
@@ -166,6 +170,13 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                             slots.start(), slots.end(), mod, bitRate, regens
                         );
 
+                        if (byCost) { // keep the cheapest feasible candidate (ties: the first one) and go on
+                            double cost = candidateCost(cp, path, regens, coreId, slots, mod);
+                            if (verdict.marginKept() && cost < bestKeptCost) { bestKept = candidate; bestKeptCost = cost; }
+                            if (cost < bestAnyCost) { bestAny = candidate; bestAnyCost = cost; }
+                            continue;
+                        }
+
                         // 8. Success (with the margin, if any)
                         if (verdict.marginKept()) return candidate;
                         if (withoutMargin == null) withoutMargin = candidate;
@@ -174,6 +185,8 @@ public class StandardIntegratedRMSCA implements IRMSCA {
                 // No candidate of this path keeps the margin: the first feasible one
                 if (withoutMargin != null) return withoutMargin;
             }
+            if (bestKept != null) return bestKept;
+            if (bestAny != null) return bestAny;
         }
 
         // Set failure cause if not already set specifically by QoT
@@ -185,6 +198,22 @@ public class StandardIntegratedRMSCA implements IRMSCA {
         }
 
         return new AllocationResult(source, destination, bitRate, currentCause, currentCoreId);
+    }
+
+    /**
+     * Whether the RMSCA chooses, in each pass, the feasible candidate of lowest {@link #candidateCost} over all paths,
+     * formats and (core, interval) candidates, instead of accepting the first feasible one. False here; integrated
+     * algorithms such as {@code kspxt} override it. With a preferred margin, the cheapest candidate keeping the margin
+     * wins over any candidate that does not.
+     */
+    protected boolean selectsByCost() {
+        return false;
+    }
+
+    /** Cost of a feasible candidate when {@link #selectsByCost()}; lower is better, ties keep the first candidate. */
+    protected double candidateCost(ControlPlane cp, Path path, List<Node> regens, int coreId, SpectrumInterval slots,
+                                   ModulationFormat mod) {
+        return 0;
     }
 
     /**

@@ -22,6 +22,7 @@ public class AlgorithmFactory {
     static {
         // Integrated
         integratedRegistry.put("standard", StandardIntegratedRMSCA.class);
+        integratedRegistry.put("kspxt", KspXtIntegratedRMSCA.class);
         
         // Routing
         routingRegistry.put("djk", DijkstraRouting.class);
@@ -54,6 +55,7 @@ public class AlgorithmFactory {
         jointRegistry.put("rccas-fallback", RandomCoreZoneAssignment.Fallback.class);
         jointRegistry.put("icxtaa", IcxtAwareCoreAndSpectrumAssignment.class);
         jointRegistry.put("xtawaregreedy", XtAwareGreedyCoreAndSpectrumAssignment.class);
+        jointRegistry.put("colourfit", ColourFitCoreAndSpectrumAssignment.class);
         jointRegistry.put("xtawaregreedyalgorithm", XtAwareGreedyCoreAndSpectrumAssignment.class);
 
         // Spectrum
