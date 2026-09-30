@@ -650,7 +650,11 @@ public final class VerificationCampaign {
             // Issues #32-#35: joint core and spectrum algorithms ported from SNetS v1
             new Variant("v1", "ABNE", all, "abne", "distance-adaptive"),
             new Variant("v1", "ABNE2", all, "abne2", "distance-adaptive"),
-            new Variant("v1", "ABNE + fallback", all, "abne-fallback", "distance-adaptive"));
+            new Variant("v1", "ABNE + fallback", all, "abne-fallback", "distance-adaptive"),
+            new Variant("v1", "CPCAS", all, "cpcas", "distance-adaptive"),
+            new Variant("v1", "CPCAS + fallback", all, "cpcas-fallback", "distance-adaptive"),
+            new Variant("v1", "RCCAS", all, "rccas", "distance-adaptive"),
+            new Variant("v1", "RCCAS + fallback", all, "rccas-fallback", "distance-adaptive"));
         List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
         List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));
@@ -661,6 +665,9 @@ public final class VerificationCampaign {
                     : Set.of(System.getProperty("vv.groups").split(","));
             for (Variant v : variants) {
                 if (groups != null && !groups.contains(v.group())) continue;
+                // -Dvv.variants=CPCAS,RCCAS restricts the run to some variants (default: all)
+                if (System.getProperty("vv.variants") != null
+                        && !List.of(System.getProperty("vv.variants").split(",")).contains(v.label())) continue;
                 for (double load : new double[] {400, 600, 800, 1000, 1200}) {
                     Scenario s = nsfnet(0.25);
                     s.modulations = MODULATIONS;
