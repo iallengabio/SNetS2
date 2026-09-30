@@ -656,7 +656,11 @@ public final class VerificationCampaign {
             new Variant("v1", "RCCAS", all, "rccas", "distance-adaptive"),
             new Variant("v1", "RCCAS + fallback", all, "rccas-fallback", "distance-adaptive"),
             new Variant("v1", "ICXTAA", all, "icxtaa", "distance-adaptive"),
-            new Variant("v1", "ICXTAA + qot-adaptive", all, "icxtaa", "qot-adaptive"));
+            new Variant("v1", "ICXTAA + qot-adaptive", all, "icxtaa", "qot-adaptive"),
+            new Variant("v1", "XT-aware greedy", all, "xtawaregreedy", "distance-adaptive"),
+            new Variant("v1", "XT-aware greedy + qot-adaptive", all, "xtawaregreedy", "qot-adaptive"),
+            new Variant("v1", "XT-aware greedy + qot-margin sigma=3", all, "xtawaregreedy", "qot-margin", "firstfit",
+                    Map.of("sigma", 3.0)));
         List<String> modNames = MODULATIONS.stream().map(m -> (String) m.get("name")).toList();
         List<String> header = new ArrayList<>(List.of("group", "variant", "load", "rep", "bp", "bp_fragmentation",
                 "bp_qot_new", "bp_qot_others", "bp_xt", "bp_xt_others", "mean_snr_db", "mean_slots"));

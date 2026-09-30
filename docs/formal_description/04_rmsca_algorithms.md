@@ -124,6 +124,14 @@ Porte de `IcxtAwareAlgorithm` do SNetS v1. Em vez de um intervalo por núcleo, p
 
 O RMSCA valida os candidatos nessa ordem (SNR e XT do novo circuito e dos ativos) e aceita o primeiro viável, que é a escolha do v1. Um núcleo cujo primeiro intervalo livre falha por XT não é abandonado: os intervalos seguintes do mesmo núcleo são tentados. O custo por formato e caminho é de até $|\mathcal{C}(p)| \cdot N$ validações, contra $|\mathcal{C}(p)|$ nas combinações de um intervalo por núcleo.
 
+#### XT-aware greedy (`xtawaregreedy`)
+Porte de `XtAwareGreedyAlgorithm` do SNetS v1. Entre todos os pares $(c, I)$ livres da demanda, escolhe o **viável** de maior margem de crosstalk $XT_{th}(m) - XT_{novo}$. Para um formato fixo, o limiar é o mesmo para todos os candidatos, então maior margem equivale a menor $XT_{novo}$.
+
+* **No v1:** todos os candidatos são validados e o de melhor margem é guardado; um candidato sem XT é aceito imediatamente.
+* **Aqui:** os candidatos são ordenados pelo XT previsto do novo circuito (`predictXtRatio`, uma passada pelos enlaces sobre o cache de XT), em ordem crescente. Empates mantêm a ordem do v1: núcleo crescente, depois slot inicial crescente. O RMSCA aceita o primeiro viável dessa ordem, que é exatamente a escolha do v1. As verificações caras (SNR, circuitos ativos) só rodam até esse candidato.
+* **Sem XT** (`activeXT = false`): todos os candidatos empatam, e a ordem é First-Fit de núcleo com First-Fit de espectro sobre todos os intervalos.
+* **Verificação:** um teste compara a escolha com a busca exaustiva do v1 (cada candidato validado isoladamente pelo RMSCA) em 600 passos de uma rede dinâmica, com resultado idêntico.
+
 [3] S. Fujii, Y. Hirota, H. Tode, K. Murakami, "On-Demand Spectrum and Core Allocation for Reducing Crosstalk in Multicore Fibers in Elastic Optical Networks", *JOCN* 6(12):1059–1071 (2014), [opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059](https://opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059).
 
 [2] J. C. Lacerda Jr., A. G. Morais, A. V. T. Cartaxo, A. Soares, "A New Algorithm to Mitigate Fragmentation and Crosstalk in Multi-Core Elastic Optical Networks", *Photonics* 11(6):504 (2024), [mdpi.com/2304-6732/11/6/504](https://www.mdpi.com/2304-6732/11/6/504). Descreve o ABNE como trabalho anterior dos autores.
@@ -136,7 +144,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
-*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS, RCCAS (e variantes) e ICXTAA.
+*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS, RCCAS (e variantes), ICXTAA e XT-aware greedy.
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---
