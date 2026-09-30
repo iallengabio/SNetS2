@@ -1,0 +1,452 @@
+{
+  "networkTopology": {
+    "nodes": [
+      {
+        "id": "0",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "1",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "2",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "3",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "4",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "5",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "6",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "7",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "8",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "9",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "10",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "11",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "12",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      },
+      {
+        "id": "13",
+        "tx": 100000,
+        "rx": 100000,
+        "regenerators": 0,
+        "addDropDegree": 1
+      }
+    ],
+    "links": [
+      {
+        "source": "0",
+        "destination": "1",
+        "length": 1053.7
+      },
+      {
+        "source": "0",
+        "destination": "2",
+        "length": 1507.4
+      },
+      {
+        "source": "0",
+        "destination": "7",
+        "length": 1801.4
+      },
+      {
+        "source": "1",
+        "destination": "2",
+        "length": 605.1
+      },
+      {
+        "source": "1",
+        "destination": "3",
+        "length": 608.8
+      },
+      {
+        "source": "2",
+        "destination": "5",
+        "length": 1502.8
+      },
+      {
+        "source": "3",
+        "destination": "4",
+        "length": 606.5
+      },
+      {
+        "source": "3",
+        "destination": "10",
+        "length": 1500.5
+      },
+      {
+        "source": "4",
+        "destination": "5",
+        "length": 1304.2
+      },
+      {
+        "source": "4",
+        "destination": "6",
+        "length": 607.9
+      },
+      {
+        "source": "5",
+        "destination": "9",
+        "length": 1051.9
+      },
+      {
+        "source": "5",
+        "destination": "13",
+        "length": 1505.6
+      },
+      {
+        "source": "6",
+        "destination": "7",
+        "length": 759.3
+      },
+      {
+        "source": "6",
+        "destination": "9",
+        "length": 1353.3
+      },
+      {
+        "source": "7",
+        "destination": "8",
+        "length": 757.0
+      },
+      {
+        "source": "8",
+        "destination": "9",
+        "length": 801.0
+      },
+      {
+        "source": "8",
+        "destination": "11",
+        "length": 304.7
+      },
+      {
+        "source": "8",
+        "destination": "12",
+        "length": 308.4
+      },
+      {
+        "source": "10",
+        "destination": "11",
+        "length": 502.4
+      },
+      {
+        "source": "10",
+        "destination": "12",
+        "length": 756.1
+      },
+      {
+        "source": "11",
+        "destination": "13",
+        "length": 800.1
+      },
+      {
+        "source": "12",
+        "destination": "13",
+        "length": 303.8
+      },
+      {
+        "source": "1",
+        "destination": "0",
+        "length": 1053.7
+      },
+      {
+        "source": "2",
+        "destination": "0",
+        "length": 1507.4
+      },
+      {
+        "source": "7",
+        "destination": "0",
+        "length": 1801.4
+      },
+      {
+        "source": "2",
+        "destination": "1",
+        "length": 605.1
+      },
+      {
+        "source": "3",
+        "destination": "1",
+        "length": 608.8
+      },
+      {
+        "source": "5",
+        "destination": "2",
+        "length": 1502.8
+      },
+      {
+        "source": "4",
+        "destination": "3",
+        "length": 606.5
+      },
+      {
+        "source": "10",
+        "destination": "3",
+        "length": 1500.5
+      },
+      {
+        "source": "5",
+        "destination": "4",
+        "length": 1304.2
+      },
+      {
+        "source": "6",
+        "destination": "4",
+        "length": 607.9
+      },
+      {
+        "source": "9",
+        "destination": "5",
+        "length": 1051.9
+      },
+      {
+        "source": "13",
+        "destination": "5",
+        "length": 1505.6
+      },
+      {
+        "source": "7",
+        "destination": "6",
+        "length": 759.3
+      },
+      {
+        "source": "9",
+        "destination": "6",
+        "length": 1353.3
+      },
+      {
+        "source": "8",
+        "destination": "7",
+        "length": 757.0
+      },
+      {
+        "source": "9",
+        "destination": "8",
+        "length": 801.0
+      },
+      {
+        "source": "11",
+        "destination": "8",
+        "length": 304.7
+      },
+      {
+        "source": "12",
+        "destination": "8",
+        "length": 308.4
+      },
+      {
+        "source": "11",
+        "destination": "10",
+        "length": 502.4
+      },
+      {
+        "source": "12",
+        "destination": "10",
+        "length": 756.1
+      },
+      {
+        "source": "13",
+        "destination": "11",
+        "length": 800.1
+      },
+      {
+        "source": "13",
+        "destination": "12",
+        "length": 303.8
+      }
+    ],
+    "cores": [
+      {
+        "id": 0,
+        "adjacentCores": []
+      }
+    ],
+    "modulations": [
+      {
+        "name": "4QAM",
+        "maxRange": 5110.0,
+        "M": 4.0,
+        "SNR": 5.92,
+        "XT": -16.0
+      },
+      {
+        "name": "8QAM",
+        "maxRange": 3270.0,
+        "M": 8.0,
+        "SNR": 9.32,
+        "XT": -19.4
+      },
+      {
+        "name": "16QAM",
+        "maxRange": 2000.0,
+        "M": 16.0,
+        "SNR": 12.34,
+        "XT": -22.42
+      },
+      {
+        "name": "32QAM",
+        "maxRange": 400.0,
+        "M": 32.0,
+        "SNR": 15.22,
+        "XT": -25.3
+      },
+      {
+        "name": "64QAM",
+        "maxRange": 160.0,
+        "M": 64.0,
+        "SNR": 18.02,
+        "XT": -28.1
+      }
+    ]
+  },
+  "physicalLayer": {
+    "activeQoT": false,
+    "activeQoTForOther": false,
+    "activeASE": false,
+    "activeNLI": false,
+    "activeXT": false,
+    "activeXTForOther": false,
+    "rateOfFEC": 0.25,
+    "power": 0.0,
+    "spanLength": 80.0,
+    "fiberLoss": 0.2,
+    "fiberNonlinearity": 0.0013,
+    "fiberDispersion": 1.6e-05,
+    "centerFrequency": 193850000000000.0,
+    "constantOfPlanck": 6.626e-34,
+    "noiseFigureOfOpticalAmplifier": 5.0,
+    "powerSaturationOfOpticalAmplifier": 23.0,
+    "noiseFactorModelParameterA1": 100.0,
+    "noiseFactorModelParameterA2": 4.0,
+    "typeOfAmplifierGain": 0,
+    "amplificationFrequency": 193850000000000.0,
+    "switchInsertionLoss": 5.0,
+    "fixedPowerSpectralDensity": false,
+    "referenceBandwidthForPowerSpectralDensity": 12500000000.0,
+    "propagationConstant": 10000000.0,
+    "bendingRadius": 0.01,
+    "couplingCoefficient": 0.012,
+    "corePitch": 4.5e-05,
+    "polarizationModes": 2.0,
+    "guardBand": 0,
+    "bvtSpectralWidth": 12500000000.0
+  },
+  "simulation": {
+    "requests": 100000,
+    "warmUpRequests": 10000,
+    "totalSlots": 128,
+    "routing": "djk",
+    "coreAndSpectrumAssignment": "firstfitcore",
+    "integratedRMSCA": "standard",
+    "modulationSelection": "distance-adaptive",
+    "activeMetrics": {
+      "BlockingProbability": true,
+      "BitRateBlockingProbability": true,
+      "SpectrumUtilization": true,
+      "SpectrumSizeStatistics": false,
+      "ExternalFragmentation": false,
+      "RelativeFragmentation": false,
+      "TransmittersReceiversRegeneratorsUtilization": false,
+      "ModulationUtilization": false,
+      "ConsumedEnergy": false,
+      "CrosstalkStatistics": false,
+      "SimulationMetadata": false
+    },
+    "spectrumAssignment": "firstfit"
+  },
+  "traffic": {
+    "loadDistributionPerPair": "uniform",
+    "load": 130.0,
+    "bitRates": [
+      {
+        "value": 100.0,
+        "weight": 1.0
+      },
+      {
+        "value": 200.0,
+        "weight": 1.0
+      },
+      {
+        "value": 400.0,
+        "weight": 1.0
+      }
+    ]
+  },
+  "experimentalPlanning": {
+    "replications": 10,
+    "traffic.load": [
+      130.0,
+      155.0,
+      180.0,
+      205.0,
+      230.0
+    ]
+  }
+}

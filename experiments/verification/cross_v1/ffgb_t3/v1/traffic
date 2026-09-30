@@ -1,0 +1,148 @@
+{
+  "requestGenerators": [
+    {
+      "source": "1",
+      "destination": "2",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "1",
+      "destination": "2",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "1",
+      "destination": "2",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "1",
+      "destination": "3",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "1",
+      "destination": "3",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "1",
+      "destination": "3",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "1",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "1",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "1",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "3",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "3",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "2",
+      "destination": "3",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "1",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "1",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "1",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "2",
+      "bitRate": 100000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "2",
+      "bitRate": 200000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    },
+    {
+      "source": "3",
+      "destination": "2",
+      "bitRate": 400000000000.0,
+      "arrivalRate": 2.2222222222222223,
+      "holdRate": 1.0,
+      "arrivalRateIncrease": 0.5555555555555556
+    }
+  ]
+}

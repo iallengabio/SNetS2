@@ -52,3 +52,7 @@ docs/codebase_drift_report.md
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# SNetS v1 outputs of the cross-validation scenarios (scripts/verification/cross_v1.py)
+experiments/verification/cross_v1/*/v1/*.csv
+experiments/verification/cross_v1/*/v1/routesByPar.txt
