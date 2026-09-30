@@ -52,6 +52,7 @@ public class AlgorithmFactory {
         jointRegistry.put("cpcas-fallback", CorePrioritizationCoreAndSpectrumAssignment.Fallback.class);
         jointRegistry.put("rccas", RandomCoreZoneAssignment.class);
         jointRegistry.put("rccas-fallback", RandomCoreZoneAssignment.Fallback.class);
+        jointRegistry.put("icxtaa", IcxtAwareCoreAndSpectrumAssignment.class);
 
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);

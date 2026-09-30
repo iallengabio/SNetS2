@@ -115,6 +115,15 @@ Porte de `CorePrioritizationCrosstalkAvoidanceStrategy` (`cpcas`) e `RandomCoreC
 * **Núcleo, `rccas`.** Sorteio uniforme. O v1 usa um `new Random()` sem semente a cada chamada; aqui o gerador vem da semente da replicação.
 * **Variantes `-fallback`** (extensão, não existem no v1): depois do núcleo escolhido, propõem os demais, cada um com as zonas do seu grupo. No `cpcas`, a ordem é por soma de pesos crescente (antes da atualização); no `rccas`, aleatória.
 
+#### ICXTAA (`icxtaa`)
+Porte de `IcxtAwareAlgorithm` do SNetS v1. Em vez de um intervalo por núcleo, propõe **todos** os intervalos livres da demanda:
+
+* núcleos em ordem decrescente de id, como no v1;
+* em cada núcleo, as zonas de espectro do seu grupo (a própria primeiro, como em `cpcas`);
+* em cada zona, todos os slots iniciais em ordem crescente.
+
+O RMSCA valida os candidatos nessa ordem (SNR e XT do novo circuito e dos ativos) e aceita o primeiro viável, que é a escolha do v1. Um núcleo cujo primeiro intervalo livre falha por XT não é abandonado: os intervalos seguintes do mesmo núcleo são tentados. O custo por formato e caminho é de até $|\mathcal{C}(p)| \cdot N$ validações, contra $|\mathcal{C}(p)|$ nas combinações de um intervalo por núcleo.
+
 [3] S. Fujii, Y. Hirota, H. Tode, K. Murakami, "On-Demand Spectrum and Core Allocation for Reducing Crosstalk in Multicore Fibers in Elastic Optical Networks", *JOCN* 6(12):1059–1071 (2014), [opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059](https://opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059).
 
 [2] J. C. Lacerda Jr., A. G. Morais, A. V. T. Cartaxo, A. Soares, "A New Algorithm to Mitigate Fragmentation and Crosstalk in Multi-Core Elastic Optical Networks", *Photonics* 11(6):504 (2024), [mdpi.com/2304-6732/11/6/504](https://www.mdpi.com/2304-6732/11/6/504). Descreve o ABNE como trabalho anterior dos autores.
@@ -127,7 +136,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
-*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS e RCCAS (e variantes).
+*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS, RCCAS (e variantes) e ICXTAA.
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---
