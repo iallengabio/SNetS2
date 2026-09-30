@@ -102,6 +102,21 @@ Porte de `CSBASDM` e `CSBASDM2` do SNetS v1: balanceamento de núcleo e espectro
 * **`abne-fallback`** (extensão, não existe no v1): propõe o núcleo da vez e, depois dele, os demais na ordem do rodízio, cada um com a sua política espectral.
 * **Estado.** O contador pertence à instância do algoritmo, criada por replicação.
 
+#### Priorização de núcleo com zonas de espectro (`cpcas`, `rccas`)
+Porte de `CorePrioritizationCrosstalkAvoidanceStrategy` (`cpcas`) e `RandomCoreCrosstalkAvoidanceStrategy` (`rccas`) do SNetS v1. Ambos seguem a política de priorização de núcleo e de espectro de Fujii et al. [3].
+
+* **Zonas de espectro.** Os núcleos são agrupados por cor. Com $k$ cores, a grade de $N$ slots é dividida em $k$ zonas consecutivas, e a zona $q$ é a prioritária da cor $q$. Com $k = 3$, as zonas mantêm as proporções do v1: slots 1–137, 138–274 e 275–320 de 320, isto é, $137/320$, $137/320$ e $46/320$ da grade, a última para o núcleo central da MCF de 7 núcleos. Com outro $k$, as zonas são iguais. O v1 fixa 320 slots e 7 núcleos.
+* **Espectro.** First-Fit dentro da própria zona e depois nas zonas seguintes, em ordem cíclica ($q, q+1, \dots$), que é a ordem do v1. Um intervalo nunca atravessa a fronteira de uma zona.
+* **Núcleo, `cpcas`.** Cada enlace guarda um peso por núcleo. O núcleo da chamada é o de menor soma de pesos ao longo do caminho, com empate para o maior id (o v1 percorre os núcleos em ordem decrescente).
+  * Em cada enlace do caminho, o núcleo escolhido recebe o peso máximo (99999) e os seus vizinhos recebem +1.
+  * Quando todos os núcleos de um enlace chegam ao máximo, os pesos daquele enlace voltam a 0.
+  * Os pesos são atualizados na escolha, mesmo que o candidato falhe na validação, e não diminuem na desativação, como no v1.
+  * No v1 eles ficam no modelo da rede (`Core.peso`). Aqui pertencem à instância do algoritmo, uma por replicação.
+* **Núcleo, `rccas`.** Sorteio uniforme. O v1 usa um `new Random()` sem semente a cada chamada; aqui o gerador vem da semente da replicação.
+* **Variantes `-fallback`** (extensão, não existem no v1): depois do núcleo escolhido, propõem os demais, cada um com as zonas do seu grupo. No `cpcas`, a ordem é por soma de pesos crescente (antes da atualização); no `rccas`, aleatória.
+
+[3] S. Fujii, Y. Hirota, H. Tode, K. Murakami, "On-Demand Spectrum and Core Allocation for Reducing Crosstalk in Multicore Fibers in Elastic Optical Networks", *JOCN* 6(12):1059–1071 (2014), [opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059](https://opg.optica.org/jocn/abstract.cfm?uri=jocn-6-12-1059).
+
 [2] J. C. Lacerda Jr., A. G. Morais, A. V. T. Cartaxo, A. Soares, "A New Algorithm to Mitigate Fragmentation and Crosstalk in Multi-Core Elastic Optical Networks", *Photonics* 11(6):504 (2024), [mdpi.com/2304-6732/11/6/504](https://www.mdpi.com/2304-6732/11/6/504). Descreve o ABNE como trabalho anterior dos autores.
 
 ---
@@ -112,7 +127,7 @@ O SNetS2 virá com uma biblioteca de algoritmos base prontos para uso:
 *   **Routing:** Dijkstra (Shortest Path), k-Shortest Paths (KSP).
 *   **Spectrum Assignment:** First Fit (FF), Random Fit (RF), Last Fit (LF), Exact Fit (EF), Core-Staggered Fit.
 *   **Core Assignment:** First Fit Core, Random Fit Core, Min-Crosstalk Core, Peripheral-First Core, XT-Aware Core.
-*   **Core and Spectrum Assignment (conjunta):** ABNE (e variantes).
+*   **Core and Spectrum Assignment (conjunta):** ABNE, CPCAS e RCCAS (e variantes).
 *   **Modulation:** Fixed Modulation, Distance-Adaptive Modulation, QoT-Adaptive Modulation, QoT-Adaptive com margem.
 
 ---

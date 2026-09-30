@@ -48,6 +48,10 @@ public class AlgorithmFactory {
         jointRegistry.put("abne2", AbneCoreAndSpectrumAssignment.Abne2.class);
         jointRegistry.put("csbasdm2", AbneCoreAndSpectrumAssignment.Abne2.class);
         jointRegistry.put("abne-fallback", AbneCoreAndSpectrumAssignment.Fallback.class);
+        jointRegistry.put("cpcas", CorePrioritizationCoreAndSpectrumAssignment.class);
+        jointRegistry.put("cpcas-fallback", CorePrioritizationCoreAndSpectrumAssignment.Fallback.class);
+        jointRegistry.put("rccas", RandomCoreZoneAssignment.class);
+        jointRegistry.put("rccas-fallback", RandomCoreZoneAssignment.Fallback.class);
 
         // Spectrum
         spectrumRegistry.put("firstfit", FirstFitSpectrumAssignment.class);
