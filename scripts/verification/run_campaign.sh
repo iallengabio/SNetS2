@@ -3,7 +3,8 @@
 # Report: docs/review/04_relatorio_verificacao_validacao.md
 #
 # Usage: scripts/verification/run_campaign.sh [experiment ...]
-#   experiments: erlang tx kr tandem algos energy phy qotnet (default: all)
+#   experiments: erlang tx kr tandem algos energy phy qotnet gnpy (default: all)
+# External comparisons (L12): scripts/verification/cross_v1.py (SNetS v1) and gnpy_l12d.py (GNPy).
 # Python dependencies: pip install -r scripts/verification/requirements.txt
 set -euo pipefail
 cd "$(dirname "$0")/../.."
