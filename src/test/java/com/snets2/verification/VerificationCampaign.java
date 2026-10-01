@@ -59,6 +59,7 @@ public final class VerificationCampaign {
         experiments.put("energy", () -> { energy(out); return null; });
         experiments.put("phy", () -> { physicalLayer(out); return null; });
         experiments.put("qotnet", () -> { qotNetwork(out); return null; });
+        experiments.put("gnpy", () -> { gnpyReference(out); return null; });
         for (Map.Entry<String, Callable<Void>> e : experiments.entrySet()) {
             if (!selected.isEmpty() && !selected.contains(e.getKey())) continue;
             long t0 = System.nanoTime();
@@ -604,6 +605,50 @@ public final class VerificationCampaign {
                 }
             }
         }
+    }
+
+    // =====================================================================================
+    // E10 - Physical layer against GNPy (L12-d); GNPy side in scripts/verification/gnpy_l12d.py
+    // =====================================================================================
+
+    /** Channels of 4 slots (50 GHz) filling the 320-slot core; the victim is the central one. */
+    static final int GNPY_CHANNEL_SLOTS = 4, GNPY_CHANNELS = 80, GNPY_VICTIM = GNPY_CHANNELS / 2;
+
+    /**
+     * SNR of a 50 GHz channel on one link of N spans of 80 km, split into ASE, NLI and total, for an isolated
+     * channel and for a core filled with 80 equal channels (central one), launch power -6..+6 dBm per channel.
+     */
+    static void gnpyReference(File out) throws Exception {
+        try (Csv csv = new Csv(out, "e10_gnpy_snets2", "load", "spans", "power_dbm", "snr_ase_db", "snr_nli_db", "snr_db")) {
+            for (String load : new String[] {"isolated", "full"}) {
+                for (int spans : new int[] {1, 5, 10, 20, 40}) {
+                    for (int p = -6; p <= 6; p++) {
+                        Map<String, Object> base = Map.of("activeXT", false, "guardBand", 0, "power", (double) p);
+                        double ase = gnpySnr(spans, load, physicalWith(base, "activeNLI", false));
+                        double nli = gnpySnr(spans, load, physicalWith(base, "activeASE", false));
+                        double all = gnpySnr(spans, load, physical(base));
+                        csv.row(load, spans, p, 10 * Math.log10(ase), 10 * Math.log10(nli), 10 * Math.log10(all));
+                    }
+                }
+            }
+        }
+    }
+
+    static PhysicalLayerConfig physicalWith(Map<String, Object> base, String key, Object value) throws IOException {
+        Map<String, Object> p = new LinkedHashMap<>(base);
+        p.put(key, value);
+        return physical(p);
+    }
+
+    static double gnpySnr(int spans, String load, PhysicalLayerConfig cfg) {
+        SingleLink l = SingleLink.of(spans * 80.0, cfg);
+        int n = GNPY_CHANNEL_SLOTS;
+        if (load.equals("full")) {
+            for (int k = 0; k < GNPY_CHANNELS; k++) {
+                if (k != GNPY_VICTIM) l.cp().establishCircuit(l.circuit("c" + k, 0, k * n, k * n + n - 1));
+            }
+        }
+        return l.snr(GNPY_VICTIM * n, GNPY_VICTIM * n + n - 1);
     }
 
     // =====================================================================================

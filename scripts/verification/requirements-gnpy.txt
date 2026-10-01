@@ -1,0 +1,2 @@
+# L12-d (scripts/verification/gnpy_l12d.py). GNPy >= 2.10 needs oopt-gnpy-libyang, without wheels for every platform.
+gnpy==2.9.0

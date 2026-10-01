@@ -1,0 +1,124 @@
+{
+  "nodes": [
+    {
+      "name": "1",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "2",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "3",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    }
+  ],
+  "links": [
+    {
+      "source": "1",
+      "destination": "2",
+      "slots": 320,
+      "spectrum": 12500000000.0,
+      "size": 380.0
+    },
+    {
+      "source": "2",
+      "destination": "3",
+      "slots": 320,
+      "spectrum": 12500000000.0,
+      "size": 620.0
+    },
+    {
+      "source": "2",
+      "destination": "1",
+      "slots": 320,
+      "spectrum": 12500000000.0,
+      "size": 380.0
+    },
+    {
+      "source": "3",
+      "destination": "2",
+      "slots": 320,
+      "spectrum": 12500000000.0,
+      "size": 620.0
+    }
+  ],
+  "modulations": [
+    {
+      "name": "16QAM",
+      "maxRange": 100000.0,
+      "M": 16.0,
+      "SNR": 12.34,
+      "XT": -22.42
+    }
+  ],
+  "cores": [
+    {
+      "id": 0,
+      "adjacentCores": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": 1,
+      "adjacentCores": [
+        0,
+        2,
+        6
+      ]
+    },
+    {
+      "id": 2,
+      "adjacentCores": [
+        0,
+        1,
+        3
+      ]
+    },
+    {
+      "id": 3,
+      "adjacentCores": [
+        0,
+        2,
+        4
+      ]
+    },
+    {
+      "id": 4,
+      "adjacentCores": [
+        0,
+        3,
+        5
+      ]
+    },
+    {
+      "id": 5,
+      "adjacentCores": [
+        0,
+        4,
+        6
+      ]
+    },
+    {
+      "id": 6,
+      "adjacentCores": [
+        0,
+        1,
+        5
+      ]
+    }
+  ],
+  "guardBand": 0,
+  "bvtSpectralAmplitude": 1000
+}

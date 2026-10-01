@@ -1,7 +1,7 @@
 # SNetS2: Relatório de Verificação e Validação
 
 > **Escopo.** Evidência experimental de que o SNetS2 faz o que o seu modelo formal prevê (*verificação*) e de que o modelo se comporta como a teoria e a literatura esperam (*validação*). Os experimentos vão do mais simples, com solução analítica exata, até redes SDM com camada física.
-> **Base.** `main` após os PRs [#24](https://github.com/iallengabio/SNetS2/pull/24)–[#29](https://github.com/iallengabio/SNetS2/pull/29), que corrigiram os achados da primeira campanha (29/09/2026). Os resultados da primeira campanha, feita após o PR [#11](https://github.com/iallengabio/SNetS2/pull/11), estão resumidos em §13.
+> **Base.** `main` após os PRs [#24](https://github.com/iallengabio/SNetS2/pull/24)–[#29](https://github.com/iallengabio/SNetS2/pull/29), que corrigiram os achados da primeira campanha (29/09/2026). Os resultados da primeira campanha, feita após o PR [#11](https://github.com/iallengabio/SNetS2/pull/11), estão resumidos em §15.
 > **Companheiros.** [Plano de verificação](03_plano_de_verificacao.md) (IDs `Lx-y`) e [code review](02_code_review.md) (IDs `CR-xx`).
 > **Reprodução.** `scripts/verification/run_campaign.sh` (≈ 25 min em 10 núcleos). Dados brutos em [`vv/data`](vv/data), figuras em [`vv/figures`](vv/figures) e todas as tabelas geradas em [`vv/tables.md`](vv/tables.md).
 
@@ -17,6 +17,8 @@
 | E6 | Consumo de energia | L11-a/b | Fórmula do circuito e lei de Little | 15 + 15 | ✅ com e sem *warm-up* (erro ≤ 0,2 %) |
 | E7 | Modelos da camada física | L9-a/b/c/e/h | ASE, GN e XT em forma fechada | 6 verificações | ✅ erro ≤ 10⁻¹⁴; `maxRange` derivado do próprio modelo |
 | E8 | Rede SDM com camada física | L9-k, L10 | Monotonicidade e tendências da literatura | 11 variantes × 5 cargas | ✅ monotonicidade; nova atribuição de núcleo ≤ Random-Fit em todas as cargas; ⚠️ `qot-adaptive` bloqueia mais em carga alta |
+| E9 | SNetS2 × SNetS v1: topologias de 3, 6 e 9 nós, NSFNET e USA; SP e KSP | L12-a | Simulador independente com premissas alinhadas | 16 cenários × 5 cargas | ✅ premissas alinhadas: 52 de 52 pontos com BP ≥ 0,5 % dentro de 10 % (máx. 8,6 %), sem viés; ⚠️ banda de guarda modelada de forma diferente |
+| E10 | Camada física: SNetS2 × GNPy, 1 enlace de 1 a 40 vãos | L12-d | GNPy 2.9 (modelo GN analítico) | 2 cargas × 5 comprimentos × 13 potências | ✅ 130 de 130 pontos dentro de ±0,5 dB (máx. \|Δ\| = 0,18 dB) |
 
 **Conclusões principais**
 
@@ -26,6 +28,8 @@
 4. **A camada física implementa as fórmulas com precisão de máquina**, e a potência ótima coincide com a previsão analítica do modelo GN. O `maxRange` agora é derivado do próprio modelo (carga plena, pior taxa de bits), por isso é conservador: na rede SDM testada, ASE e NLI continuam sem bloquear com a política por alcance. O primeiro bloqueio por QoT aparece com a política `qot-adaptive`, nos circuitos já estabelecidos.
 5. **Em redes multinúcleo, a atribuição de núcleo domina o bloqueio.** A nova estratégia `xtawarecore` com a política de espectro `corestaggeredfit` bloqueia no máximo tanto quanto o Random-Fit de núcleo em todas as cargas, e reduz o bloqueio por XT nos circuitos ativos em cerca de 10 vezes.
 6. **Escolher sempre o formato mais eficiente não é a melhor política quando o crosstalk domina.** A `qot-adaptive` usa 9–16 % menos slots por circuito, mas bloqueia 10–16 % mais acima de 800 Erl.
+7. **O SNetS2 reproduz o SNetS v1 quando as premissas são as mesmas.** Em 65 pontos de bloqueio (menor caminho e KSP com First-Fit, MCF-7 com ABNE e com CPCAS, de 3 nós até NSFNET e USA), a diferença entre os simuladores é compatível com o ruído estatístico, e todos os pontos com bloqueio ≥ 0,5 % ficam dentro do critério de 10 % do plano. A única divergência sistemática vem de uma escolha de modelagem, a banda de guarda.
+8. **A camada física concorda com o GNPy dentro de 0,2 dB.** O ASE difere 0,11–0,12 dB pela convenção $G$ × $G - 1$, o NLI de canal isolado é idêntico e o XCI com o núcleo cheio difere 0,18 dB.
 
 ---
 
@@ -35,7 +39,7 @@
 * **Replicações e sementes.** São 10 replicações independentes (5 nos cenários de rede), com sementes 0…n−1. Variantes de um mesmo experimento usam as mesmas sementes (números aleatórios comuns).
 * **Estatística.** Média, erro-padrão (EP) e intervalo de confiança de 95 % pela t de Student. O critério de aprovação é o do plano: $|\bar x - \theta| \le 4\,EP + 10^{-3}$. Também se reporta o escore $z = (\bar x - \theta)/EP$.
 * **Transiente.** Os cenários começam com a rede vazia. As primeiras requisições são descartadas (*warm-up*: 10 k a 20 k) e o resultado vem das requisições seguintes (100 k a 280 k por réplica).
-* **Regressão.** Versões rápidas de E1–E4, E6b e E7 rodam no `mvn test` (§12).
+* **Regressão.** Versões rápidas de E1–E4, E6b e E7 rodam no `mvn test` (§14).
 * **Oráculos** implementados de forma independente em `scripts/verification/analyze.py`: Erlang B, Kaufman–Roberts, cadeia de Markov de tempo contínuo resolvida numericamente, ASE da cadeia de amplificadores, GN em forma fechada e XT de acoplamento de potência.
 
 ---
@@ -161,7 +165,7 @@ Os bloqueios com modulação adaptativa são menores que na primeira campanha, p
 | 60 k | 15 | 9 280 | 9 263 ± 16 | −0,18 % | ✅ |
 
 **Conclusões**
-* ✅ **A potência média satisfaz a lei de Little com e sem *warm-up*** nos 15 pontos. Na primeira campanha, o *warm-up* causava erros de −16,7 % e −50 % (CR-11, ver §13); a correção ([#13](https://github.com/iallengabio/SNetS2/issues/13)) integra a energia só na janela medida $[T_w, T]$ e divide por $T - T_w$. O pequeno viés negativo restante (−0,03 % a −0,18 %) está dentro do critério.
+* ✅ **A potência média satisfaz a lei de Little com e sem *warm-up*** nos 15 pontos. Na primeira campanha, o *warm-up* causava erros de −16,7 % e −50 % (CR-11, ver §15); a correção ([#13](https://github.com/iallengabio/SNetS2/issues/13)) integra a energia só na janela medida $[T_w, T]$ e divide por $T - T_w$. O pequeno viés negativo restante (−0,03 % a −0,18 %) está dentro do critério.
 * ✅ **A potência estática não depende mais dos transceptores instalados** ([#14](https://github.com/iallengabio/SNetS2/issues/14)): o termo $a$ do OXC é o grau de *add/drop*, configurado por nó (`addDropDegree`, padrão 1).
 * ✅ **Energia e ASE usam a mesma cadeia de amplificadores** ([#15](https://github.com/iallengabio/SNetS2/issues/15)): booster + $N_l$ de linha + pré-amplificador, com os mesmos ganhos.
 * ⚠️ Os 100 W por amplificador e os 80 W por regenerador ocioso continuam sem referência; estão documentados como premissas do simulador. O grau $n$ do nó conta cada sentido separadamente (um par de fibras vale 2).
@@ -285,15 +289,111 @@ Desde [#25](https://github.com/iallengabio/SNetS2/pull/25), o `maxRange` de cada
 * ✅ É a única variante em que aparece bloqueio por QoT dos circuitos estabelecidos (`QOT_OTHERS`, ~0,1–0,2 %): a política passa a operar no limite do QoT.
 * ⚠️ **O bloqueio é igual até 600 Erl e 10–16 % maior a partir de 800 Erl.** Os formatos de ordem alta toleram muito menos crosstalk, e nesta rede o recurso escasso é a margem de XT, não o espectro (o bloqueio por fragmentação é zero). Uma variante com margem de SNR/XT é a continuação natural.
 
-## 10. Limitações e ameaças à validade
+## 10. E9 — Comparação com o SNetS v1 (L12-a)
 
-* **Oráculos exatos só existem para os cenários pequenos (E1–E4).** Nos cenários de rede (E5, E8), a validação é qualitativa: ordenação e monotonicidade. A comparação quantitativa com outro simulador (L12-a) e com o GNPy (L12-d) continua pendente.
-* O modelo de NLI é o GN incoerente em forma fechada, com vãos idênticos. O XCI usa o limite de alta dispersão. Não foram avaliados o modelo EGN nem efeitos de modulação.
+**Cenário.** Os dois simuladores rodam os mesmos 16 cenários em duas partes:
+* **E9a:** 4 famílias × 3 topologias simples (linha de 3 nós; anel de 6 nós com uma corda; grade 3 × 3), com comprimentos de 270–1170 km;
+* **E9b:** NSFNET (14 nós, 22 enlaces) e USA (24 nós, 43 enlaces) do artefato do v1, com a família `ff` (menor caminho) e a família `ksp` (3 menores caminhos). Os comprimentos originais (múltiplos de 25 ou 50 km) produzem muitos caminhos de mesmo comprimento; cada enlace $j$ recebe $+((37 j) \bmod 97)/10$ km (0 a 9,6 km), o que elimina os empates.
+
+O script falha se algum par tiver dois menores caminhos de mesmo comprimento ou, na família `ksp`, empate entre os 4 menores caminhos simples. Assim, o desempate do Dijkstra e do KSP de cada simulador não interfere: os dois calculam os k menores caminhos simples por distância (o v1 por enumeração, o SNetS2 pelo algoritmo de Yen). As premissas alinhadas são:
+* sem camada física (QoT, ASE, NLI e XT desligados); roteamento por distância; FEC de 25 %, 2 polarizações e slots de 12,5 GHz;
+* taxas de 100, 200 e 400 Gbps com o mesmo peso; carga total dividida igualmente entre os pares ordenados (no v1, um gerador de Poisson por par e taxa, cuja superposição é o processo do SNetS2);
+* 100 k requisições por réplica, das quais as primeiras 10 % são descartadas (o transiente fixo do v1 e `warmUpRequests` no SNetS2); 10 réplicas por carga e 5 cargas por cenário.
+
+| Família | Núcleos × slots | Guarda | Formatos | SNetS v1 | SNetS2 |
+| :-- | :-: | :-: | :-- | :-- | :-- |
+| `ff` | 1 × 128 | 0 | 4QAM–64QAM por alcance | `randomcorefirstfit` (1 núcleo) + `modulationbydistance` | `firstfitcore` + `firstfit` + `distance-adaptive` |
+| `ffgb` | 1 × 128 | 1 | idem | idem | idem |
+| `abne` | 7 × 320 | 0 | só 16QAM | `csbasdm` | `abne` |
+| `cpcas` | 7 × 320 | 0 | só 16QAM | `cpcas` | `cpcas` |
+| `ksp` | 1 × 128 | 0 | só 16QAM | integrado `kspcsa` (`newksp`, k = 3) + `randomcorefirstfit` | `ksp` (k = 3) + `firstfitcore` + `firstfit` |
+
+A família `ksp` usa um único formato porque, no v1, o KSP só existe como algoritmo integrado (`kspcsa`), que ignora o alcance dos formatos: sem QoT, ele sempre escolhe o mais eficiente. O RMCSA sequencial do v1, que respeita o alcance, tem uma única rota. Por isso a combinação KSP + modulação por alcance do plano (L12-a) não tem equivalente no v1, e o alcance é coberto pela família `ff` nas mesmas redes. As famílias com 7 núcleos usam um único formato porque o SNetS2 tenta o formato seguinte quando o primeiro não encontra espectro. Essa nova chamada à atribuição de núcleo e espectro avança o rodízio do ABNE e os pesos do CPCAS. O RMCSA sequencial do v1 escolhe o formato uma vez e chama a atribuição de núcleo e espectro uma única vez por requisição. Com First-Fit e um núcleo, a tentativa extra nunca tem sucesso (um formato menos eficiente pede mais slots), então as duas regras dão o mesmo resultado.
+
+**Oráculo e critério.** O SNetS v1 ([SNetS-SDM-SBRC26](https://github.com/alexandrefontinele/SNetS-SDM-SBRC26), commit `8c5c92a`), compilado a partir do código-fonte. Critério do plano: diferença relativa < 10 % com premissas alinhadas. Também se reporta $z = (\bar x_{2} - \bar x_{1})/\sqrt{EP_1^2 + EP_2^2}$; sem viés, cerca de 5 % dos pontos devem ter $|z| > 2$. O v1 não aceita semente, então a comparação é estatística, nunca bit a bit.
+
+![E9a](vv/figures/e9_cross_v1.png)
+
+![E9b](vv/figures/e9b_cross_v1_networks.png)
+
+| Parte | Família | Pontos | Pontos com BP ≥ 0,5 % dentro de 10 % | Maior diferença (BP ≥ 0,5 %) | Pontos com \|z\| > 2 | z médio | Utilização: diferença |
+| :-: | :-- | :-: | :-: | :-: | :-: | :-: | :-: |
+| E9a | `ff` | 15 | 12 de 12 | 4,0 % | 1 | +0,4 | −0,3 a −1,1 % |
+| E9a | `abne` | 15 | 12 de 12 | 8,6 % | 1 | +0,3 | ≤ 0,3 % |
+| E9a | `cpcas` | 15 | 12 de 12 | 8,0 % | 1 | +0,0 | ≤ 0,3 % |
+| E9b | `ff` (NSFNET, USA) | 10 | 8 de 8 | 2,8 % | 1 | +0,4 | −0,6 a +0,5 % |
+| E9b | `ksp` (NSFNET, USA) | 10 | 8 de 8 | 3,7 % | 0 | −0,2 | −0,4 a +0,4 % |
+| | **premissas alinhadas** | **65** | **52 de 52** | **8,6 %** | **4** | **+0,18** | |
+| E9a | `ffgb` | 15 | 11 de 12 | 14,2 % | 9 | +2,7 | +29 a +32 % |
+
+Todos os pontos, também por taxa de bits, estão em [`vv/e9_cross_v1.md`](vv/e9_cross_v1.md) e [`vv/data/e9_cross_v1.csv`](vv/data/e9_cross_v1.csv).
+
+* ✅ **Bloqueio de taxa de bits.** Com premissas alinhadas, os 52 pontos com bloqueio ≥ 0,5 % ficam dentro de 10 % (máx. 8,6 %). As diferenças maiores (até 17 %) só aparecem com bloqueio ≤ 0,2 %, onde o IC95 de cada simulador já é de ±15–20 %, e nenhuma delas tem $|z| > 1{,}9$. Os 4 pontos com $|z| > 2$ (máx. 2,2) de 65 são o esperado por acaso (≈ 3), e o $z$ médio (+0,18) não indica viés. O mesmo vale para o bloqueio por taxa (100, 200 e 400 Gbps): máx. $|z| = 2{,}8$, $z$ médio entre +0,15 e +0,18.
+* ✅ **Redes de referência e KSP.** Na NSFNET e na USA, as diferenças ficam abaixo de 3,7 % em todos os pontos com bloqueio ≥ 0,5 %, com o menor caminho e com os 3 menores caminhos.
+* ✅ **ABNE e CPCAS.** Os portes (§3.3 de `04_rmsca_algorithms.md`) reproduzem o v1 na MCF de 7 núcleos, apesar das generalizações (coloração em vez de paridade de id, estado na instância do algoritmo, sementes).
+* ⚠️ **Utilização com 1 núcleo: −0,3 % a −1,1 % no SNetS2, com significância.** O v1 observa a rede a cada chegada, **depois** de alocar a requisição, e o circuito recém-alocado entra na amostra. O SNetS2 usa a média ponderada no tempo, que é o valor correto. O efeito é da ordem de um circuito sobre a ocupação total e some com 7 núcleos × 320 slots (≤ 0,3 %).
+* ⚠️ **Banda de guarda (`ffgb`): o SNetS2 bloqueia 2–14 % mais, com $|z|$ até 4,5.** Os modelos são diferentes. O v1 compartilha a guarda entre circuitos vizinhos e não a coloca nas bordas da grade. O SNetS2 soma $G$ slots a cada demanda. Com $G = 1$, o SNetS2 gasta mais espectro por circuito e bloqueia mais. A utilização difere 30 % porque o SNetS2 conta a guarda como slot ocupado e o v1 não. Nenhum dos dois está errado, mas resultados com guarda não são comparáveis entre as versões.
+
+**Achados sobre o v1, registrados para quem reproduzir a comparação.**
+* Os nós precisam se chamar `1`…`N`: o `djk` grava `routesByPar.txt` percorrendo os nomes `1..N` e lança `NullPointerException` com outros nomes.
+* Uma exceção numa réplica encerra o *pool* de *threads*, mas o laço principal continua esperando: a execução trava sem erro visível.
+* O KSP do v1 só existe dentro de algoritmos integrados (`kspcsa` e variantes), que ignoram o alcance dos formatos; o RMCSA sequencial, que o respeita, usa uma única rota.
+* **Tempo (E9a):** com 10 *threads*, o v1 levou 2 h 04 min e o SNetS2, 7 min 36 s (≈ 16×). A diferença vem sobretudo dos cenários de 7 núcleos, com milhares de circuitos ativos e a fila de eventos do v1 ordenada por inserção linear.
+
+**Reprodução.**
+```bash
+python3 scripts/verification/cross_v1.py generate
+python3 scripts/verification/cross_v1.py run-v1 <checkout do SNetS v1 compilado com mvn package> 10
+python3 scripts/verification/cross_v1.py run-snets2 10
+python3 scripts/verification/cross_v1.py analyze
+```
+
+## 11. E10 — Camada física contra o GNPy (L12-d)
+
+**Cenário.** Um enlace de $N$ vãos de 80 km ($N$ = 1, 5, 10, 20 e 40), com a cadeia do SNetS2: *booster* de 15 dB depois do ROADM ($3 \times 5$ dB) e um amplificador de 16 dB por vão, ganho fixo e NF de 5 dB. A fibra tem 0,2 dB/km, $D$ = 16 ps/(nm·km) e $\gamma$ = 1,3 /(W·km). O canal testado tem 50 GHz (4 slots, sem guarda), em 193,85 THz, com potência de −6 a +6 dBm. Há duas cargas:
+* **canal isolado:** só SCI;
+* **núcleo cheio:** o canal central de 80 canais iguais de 50 GHz, que ocupam os 4 THz da grade (SCI + XCI de 79 vizinhos).
+
+**Oráculo e critério.** O [GNPy](https://github.com/Telecominfraproject/oopt-gnpy) 2.9.0 [9], com os mesmos parâmetros: elementos `Fused` (perda do ROADM), `Edfa` do tipo `fixed_gain` sem *ripple* e `Fiber`, modelo de NLI `gn_model_analytic` (eq. 120 de [6]), sem Raman e sem ruído do transmissor. O GNPy exige ao menos duas portadoras; no caso isolado, a segunda tem $10^{-20}$ W, a 1,5 THz de distância. Critério do plano: ±0,5 dB. O SNetS2 separa ASE e NLI desligando um dos efeitos (`activeNLI`, `activeASE`); o GNPy acumula os dois separadamente.
+
+![E10](vv/figures/e10_gnpy.png)
+
+| Carga | Componente | Δ = SNetS2 − GNPy (dB) | Pontos dentro de ±0,5 dB |
+| :-- | :-- | :-: | :-: |
+| canal isolado | ASE | +0,11 a +0,12 | 65 de 65 |
+| canal isolado | NLI | 0,00 | 65 de 65 |
+| canal isolado | ASE + NLI | +0,01 a +0,12 | 65 de 65 |
+| núcleo cheio | ASE | +0,11 a +0,12 | 65 de 65 |
+| núcleo cheio | NLI | −0,18 | 65 de 65 |
+| núcleo cheio | ASE + NLI | −0,17 a +0,12 | 65 de 65 |
+
+* ✅ **ASE: o SNetS2 dá SNR 0,11–0,12 dB maior.** É a convenção do ruído: o GNPy usa $h\nu F G B$, e o SNetS2, $h\nu F (G - 1) B$ ([07_physical_layer_models.md](../formal_description/07_physical_layer_models.md), §3.2). A diferença esperada é $10\log_{10}[G/(G-1)]$: 0,11 dB com 16 dB de ganho e 0,14 dB com 15 dB. O OSNR em 12,5 GHz é o SNR de ASE + 6,02 dB nos dois, com o mesmo Δ.
+* ✅ **NLI de canal isolado: idêntico** ($|Δ| < 0{,}005$ dB em todos os comprimentos e potências). Os dois usam a forma fechada do SCI de Poggiolini [6].
+* ✅ **NLI com o núcleo cheio: o SNetS2 prevê 4 % mais NLI (−0,18 dB), constante em comprimento e potência.** O XCI do SNetS2 usa a forma logarítmica de Johannisson–Karlsson [7] (limite de alta dispersão); o GNPy integra a eq. 120 de [6] com $\operatorname{asinh}$. A diferença é conservadora: o SNetS2 subestima o SNR.
+* ✅ **SNR total:** 130 de 130 pontos dentro de ±0,5 dB (máx. $|Δ|$ = 0,18 dB). A potência ótima (passo de 1 dB) é a mesma nos dois em todos os comprimentos: +1 a +2 dBm com o canal isolado e −1 a 0 dBm com o núcleo cheio.
+
+Dados em [`vv/data/e10_gnpy_snets2.csv`](vv/data/e10_gnpy_snets2.csv) (SNetS2), [`vv/data/e10_gnpy.csv`](vv/data/e10_gnpy.csv) (GNPy) e [`vv/data/e10_gnpy_comparison.csv`](vv/data/e10_gnpy_comparison.csv); tabela em [`vv/e10_gnpy.md`](vv/e10_gnpy.md).
+
+**Reprodução.**
+```bash
+scripts/verification/run_campaign.sh gnpy              # lado SNetS2
+pip install -r scripts/verification/requirements-gnpy.txt
+python3 scripts/verification/gnpy_l12d.py              # lado GNPy e comparação
+```
+As versões do GNPy a partir da 2.10 dependem de `oopt-gnpy-libyang`, que não tem *wheel* para todas as plataformas; a 2.9.0 instala só com dependências Python.
+
+## 12. Limitações e ameaças à validade
+
+* **Oráculos exatos só existem para os cenários pequenos (E1–E4).** Nos cenários de rede (E5, E8), a validação é qualitativa: ordenação e monotonicidade. A comparação com outro simulador (E9, L12-a) cobre de 3 nós até NSFNET e USA, sem camada física; a camada física foi comparada com o GNPy só em um enlace (E10, L12-d).
+* **O SNetS v1 não é independente do SNetS2 em tudo.** Os portes de ABNE e CPCAS vieram do código do v1, então E9 confirma que o porte é fiel, não que o algoritmo esteja correto em relação ao artigo original.
+* O modelo de NLI é o GN incoerente em forma fechada, com vãos idênticos. O XCI usa o limite de alta dispersão, 0,18 dB mais pessimista que a forma analítica do GNPy (E10). Não foram avaliados o modelo EGN, o espalhamento Raman estimulado nem efeitos de modulação.
+* E10 compara o SNetS2 com o modelo GN analítico do GNPy 2.9, não com o GGN nem com medidas. Um erro comum às duas formas fechadas não seria detectado.
+* A COST239 do plano foi trocada pela USA, a outra rede do artefato do v1, e a combinação KSP + modulação por alcance não tem equivalente no v1 (§10).
 * O XT usa o modelo de acoplamento de potência de primeira ordem ($hL \ll 1$), válido nos valores testados ($hL \le 0{,}013$).
 * Os cenários de rede usam poucas réplicas (5), suficientes para as ordenações observadas, mas não para diferenças abaixo de ~10 %.
 * Os oráculos estão em Python e foram escritos independentemente do código Java. Os parâmetros físicos, porém, são os mesmos dos experimentos do repositório; um erro nesses dados de entrada não seria detectado.
 
-## 11. Situação das recomendações
+## 13. Situação das recomendações
 
 | Recomendação da primeira campanha | Issue | Situação |
 | :-- | :-: | :-- |
@@ -305,7 +405,7 @@ Desde [#25](https://github.com/iallengabio/SNetS2/pull/25), o `maxRange` de cada
 | Atribuição de núcleo sensível aos slots | [#18](https://github.com/iallengabio/SNetS2/issues/18) | ✅ PR #29 (`xtawarecore`, `peripheralfirstcore`, `corestaggeredfit`) |
 | Não calcular NLI/XT quando não são lidos | [#19](https://github.com/iallengabio/SNetS2/issues/19) | ✅ PR #28 (−31 % de CPU no E5, resultados idênticos) |
 | Testes de regressão rápidos | [#20](https://github.com/iallengabio/SNetS2/issues/20) | ✅ PR #27 (E2–E4 e E7 no `mvn test`) |
-| Validação externa (outro simulador, GNPy) | [#21](https://github.com/iallengabio/SNetS2/issues/21) | ⏳ aberta |
+| Validação externa (outro simulador, GNPy) | [#21](https://github.com/iallengabio/SNetS2/issues/21) | ✅ L12-a (E9: 3 a 24 nós, SP e KSP) e L12-d (E10: GNPy, ±0,18 dB) |
 | Bloqueio por taxa de bits no Excel | [#22](https://github.com/iallengabio/SNetS2/issues/22) | ✅ PR #28 |
 | Seleção de modulação por QoT | [#23](https://github.com/iallengabio/SNetS2/issues/23) | ✅ PR #26 (`qot-adaptive`) |
 
@@ -313,8 +413,11 @@ Desde [#25](https://github.com/iallengabio/SNetS2/pull/25), o `maxRange` de cada
 * Seleção de modulação com margem de SNR/XT, para reduzir o bloqueio da `qot-adaptive` em redes limitadas por crosstalk (§9.3).
 * Referências para os 100 W por amplificador e 80 W por regenerador, e decisão sobre a contagem do grau $n$ do nó (§7.2).
 * Confirmação da unidade de $A_2$ no artigo de Pereira et al. (§8.4).
+* Decidir se a banda de guarda deve ser compartilhada entre circuitos vizinhos, como no v1, ou continuar somada a cada demanda (§10).
+* Estender E9 a um cenário com camada física (o v1 tem outro modelo de ganho saturado e de XT; ver [07_physical_layer_models.md](../formal_description/07_physical_layer_models.md), §3.3 e §7).
+* Avaliar se o XCI deve usar a forma com $\operatorname{asinh}$ do GNPy em vez do limite de alta dispersão (0,18 dB de diferença com o núcleo cheio, §11).
 
-## 12. Reprodução
+## 14. Reprodução
 
 ```bash
 pip install -r scripts/verification/requirements.txt
@@ -324,9 +427,9 @@ scripts/verification/run_campaign.sh erlang tandem # apenas alguns
 
 Versões rápidas (≈ 10 s) dos experimentos com oráculo exato rodam no `mvn test`: `ErlangBSingleLinkTest` (E1), `LossNetworkOraclesTest` (E2–E4), `EnergyModelTest` (E6b) e `PhysicalLayerOraclesTest` / `PhysicalLayerMagnitudeTest` (E7).
 
-O script compila o simulador, roda `VerificationCampaign` (CSV em `docs/review/vv/data`) e `analyze.py` (figuras em `docs/review/vv/figures` e tabelas em `docs/review/vv/tables.md`). Com as mesmas sementes, os resultados são reprodutíveis bit a bit.
+O script compila o simulador, roda `VerificationCampaign` (CSV em `docs/review/vv/data`) e `analyze.py` (figuras em `docs/review/vv/figures` e tabelas em `docs/review/vv/tables.md`). Com as mesmas sementes, os resultados são reprodutíveis bit a bit. As comparações externas têm scripts próprios: `cross_v1.py` (E9, requer um *checkout* compilado do SNetS v1) e `gnpy_l12d.py` (E10, requer `requirements-gnpy.txt`); ver §10 e §11.
 
-## 13. Histórico: primeira campanha (após o PR #11)
+## 15. Histórico: primeira campanha (após o PR #11)
 
 A primeira execução desta campanha, antes das correções, obteve os mesmos resultados de E1–E4 e da verificação determinística de E7. As diferenças foram:
 * **E6:** com *warm-up*, a potência média saía −16,7 % (20 k) e −50,0 % (60 k) abaixo da lei de Little, exatamente o fator $(1 - T_w/T)$; e, com 10⁶ transceptores por nó, a potência estática chegava a 4·10⁸ W.
@@ -346,3 +449,4 @@ Os dados e figuras dessa execução estão no histórico do git (commit `d7b61a3
 6. P. Poggiolini, "The GN Model of Non-Linear Propagation in Uncompensated Coherent Optical Systems", *J. Lightwave Technol.*, vol. 30, no. 24, 2012.
 7. P. Johannisson, E. Agrell, "Modeling of Nonlinear Signal Distortion in Fiber-Optic Networks", *J. Lightwave Technol.*, vol. 32, no. 23, 2014.
 8. H. A. Pereira, D. A. R. Chaves, C. J. A. Bastos-Filho, J. F. Martins-Filho, "OSNR model to consider physical layer impairments in transparent optical networks", *Photonic Network Communications*, vol. 18, 2009.
+9. A. Ferrari et al., "GNPy: an open source application for physical layer aware open optical networks", *J. Opt. Commun. Netw.*, vol. 12, no. 6, 2020.

@@ -1,0 +1,33 @@
+{
+  "requests": 100000,
+  "rmlsaType": 0,
+  "routing": "djk",
+  "kRouting": "newksp",
+  "spectrumAssignment": "firstfit",
+  "coreAndSpectrumAssignment": "cpcas",
+  "integratedRmlsa": "kspcsa",
+  "modulationSelection": "modulationbydistance",
+  "grooming": "notrafficgrooming",
+  "reallocation": "fsalfav1",
+  "powerAssignment": "cpa",
+  "loadPoints": 5,
+  "replications": 10,
+  "activeMetrics": {
+    "SpectrumSizeStatistics": false,
+    "ExternalFragmentation": false,
+    "RelativeFragmentation": false,
+    "TransmittersReceiversRegeneratorsUtilization": false,
+    "ModulationUtilization": false,
+    "ConsumedEnergy": false,
+    "GroomingStatistics": false,
+    "DataSetInformation": false,
+    "PhysicalLayerStatistics": false,
+    "CrosstalkStatistics": false,
+    "BlockingProbability": true,
+    "BitRateBlockingProbability": true,
+    "SpectrumUtilization": true
+  },
+  "regeneratorAssignment": "aar",
+  "networkType": 0,
+  "threads": 1
+}

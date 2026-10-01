@@ -1,0 +1,185 @@
+{
+  "nodes": [
+    {
+      "name": "1",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "2",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "3",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "4",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "5",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    },
+    {
+      "name": "6",
+      "transmitters": 100000,
+      "receivers": 100000,
+      "regenerators": 0
+    }
+  ],
+  "links": [
+    {
+      "source": "1",
+      "destination": "2",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 350.0
+    },
+    {
+      "source": "2",
+      "destination": "3",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 710.0
+    },
+    {
+      "source": "3",
+      "destination": "4",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 470.0
+    },
+    {
+      "source": "4",
+      "destination": "5",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 930.0
+    },
+    {
+      "source": "5",
+      "destination": "6",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 290.0
+    },
+    {
+      "source": "6",
+      "destination": "1",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 640.0
+    },
+    {
+      "source": "2",
+      "destination": "5",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 1170.0
+    },
+    {
+      "source": "2",
+      "destination": "1",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 350.0
+    },
+    {
+      "source": "3",
+      "destination": "2",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 710.0
+    },
+    {
+      "source": "4",
+      "destination": "3",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 470.0
+    },
+    {
+      "source": "5",
+      "destination": "4",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 930.0
+    },
+    {
+      "source": "6",
+      "destination": "5",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 290.0
+    },
+    {
+      "source": "1",
+      "destination": "6",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 640.0
+    },
+    {
+      "source": "5",
+      "destination": "2",
+      "slots": 128,
+      "spectrum": 12500000000.0,
+      "size": 1170.0
+    }
+  ],
+  "modulations": [
+    {
+      "name": "4QAM",
+      "maxRange": 5110.0,
+      "M": 4.0,
+      "SNR": 5.92,
+      "XT": -16.0
+    },
+    {
+      "name": "8QAM",
+      "maxRange": 3270.0,
+      "M": 8.0,
+      "SNR": 9.32,
+      "XT": -19.4
+    },
+    {
+      "name": "16QAM",
+      "maxRange": 2000.0,
+      "M": 16.0,
+      "SNR": 12.34,
+      "XT": -22.42
+    },
+    {
+      "name": "32QAM",
+      "maxRange": 400.0,
+      "M": 32.0,
+      "SNR": 15.22,
+      "XT": -25.3
+    },
+    {
+      "name": "64QAM",
+      "maxRange": 160.0,
+      "M": 64.0,
+      "SNR": 18.02,
+      "XT": -28.1
+    }
+  ],
+  "cores": [
+    {
+      "id": 0,
+      "adjacentCores": []
+    }
+  ],
+  "guardBand": 1,
+  "bvtSpectralAmplitude": 1000
+}
